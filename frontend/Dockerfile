@@ -1,20 +1,20 @@
-# Pull the latest Node.js LTS engine base
-FROM node:24-alpine
+# Use the rock-solid Node.js 22 LTS base image
+FROM node:22-alpine
 
-# Set internal project directory
+# Set the working directory inside the container
 WORKDIR /app
 
-# Cache dependencies by separating structural copying
+# Copy package management files to cache dependencies
 COPY package*.json ./
 
-# Install standard lockfile dependencies 
+# Install frontend dependencies
 RUN npm install
 
-# Bind all source documents
+# Copy the rest of your React frontend source code
 COPY . .
 
-# Expose default React execution port
+# Expose the standard React development server port
 EXPOSE 3000
 
-# Execute startup routine automatically
+# Automatically start the React development environment
 CMD ["npm", "start"]

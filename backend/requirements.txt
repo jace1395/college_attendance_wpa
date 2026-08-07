@@ -1,4 +1,4 @@
-django>=6.1
+django>=5.1,<6.0
 numpy
 pandas
 matplotlib
