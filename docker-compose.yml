@@ -1,12 +1,37 @@
 name: damodar-attendance-wpa
 
 services:
+  db:
+    image: postgres:16-alpine
+    container_name: attendance_postgres_db
+    environment:
+      - POSTGRES_DB=attendance_db
+      - POSTGRES_USER=postgres_user
+      - POSTGRES_PASSWORD=my_secure_password123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres_user -d attendance_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
   backend:
     build: ./backend
     volumes:
       - ./backend:/app
     ports:
       - "8000:8000"
+    environment:
+      - DB_HOST=db
+      - DB_NAME=attendance_db
+      - DB_USER=postgres_user
+      - DB_PASSWORD=my_secure_password123
+    depends_on:
+      db:
+        condition: service_healthy
 
   frontend:
     build: ./frontend
@@ -19,3 +44,6 @@ services:
     tty: true
     depends_on:
       - backend
+
+volumes:
+  postgres_data:
