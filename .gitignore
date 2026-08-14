@@ -1,4 +1,6 @@
 venv/
+*.sql
+.venv
 .env
 .idea/
 *.pyc
