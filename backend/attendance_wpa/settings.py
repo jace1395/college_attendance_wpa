@@ -43,6 +43,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'rest_framework',
+    'users',
+    'attendance',
 ]
 
 MIDDLEWARE = [
@@ -129,3 +132,12 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
+
+# Custom User Model
+AUTH_USER_MODEL = 'users.User'
+
+# Custom Authentication Backend (Allows login via Email OR Roll No)
+AUTHENTICATION_BACKENDS = [
+    'users.backends.EmailOrRollNoBackend',
+    'django.contrib.auth.backends.ModelBackend',
+]
