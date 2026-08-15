@@ -6,6 +6,7 @@ class StreamChoices(models.TextChoices):
     BCA = 'BCA', 'BCA'
     BBA = 'BBA', 'BBA'
     BCOM = 'BCOM', 'BCOM'
+    BBA_FS = 'BBA(FS)', 'BBA (Financial Studies)'
 
 class SemesterChoices(models.TextChoices):
     SEM1 = 'Sem 1', 'Sem 1'
