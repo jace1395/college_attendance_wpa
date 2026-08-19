@@ -1,0 +1,1792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Teacher Dashboard – SDCCE</title>
+  <meta name="description" content="SDCCE Teacher Dashboard – manage your subjects, attendance, and timetable." />
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet" />
+
+  <!-- React 18 + Babel CDN -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <style>
+    /* ═══ CLAY MORPHISM DESIGN SYSTEM ═══ */
+    @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;500;600;700;800;900&display=swap');
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      /* ── Light clay palette ── */
+      --clay-bg:        #f0e9ff;
+      --clay-sidebar:   #ddd5f8;
+      --clay-header:    #e4dcf6;
+      --clay-chrome:    #c8b8f0;
+      --clay-blue:      #7c6fff;
+      --clay-blue-d:    #5a4de0;
+      --clay-red:       #ff7070;
+      --text-dark:      #3a2d5c;
+      --text-mid:       #6b5c8a;
+      --text-light:     #a090c0;
+      --sidebar-w:      210px;
+      --header-h:       60px;
+      --chrome-h:       30px;
+      --cs1: 6px 6px 0px rgba(124,111,255,0.35), inset 2px 2px 8px rgba(255,255,255,0.7),  inset -2px -2px 8px rgba(124,111,255,0.2);
+      --cs2: 6px 6px 0px rgba(220,100,140,0.30), inset 2px 2px 8px rgba(255,255,255,0.75), inset -2px -2px 8px rgba(220,100,140,0.2);
+      --cs3: 6px 6px 0px rgba(60,180,140,0.30),  inset 2px 2px 8px rgba(255,255,255,0.75), inset -2px -2px 8px rgba(60,180,140,0.2);
+      --cs4: 6px 6px 0px rgba(210,150,60,0.30),  inset 2px 2px 8px rgba(255,255,255,0.75), inset -2px -2px 8px rgba(210,150,60,0.2);
+      --clay-sm:  4px 4px 0px rgba(150,120,220,0.30), inset 1px 1px 4px rgba(255,255,255,0.65), inset -1px -1px 4px rgba(150,120,220,0.20);
+      --clay-in:  inset 3px 3px 8px rgba(150,120,220,0.30), inset -2px -2px 6px rgba(255,255,255,0.60);
+      --rx: 22px; --rl: 16px; --rm: 12px; --rs: 8px;
+      --tr: 0.22s ease;
+
+      /* ── Card face colours ── */
+      --card1-bg: #ddd0ff;
+      --card2-bg: #ffd6e4;
+      --card3-bg: #c4f0e0;
+      --card4-bg: #ffe8bc;
+
+      /* ── Shared neutrals ── */
+      --cell-bg:       rgba(255,255,255,0.55);
+      --cell-empty-bg: rgba(255,255,255,0.25);
+      --modal-bg:      #ede4ff;
+      --input-bg:      rgba(255,255,255,0.6);
+      --info-bg:       rgba(255,255,255,0.45);
+      --welcome-bg:    rgba(255,255,255,0.55);
+    }
+
+    /* ════════════════════════════════════
+       DARK MODE OVERRIDES
+       ════════════════════════════════════ */
+    .dark {
+      --clay-bg:      #1a1530;
+      --clay-sidebar: #211c3a;
+      --clay-header:  #1e1835;
+      --clay-chrome:  #17122c;
+      --clay-blue:    #8a7fff;
+      --clay-blue-d:  #6a5ff0;
+      --clay-red:     #ff8080;
+      --text-dark:    #e8e0ff;
+      --text-mid:     #b0a0d8;
+      --text-light:   #6a5c90;
+
+      /* Dark clay card shadows — deeper offsets, no white inset */
+      --cs1: 6px 6px 0px rgba(100,88,220,0.55), inset 2px 2px 8px rgba(180,160,255,0.12), inset -2px -2px 8px rgba(0,0,0,0.35);
+      --cs2: 6px 6px 0px rgba(180,70,110,0.45),  inset 2px 2px 8px rgba(255,180,200,0.10), inset -2px -2px 8px rgba(0,0,0,0.35);
+      --cs3: 6px 6px 0px rgba(30,140,100,0.45),  inset 2px 2px 8px rgba(160,240,200,0.10), inset -2px -2px 8px rgba(0,0,0,0.35);
+      --cs4: 6px 6px 0px rgba(160,110,20,0.45),  inset 2px 2px 8px rgba(255,220,140,0.10), inset -2px -2px 8px rgba(0,0,0,0.35);
+      --clay-sm: 4px 4px 0px rgba(0,0,0,0.40), inset 1px 1px 4px rgba(255,255,255,0.08), inset -1px -1px 4px rgba(0,0,0,0.30);
+      --clay-in: inset 3px 3px 8px rgba(0,0,0,0.40), inset -2px -2px 6px rgba(255,255,255,0.05);
+
+      /* Dark card faces */
+      --card1-bg: #2e2655;
+      --card2-bg: #3a2040;
+      --card3-bg: #1a3030;
+      --card4-bg: #352a18;
+
+      /* Dark neutrals */
+      --cell-bg:       rgba(255,255,255,0.06);
+      --cell-empty-bg: rgba(255,255,255,0.03);
+      --modal-bg:      #2a2248;
+      --input-bg:      rgba(255,255,255,0.08);
+      --info-bg:       rgba(255,255,255,0.06);
+      --welcome-bg:    rgba(255,255,255,0.07);
+    }
+
+    /* Apply dark palette to html/body root when .dark is on wrapper */
+    .dark, .dark html, .dark body { background: var(--clay-bg); color: var(--text-dark); }
+
+    html, body, #root {
+      height: 100%;
+      font-family: 'Nunito', Arial, sans-serif;
+      background: var(--clay-bg);
+      color: var(--text-dark);
+      overflow: hidden;
+      font-size: 14px;
+      transition: background var(--tr), color var(--tr);
+    }
+
+    /* Wrapper div that holds the dark class */
+    .app-root {
+      height: 100%; display: flex; flex-direction: column;
+      background: var(--clay-bg); color: var(--text-dark);
+      transition: background 0.3s ease, color 0.3s ease;
+    }
+
+    /* ── Scrollbar ── */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: rgba(150,120,220,0.2); border-radius: 4px; }
+
+    /* ── Chrome Bar ── */
+    .chrome-bar {
+      height: var(--chrome-h);
+      background: var(--clay-chrome);
+      box-shadow: 0 2px 0 rgba(150,120,220,0.25), inset 0 1px 0 rgba(255,255,255,0.5);
+      display: flex; align-items: center;
+      padding: 0 16px;
+      font-size: 12px; font-weight: 700;
+      color: var(--text-mid); letter-spacing: 0.04em;
+      user-select: none; flex-shrink: 0;
+    }
+
+    /* ── Shell ── */
+    .app-shell {
+      display: flex;
+      height: calc(100vh - var(--chrome-h));
+    }
+
+    /* ── Sidebar ── */
+    .sidebar {
+      width: var(--sidebar-w); min-width: var(--sidebar-w);
+      background: var(--clay-sidebar);
+      box-shadow: 4px 0 0 rgba(150,120,220,0.18), inset -2px 0 8px rgba(255,255,255,0.5);
+      display: flex; flex-direction: column;
+      justify-content: space-between;
+      padding: 24px 0 18px;
+      transition: width var(--tr), min-width var(--tr);
+      overflow: hidden; flex-shrink: 0;
+    }
+    .sidebar.collapsed { width: 0; min-width: 0; padding: 0; box-shadow: none; }
+
+    .sidebar-top { display: flex; flex-direction: column; gap: 22px; }
+
+    .welcome-block {
+      padding: 13px 14px; margin: 0 10px;
+      background: var(--welcome-bg);
+      border-radius: var(--rl);
+      box-shadow: var(--clay-sm);
+      display: flex; flex-direction: column; gap: 1px;
+      transition: background var(--tr);
+    }
+    .welcome-label { font-size: 10px; color: var(--text-light); font-weight: 700; text-transform: uppercase; letter-spacing: 0.07em; }
+    .welcome-role  { font-size: 11px; color: var(--text-mid); font-weight: 600; }
+    .welcome-name  { font-size: 15px; color: var(--text-dark); font-weight: 900; margin-top: 2px; }
+
+    .nav-links { display: flex; flex-direction: column; gap: 6px; padding: 0 10px; }
+
+    .nav-item {
+      display: flex; align-items: center; gap: 9px;
+      padding: 10px 12px; border-radius: var(--rm);
+      text-decoration: none; color: var(--text-mid);
+      font-size: 13px; font-weight: 700;
+      transition: all var(--tr); white-space: nowrap;
+      cursor: pointer; border: none; background: transparent;
+      width: 100%; text-align: left; font-family: 'Nunito', sans-serif;
+    }
+    .nav-item:hover {
+      background: rgba(255,255,255,0.5); color: var(--text-dark);
+      box-shadow: var(--clay-sm); transform: translateY(-1px);
+    }
+    .nav-item.active {
+      background: var(--clay-blue); color: #fff;
+      box-shadow: 4px 4px 0px rgba(90,77,224,0.45), inset 1px 1px 4px rgba(255,255,255,0.3), inset -1px -1px 4px rgba(90,77,224,0.3);
+      transform: translateY(-1px);
+    }
+    .nav-item .msym { font-size: 19px; }
+
+    .sidebar-bottom { padding: 0 10px; }
+    .signout-btn {
+      display: flex; align-items: center; gap: 9px;
+      padding: 10px 12px; border-radius: var(--rm);
+      border: none; background: rgba(255,112,112,0.14);
+      color: var(--clay-red); font-size: 13px; font-weight: 700;
+      cursor: pointer; width: 100%; transition: all var(--tr);
+      white-space: nowrap; font-family: 'Nunito', sans-serif;
+      box-shadow: var(--clay-sm);
+    }
+    .signout-btn:hover { background: rgba(255,112,112,0.26); transform: translateY(-1px); }
+
+    /* ── Main Panel ── */
+    .main-panel { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--clay-bg); }
+
+    .top-bar {
+      height: var(--header-h); background: var(--clay-header);
+      box-shadow: 0 4px 0 rgba(150,120,220,0.16), inset 0 2px 0 rgba(255,255,255,0.6);
+      display: flex; align-items: center; gap: 14px;
+      padding: 0 20px; flex-shrink: 0;
+    }
+    .hamburger {
+      background: rgba(255,255,255,0.55); border: none; color: var(--text-dark);
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      padding: 6px; border-radius: var(--rs); transition: all var(--tr);
+      box-shadow: var(--clay-sm);
+    }
+    .hamburger:hover { background: rgba(255,255,255,0.85); transform: translateY(-1px); }
+    .hamburger .msym { font-size: 22px; }
+
+    .brand {
+      font-size: 20px; font-weight: 900; color: var(--clay-blue);
+      letter-spacing: 0.08em; text-shadow: 2px 2px 0 rgba(124,111,255,0.18);
+      flex: 1;
+    }
+
+    /* ── Dark / Light mode toggle button ── */
+    .theme-toggle {
+      display: flex; align-items: center; gap: 7px;
+      padding: 7px 14px; border-radius: 50px;
+      border: none; cursor: pointer;
+      font-size: 12px; font-weight: 800; font-family: 'Nunito', sans-serif;
+      color: var(--text-dark);
+      background: var(--welcome-bg);
+      box-shadow: var(--clay-sm);
+      transition: all var(--tr); white-space: nowrap;
+    }
+    .theme-toggle:hover { transform: translateY(-2px); background: var(--cell-bg); }
+    .theme-toggle:active { transform: translateY(0); }
+    .theme-toggle .msym { font-size: 18px; transition: transform 0.4s ease; }
+    .theme-toggle:hover .msym { transform: rotate(20deg); }
+
+    /* ── Content ── */
+    .content {
+      flex: 1; overflow-y: auto;
+      padding: 24px 24px 80px; position: relative;
+    }
+    .page-title {
+      font-size: 22px; font-weight: 900; color: var(--text-dark);
+      margin-bottom: 20px; text-shadow: 2px 2px 0 rgba(150,120,220,0.12);
+    }
+
+    /* ═══════════ SUBJECT CARDS ═══════════ */
+    .subjects-list { display: flex; flex-direction: column; gap: 16px; }
+
+    .subject-card {
+      border-radius: var(--rx); padding: 18px 20px 20px; position: relative;
+      transition: transform var(--tr), box-shadow var(--tr), background 0.3s ease;
+      animation: cardIn 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
+      border: none;
+    }
+    .subject-card:nth-child(4n+1) { background: var(--card1-bg); box-shadow: var(--cs1); }
+    .subject-card:nth-child(4n+2) { background: var(--card2-bg); box-shadow: var(--cs2); }
+    .subject-card:nth-child(4n+3) { background: var(--card3-bg); box-shadow: var(--cs3); }
+    .subject-card:nth-child(4n+4) { background: var(--card4-bg); box-shadow: var(--cs4); }
+
+    .subject-card:hover { transform: translateY(-4px) translateX(-2px); }
+    .subject-card:nth-child(4n+1):hover { box-shadow: 9px 9px 0px rgba(124,111,255,0.4), inset 2px 2px 8px rgba(255,255,255,0.75), inset -2px -2px 8px rgba(124,111,255,0.22); }
+    .subject-card:nth-child(4n+2):hover { box-shadow: 9px 9px 0px rgba(220,100,140,0.38), inset 2px 2px 8px rgba(255,255,255,0.8), inset -2px -2px 8px rgba(220,100,140,0.22); }
+    .subject-card:nth-child(4n+3):hover { box-shadow: 9px 9px 0px rgba(60,180,140,0.38), inset 2px 2px 8px rgba(255,255,255,0.8), inset -2px -2px 8px rgba(60,180,140,0.22); }
+    .subject-card:nth-child(4n+4):hover { box-shadow: 9px 9px 0px rgba(210,150,60,0.38), inset 2px 2px 8px rgba(255,255,255,0.8), inset -2px -2px 8px rgba(210,150,60,0.22); }
+
+    @keyframes cardIn {
+      from { opacity: 0; transform: translateY(22px) scale(0.95); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    .card-class {
+      font-size: 10.5px; font-weight: 800; color: var(--text-mid);
+      margin-bottom: 3px; padding-right: 34px;
+      text-transform: uppercase; letter-spacing: 0.05em;
+    }
+    .card-subject { font-size: 15px; font-weight: 900; color: var(--text-dark); margin-bottom: 3px; }
+    .card-students { font-size: 12px; color: var(--text-mid); font-weight: 600; margin-bottom: 14px; }
+
+    .card-info-row { display: flex; gap: 12px; margin-bottom: 12px; flex-wrap: wrap; }
+    .info-block {
+      display: flex; flex-direction: column; gap: 2px;
+      background: var(--info-bg); border-radius: var(--rs);
+      padding: 7px 11px;
+      box-shadow: inset 2px 2px 5px rgba(255,255,255,0.65), inset -1px -1px 4px rgba(0,0,0,0.08);
+      flex: 1; min-width: 110px;
+      transition: background 0.3s ease;
+    }
+    .info-label { font-size: 9px; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; }
+    .info-label.green  { color: #2eaa6e; }
+    .info-label.orange { color: #c86a10; }
+    .info-value { font-size: 12.5px; font-weight: 700; color: var(--text-dark); }
+
+    .progress-track {
+      height: 7px; background: rgba(255,255,255,0.4);
+      border-radius: 99px; overflow: hidden; margin-top: 3px;
+      box-shadow: inset 2px 2px 4px rgba(0,0,0,0.09), inset -1px -1px 3px rgba(255,255,255,0.6);
+    }
+    .progress-fill { height: 100%; border-radius: 99px; transition: width 0.9s cubic-bezier(0.4,0,0.2,1); }
+    .progress-fill.good { background: linear-gradient(90deg,#4ccea0,#80e8c0); }
+    .progress-fill.poor { background: linear-gradient(90deg,#ff7070,#ffaa88); }
+
+    .edit-btn {
+      position: absolute; top: 14px; right: 14px;
+      background: rgba(255,255,255,0.55); border: none; color: var(--text-mid);
+      cursor: pointer; padding: 6px; border-radius: var(--rs);
+      transition: all var(--tr); display: flex; align-items: center;
+      box-shadow: var(--clay-sm);
+    }
+    .edit-btn:hover { background: rgba(255,255,255,0.88); color: var(--clay-blue); transform: translateY(-1px); }
+    .edit-btn .msym { font-size: 17px; }
+
+    /* ── FAB ── */
+    .fab {
+      position: fixed; bottom: 28px; right: 28px;
+      width: 54px; height: 54px; border-radius: 50%;
+      background: var(--clay-blue); border: none; color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer;
+      box-shadow: 6px 6px 0px rgba(90,77,224,0.45), inset 2px 2px 6px rgba(255,255,255,0.35), inset -2px -2px 6px rgba(90,77,224,0.35);
+      transition: all var(--tr); z-index: 100;
+    }
+    .fab:hover {
+      background: var(--clay-blue-d);
+      transform: scale(1.1) rotate(90deg) translateY(-2px);
+      box-shadow: 8px 8px 0px rgba(90,77,224,0.5), inset 2px 2px 6px rgba(255,255,255,0.4), inset -2px -2px 6px rgba(90,77,224,0.4);
+    }
+    .fab:active { transform: scale(0.95) rotate(90deg); }
+    .fab .msym { font-size: 28px; font-variation-settings: 'wght' 300; }
+
+    /* ── Empty State ── */
+    .empty-state {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 10px; padding: 56px 20px;
+      color: var(--text-light);
+      background: rgba(255,255,255,0.35); border-radius: var(--rx);
+      box-shadow: var(--clay-in); margin-top: 6px;
+    }
+    .empty-state .msym { font-size: 50px; color: var(--text-light); }
+    .empty-state p { font-size: 13px; font-weight: 700; }
+    .empty-state strong { color: var(--clay-blue); }
+
+    /* ═══════════ MODAL ═══════════ */
+    .modal-overlay {
+      position: fixed; inset: 0;
+      background: rgba(180,160,240,0.35);
+      display: flex; align-items: center; justify-content: center;
+      z-index: 300; backdrop-filter: blur(8px);
+      animation: fadeIn 0.2s ease;
+    }
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+    .modal {
+      background: var(--modal-bg); border-radius: 22px;
+      padding: 28px 26px 24px; width: 100%; max-width: 430px;
+      box-shadow: 10px 10px 0px rgba(124,111,255,0.35), inset 3px 3px 10px rgba(255,255,255,0.75), inset -3px -3px 10px rgba(124,111,255,0.2);
+      animation: modalIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+    }
+    @keyframes modalIn {
+      from { opacity: 0; transform: scale(0.85) translateY(22px); }
+      to   { opacity: 1; transform: scale(1) translateY(0); }
+    }
+    .modal-title { font-size: 18px; font-weight: 900; color: var(--text-dark); margin-bottom: 20px; }
+
+    .form-group { display: flex; flex-direction: column; gap: 4px; margin-bottom: 12px; }
+    .form-group label { font-size: 10.5px; font-weight: 800; color: var(--text-mid); letter-spacing: 0.05em; text-transform: uppercase; }
+    .form-group input {
+      background: var(--input-bg); border: none;
+      border-radius: var(--rm); padding: 9px 12px;
+      color: var(--text-dark); font-size: 13px; font-weight: 700;
+      font-family: 'Nunito', sans-serif; outline: none;
+      transition: all var(--tr);
+      box-shadow: inset 3px 3px 7px rgba(150,120,220,0.2), inset -2px -2px 6px rgba(255,255,255,0.7);
+    }
+    .form-group input:focus {
+      background: rgba(255,255,255,0.88);
+      box-shadow: inset 3px 3px 7px rgba(124,111,255,0.25), inset -2px -2px 6px rgba(255,255,255,0.8), 0 0 0 2px rgba(124,111,255,0.25);
+    }
+    .form-group input::placeholder { color: var(--text-light); font-weight: 600; }
+
+    .modal-actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 8px; }
+    .btn-cancel {
+      padding: 9px 18px; border-radius: var(--rm); border: none;
+      background: rgba(255,255,255,0.55); color: var(--text-mid);
+      font-size: 13px; font-family: 'Nunito', sans-serif; font-weight: 700;
+      cursor: pointer; transition: all var(--tr); box-shadow: var(--clay-sm);
+    }
+    .btn-cancel:hover { background: rgba(255,255,255,0.85); transform: translateY(-2px); }
+    .btn-save {
+      padding: 9px 20px; border-radius: var(--rm); border: none;
+      background: var(--clay-blue); color: #fff;
+      font-size: 13px; font-family: 'Nunito', sans-serif; font-weight: 800;
+      cursor: pointer; transition: all var(--tr);
+      box-shadow: 4px 4px 0px rgba(90,77,224,0.4), inset 1px 1px 4px rgba(255,255,255,0.3), inset -1px -1px 4px rgba(90,77,224,0.3);
+    }
+    .btn-save:hover { background: var(--clay-blue-d); transform: translateY(-2px); }
+    .btn-save:active { transform: translateY(1px); }
+
+    /* ═══════════ TIMETABLE ═══════════ */
+    .tt-content { padding: 20px 20px 60px; overflow-y: auto; flex: 1; }
+
+    .class-section {
+      margin-bottom: 28px;
+      border-radius: var(--rx); padding: 18px;
+    }
+    .class-section:nth-child(1) { background: var(--card1-bg); box-shadow: var(--cs1); }
+    .class-section:nth-child(2) { background: var(--card2-bg); box-shadow: var(--cs2); }
+    .class-section:nth-child(3) { background: var(--card3-bg); box-shadow: var(--cs3); }
+    .class-section:nth-child(4) { background: var(--card4-bg); box-shadow: var(--cs4); }
+
+    .class-header {
+      display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+      margin-bottom: 14px;
+    }
+    .class-title {
+      font-size: 14px; font-weight: 900; color: var(--text-dark);
+      background: rgba(255,255,255,0.55);
+      padding: 5px 12px; border-radius: 20px;
+      box-shadow: var(--clay-sm);
+    }
+    .class-subject-badge {
+      font-size: 12px; font-weight: 700; color: var(--text-mid);
+      background: rgba(255,255,255,0.4);
+      padding: 4px 10px; border-radius: 20px;
+    }
+    .mentor-badge {
+      font-size: 11px; font-weight: 700; color: var(--text-mid);
+      background: rgba(255,255,255,0.35);
+      padding: 4px 10px; border-radius: 20px; margin-left: auto;
+    }
+
+    .tt-table-wrap { overflow-x: auto; border-radius: var(--rm); }
+    .tt-table {
+      width: 100%; border-collapse: separate; border-spacing: 4px;
+      min-width: 560px;
+    }
+
+    .tt-th-time {
+      background: rgba(255,255,255,0.5);
+      border-radius: var(--rs);
+      padding: 7px 6px; font-size: 10px; font-weight: 800;
+      color: var(--text-mid); text-align: center; white-space: nowrap;
+      box-shadow: inset 1px 1px 4px rgba(255,255,255,0.7), inset -1px -1px 3px rgba(0,0,0,0.06);
+    }
+    .tt-th-day {
+      background: rgba(255,255,255,0.55);
+      border-radius: var(--rs);
+      padding: 7px 8px; font-size: 11px; font-weight: 800;
+      color: var(--text-dark); text-align: center;
+      box-shadow: inset 1px 1px 4px rgba(255,255,255,0.7), inset -1px -1px 3px rgba(0,0,0,0.06);
+      min-width: 40px;
+    }
+
+    .tt-cell {
+      padding: 4px; vertical-align: top;
+    }
+    .tt-cell-inner {
+      background: var(--cell-bg);
+      border-radius: var(--rs); padding: 7px 8px;
+      min-height: 52px;
+      box-shadow: inset 1px 1px 5px rgba(255,255,255,0.7), inset -1px -1px 4px rgba(0,0,0,0.07);
+      display: flex; flex-direction: column; justify-content: center; gap: 2px;
+      transition: background 0.3s ease;
+    }
+    .tt-cell-inner.empty {
+      background: var(--cell-empty-bg);
+      box-shadow: inset 1px 1px 4px rgba(255,255,255,0.5), inset -1px -1px 3px rgba(0,0,0,0.04);
+    }
+    .tt-subj { font-size: 11px; font-weight: 800; color: var(--text-dark); line-height: 1.2; }
+    .tt-room { font-size: 10px; font-weight: 600; color: var(--text-mid); }
+    .tt-pct  { font-size: 10.5px; font-weight: 800; }
+    .tt-pct.good { color: #2eaa6e; }
+    .tt-pct.poor { color: #e04444; }
+
+    .tt-empty-dash { font-size: 16px; color: rgba(160,144,192,0.3); text-align: center; }
+
+    /* ── Toast ── */
+    .toast {
+      position: fixed; bottom: 88px; right: 26px;
+      background: var(--modal-bg); border: none;
+      border-radius: var(--rm); padding: 11px 18px;
+      font-size: 13px; font-weight: 700; color: var(--text-dark);
+      box-shadow: 5px 5px 0px rgba(124,111,255,0.3), inset 2px 2px 6px rgba(255,255,255,0.7), inset -1px -1px 4px rgba(124,111,255,0.15);
+      z-index: 400; animation: toastIn 0.35s cubic-bezier(0.34,1.56,0.64,1);
+      font-family: 'Nunito', sans-serif; pointer-events: none;
+    }
+    @keyframes toastIn {
+      from { opacity: 0; transform: translateY(18px) scale(0.9); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
+    }
+
+    /* ═══════════════════════════════════════════
+       NEW PAGES SHARED
+    ═══════════════════════════════════════════ */
+    .page-content { flex: 1; overflow-y: auto; padding: 22px 22px 80px; }
+    .section-title {
+      font-size: 13px; font-weight: 800; color: var(--text-mid);
+      text-transform: uppercase; letter-spacing: 0.08em;
+      margin-bottom: 12px; margin-top: 22px;
+    }
+    .section-title:first-child { margin-top: 0; }
+
+    /* Stat strip */
+    .stat-strip { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 6px; }
+    .stat-card {
+      flex: 1; min-width: 120px;
+      border-radius: var(--rl); padding: 16px 18px;
+      display: flex; flex-direction: column; gap: 4px;
+      transition: transform var(--tr), box-shadow var(--tr);
+    }
+    .stat-card:hover { transform: translateY(-3px); }
+    .stat-card:nth-child(1) { background: var(--card1-bg); box-shadow: var(--cs1); }
+    .stat-card:nth-child(2) { background: var(--card2-bg); box-shadow: var(--cs2); }
+    .stat-card:nth-child(3) { background: var(--card3-bg); box-shadow: var(--cs3); }
+    .stat-card:nth-child(4) { background: var(--card4-bg); box-shadow: var(--cs4); }
+    .stat-val  { font-size: 28px; font-weight: 900; color: var(--text-dark); line-height: 1; }
+    .stat-lbl  { font-size: 10px; font-weight: 800; color: var(--text-mid); text-transform: uppercase; letter-spacing: 0.06em; }
+    .stat-sub  { font-size: 11px; font-weight: 600; color: var(--text-mid); }
+
+    /* ═══ MONITORING ═══ */
+    .mon-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(280px,1fr)); gap: 14px; }
+    .mon-card {
+      border-radius: var(--rl); padding: 16px;
+      transition: transform var(--tr);
+    }
+    .mon-card:nth-child(4n+1) { background: var(--card1-bg); box-shadow: var(--cs1); }
+    .mon-card:nth-child(4n+2) { background: var(--card2-bg); box-shadow: var(--cs2); }
+    .mon-card:nth-child(4n+3) { background: var(--card3-bg); box-shadow: var(--cs3); }
+    .mon-card:nth-child(4n+4) { background: var(--card4-bg); box-shadow: var(--cs4); }
+    .mon-card:hover { transform: translateY(-3px); }
+    .mon-class { font-size: 10px; font-weight: 800; color: var(--text-mid); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 2px; }
+    .mon-subject { font-size: 14px; font-weight: 900; color: var(--text-dark); margin-bottom: 10px; }
+    .mon-bar-wrap { height: 10px; background: rgba(255,255,255,0.35); border-radius: 99px; overflow: hidden; margin-bottom: 6px;
+      box-shadow: inset 2px 2px 4px rgba(0,0,0,0.1), inset -1px -1px 3px rgba(255,255,255,0.6); }
+    .mon-bar { height: 100%; border-radius: 99px; transition: width 1s cubic-bezier(0.4,0,0.2,1); }
+    .mon-bar.good { background: linear-gradient(90deg,#4ccea0,#80e8c0); }
+    .mon-bar.warn { background: linear-gradient(90deg,#ffaa55,#ffd080); }
+    .mon-bar.crit { background: linear-gradient(90deg,#ff7070,#ffaa88); }
+    .mon-pct { font-size: 13px; font-weight: 800; color: var(--text-dark); }
+    .mon-pct.good { color: #2eaa6e; } .mon-pct.warn { color: #c86a10; } .mon-pct.crit { color: #e04444; }
+    .mon-meta { font-size: 11px; color: var(--text-mid); font-weight: 600; }
+    .alert-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: rgba(255,112,112,0.18); color: #e04444;
+      border-radius: 99px; padding: 3px 10px;
+      font-size: 10px; font-weight: 800; margin-top: 8px;
+    }
+    .warn-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: rgba(255,170,85,0.2); color: #b86010;
+      border-radius: 99px; padding: 3px 10px;
+      font-size: 10px; font-weight: 800; margin-top: 8px;
+    }
+    .good-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: rgba(76,206,160,0.18); color: #2eaa6e;
+      border-radius: 99px; padding: 3px 10px;
+      font-size: 10px; font-weight: 800; margin-top: 8px;
+    }
+
+    /* Risk list */
+    .risk-list { display: flex; flex-direction: column; gap: 8px; }
+    .risk-row {
+      display: flex; align-items: center; gap: 12px;
+      background: var(--cell-bg); border-radius: var(--rm);
+      padding: 10px 14px; box-shadow: var(--clay-sm);
+      transition: transform var(--tr);
+    }
+    .risk-row:hover { transform: translateX(4px); }
+    .risk-avatar {
+      width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 13px; font-weight: 900; color: #fff;
+    }
+    .risk-name { font-size: 13px; font-weight: 800; color: var(--text-dark); }
+    .risk-sub  { font-size: 11px; color: var(--text-mid); font-weight: 600; }
+    .risk-pct  { margin-left: auto; font-size: 14px; font-weight: 900; }
+    .risk-pct.crit { color: #e04444; } .risk-pct.warn { color: #c86a10; }
+
+    /* ═══ STUDENTS ═══ */
+    .student-search {
+      display: flex; align-items: center; gap: 10px;
+      background: var(--cell-bg); border-radius: var(--rm);
+      padding: 9px 14px; box-shadow: var(--clay-sm); margin-bottom: 14px;
+    }
+    .student-search input {
+      flex: 1; background: transparent; border: none; outline: none;
+      font-size: 13px; font-weight: 700; color: var(--text-dark);
+      font-family: 'Nunito', sans-serif;
+    }
+    .student-search input::placeholder { color: var(--text-light); font-weight: 600; }
+    .student-search .msym { color: var(--text-light); font-size: 20px; }
+
+    .filter-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+    .filter-chip {
+      padding: 5px 14px; border-radius: 99px; border: none;
+      font-size: 11.5px; font-weight: 700; font-family: 'Nunito', sans-serif;
+      cursor: pointer; transition: all var(--tr);
+      background: var(--cell-bg); color: var(--text-mid);
+      box-shadow: var(--clay-sm);
+    }
+    .filter-chip.active { background: var(--clay-blue); color: #fff;
+      box-shadow: 3px 3px 0 rgba(90,77,224,0.4), inset 1px 1px 4px rgba(255,255,255,0.25); }
+    .filter-chip:hover:not(.active) { transform: translateY(-1px); color: var(--text-dark); }
+
+    .student-table-wrap { overflow-x: auto; border-radius: var(--rl); }
+    .student-table { width: 100%; border-collapse: separate; border-spacing: 0 6px; min-width: 480px; }
+    .st-head th {
+      padding: 8px 12px; font-size: 10px; font-weight: 800;
+      color: var(--text-mid); text-transform: uppercase; letter-spacing: 0.06em;
+      text-align: left;
+    }
+    .st-row td {
+      padding: 10px 12px; background: var(--cell-bg);
+      font-size: 12.5px; font-weight: 700; color: var(--text-dark);
+      transition: background 0.3s ease;
+    }
+    .st-row td:first-child { border-radius: var(--rm) 0 0 var(--rm); }
+    .st-row td:last-child  { border-radius: 0 var(--rm) var(--rm) 0; }
+    .st-row:hover td { background: rgba(124,111,255,0.1); }
+    .st-pill {
+      display: inline-block; padding: 2px 10px; border-radius: 99px;
+      font-size: 11px; font-weight: 800;
+    }
+    .st-pill.good { background: rgba(76,206,160,0.2); color: #2eaa6e; }
+    .st-pill.warn { background: rgba(255,170,85,0.2);  color: #c86a10; }
+    .st-pill.crit { background: rgba(255,112,112,0.2); color: #e04444; }
+
+    /* ═══ ATTENDANCE ═══ */
+    .att-class-select {
+      display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px;
+    }
+    .att-class-btn {
+      padding: 8px 16px; border-radius: var(--rm); border: none;
+      font-size: 12px; font-weight: 800; font-family: 'Nunito', sans-serif;
+      cursor: pointer; transition: all var(--tr);
+      background: var(--cell-bg); color: var(--text-mid); box-shadow: var(--clay-sm);
+    }
+    .att-class-btn.active { background: var(--clay-blue); color: #fff;
+      box-shadow: 4px 4px 0 rgba(90,77,224,0.4); }
+    .att-class-btn:hover:not(.active) { transform: translateY(-1px); }
+
+    .att-date-row { display: flex; align-items: center; gap: 10px; margin-bottom: 16px; }
+    .att-date-row input[type="date"] {
+      background: var(--cell-bg); border: none; border-radius: var(--rm);
+      padding: 8px 14px; color: var(--text-dark); font-size: 13px; font-weight: 700;
+      font-family: 'Nunito', sans-serif; outline: none;
+      box-shadow: var(--clay-sm); cursor: pointer;
+    }
+    .att-date-label { font-size: 12px; font-weight: 700; color: var(--text-mid); }
+
+    .att-table { width: 100%; border-collapse: separate; border-spacing: 0 6px; }
+    .att-table thead th {
+      font-size: 10px; font-weight: 800; color: var(--text-mid);
+      text-transform: uppercase; letter-spacing: 0.06em;
+      padding: 6px 12px; text-align: left;
+    }
+    .att-row td {
+      padding: 10px 12px; background: var(--cell-bg);
+      font-size: 12.5px; font-weight: 700; color: var(--text-dark);
+      transition: all 0.2s ease;
+    }
+    .att-row td:first-child { border-radius: var(--rm) 0 0 var(--rm); }
+    .att-row td:last-child  { border-radius: 0 var(--rm) var(--rm) 0; }
+    .att-row.present td { background: rgba(76,206,160,0.12); }
+    .att-row.absent  td { background: rgba(255,112,112,0.10); }
+
+    .att-toggle {
+      display: flex; border-radius: 99px; overflow: hidden;
+      box-shadow: var(--clay-sm); width: fit-content;
+    }
+    .att-toggle button {
+      padding: 5px 14px; border: none; cursor: pointer;
+      font-size: 11px; font-weight: 800; font-family: 'Nunito', sans-serif;
+      transition: all 0.18s ease;
+    }
+    .att-toggle .p-btn { background: rgba(76,206,160,0.15); color: #2eaa6e; }
+    .att-toggle .a-btn { background: rgba(255,112,112,0.12); color: #e04444; }
+    .att-toggle .p-btn.sel { background: #4ccea0; color: #fff; }
+    .att-toggle .a-btn.sel { background: #ff7070; color: #fff; }
+
+    .att-save-btn {
+      margin-top: 18px; padding: 11px 28px; border-radius: var(--rm);
+      border: none; background: var(--clay-blue); color: #fff;
+      font-size: 13px; font-weight: 800; font-family: 'Nunito', sans-serif;
+      cursor: pointer; transition: all var(--tr);
+      box-shadow: 4px 4px 0 rgba(90,77,224,0.4), inset 1px 1px 4px rgba(255,255,255,0.25);
+    }
+    .att-save-btn:hover { background: var(--clay-blue-d); transform: translateY(-2px); }
+    .att-summary {
+      display: flex; gap: 16px; align-items: center;
+      background: var(--cell-bg); border-radius: var(--rm);
+      padding: 10px 16px; box-shadow: var(--clay-sm);
+      margin-bottom: 14px; flex-wrap: wrap;
+    }
+    .att-summary span { font-size: 12px; font-weight: 700; color: var(--text-mid); }
+    .att-summary strong { color: var(--text-dark); font-size: 14px; }
+
+    /* ═══ NOTICES ═══ */
+    .notice-compose {
+      background: var(--modal-bg); border-radius: var(--rl);
+      padding: 18px 18px 14px;
+      box-shadow: 6px 6px 0 rgba(124,111,255,0.3), inset 2px 2px 8px rgba(255,255,255,0.6),
+                  inset -2px -2px 8px rgba(124,111,255,0.15);
+      margin-bottom: 20px;
+    }
+    .notice-compose textarea {
+      width: 100%; background: var(--input-bg); border: none;
+      border-radius: var(--rm); padding: 10px 14px;
+      color: var(--text-dark); font-size: 13px; font-weight: 700;
+      font-family: 'Nunito', sans-serif; outline: none; resize: vertical;
+      min-height: 70px;
+      box-shadow: inset 3px 3px 7px rgba(150,120,220,0.2), inset -2px -2px 6px rgba(255,255,255,0.6);
+      margin-bottom: 10px;
+    }
+    .notice-compose textarea::placeholder { color: var(--text-light); font-weight: 600; }
+    .notice-header-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .notice-compose input[type="text"] {
+      flex: 1; min-width: 160px;
+      background: var(--input-bg); border: none;
+      border-radius: var(--rm); padding: 9px 14px;
+      color: var(--text-dark); font-size: 13px; font-weight: 700;
+      font-family: 'Nunito', sans-serif; outline: none;
+      box-shadow: inset 3px 3px 7px rgba(150,120,220,0.2), inset -2px -2px 6px rgba(255,255,255,0.6);
+    }
+    .notice-compose select {
+      background: var(--cell-bg); border: none; border-radius: var(--rm);
+      padding: 9px 14px; color: var(--text-dark);
+      font-size: 13px; font-weight: 700; font-family: 'Nunito', sans-serif;
+      outline: none; box-shadow: var(--clay-sm); cursor: pointer;
+    }
+    .notice-post-btn {
+      padding: 9px 20px; border-radius: var(--rm); border: none;
+      background: var(--clay-blue); color: #fff;
+      font-size: 13px; font-weight: 800; font-family: 'Nunito', sans-serif;
+      cursor: pointer; transition: all var(--tr);
+      box-shadow: 4px 4px 0 rgba(90,77,224,0.4);
+    }
+    .notice-post-btn:hover { background: var(--clay-blue-d); transform: translateY(-2px); }
+
+    .notice-list { display: flex; flex-direction: column; gap: 10px; }
+    .notice-item {
+      border-radius: var(--rl); padding: 14px 16px;
+      transition: transform var(--tr); position: relative;
+    }
+    .notice-item:nth-child(4n+1) { background: var(--card1-bg); box-shadow: var(--cs1); }
+    .notice-item:nth-child(4n+2) { background: var(--card2-bg); box-shadow: var(--cs2); }
+    .notice-item:nth-child(4n+3) { background: var(--card3-bg); box-shadow: var(--cs3); }
+    .notice-item:nth-child(4n+4) { background: var(--card4-bg); box-shadow: var(--cs4); }
+    .notice-item:hover { transform: translateY(-2px); }
+    .notice-tag {
+      display: inline-block; padding: 2px 10px; border-radius: 99px;
+      font-size: 9.5px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.05em;
+      margin-bottom: 6px;
+    }
+    .notice-tag.general  { background: rgba(124,111,255,0.2); color: #5a4de0; }
+    .notice-tag.urgent   { background: rgba(255,112,112,0.2); color: #e04444; }
+    .notice-tag.academic { background: rgba(60,180,140,0.2);  color: #2eaa6e; }
+    .notice-tag.event    { background: rgba(210,150,60,0.2);  color: #c86a10; }
+    .notice-title { font-size: 14px; font-weight: 900; color: var(--text-dark); margin-bottom: 4px; }
+    .notice-body  { font-size: 12px; font-weight: 600; color: var(--text-mid); line-height: 1.5; }
+    .notice-meta  { font-size: 10.5px; font-weight: 700; color: var(--text-light); margin-top: 8px; }
+    .notice-del {
+      position: absolute; top: 10px; right: 10px;
+      background: rgba(255,255,255,0.5); border: none; border-radius: var(--rs);
+      width: 26px; height: 26px; display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: all var(--tr); color: var(--text-mid);
+      box-shadow: var(--clay-sm);
+    }
+    .notice-del:hover { background: rgba(255,112,112,0.2); color: #e04444; }
+
+    /* ═══ REPORTS ═══ */
+    .report-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    @media (max-width: 640px) { .report-grid { grid-template-columns: 1fr; } }
+    .report-card {
+      border-radius: var(--rl); padding: 16px 18px;
+      transition: transform var(--tr);
+    }
+    .report-card:nth-child(4n+1) { background: var(--card1-bg); box-shadow: var(--cs1); }
+    .report-card:nth-child(4n+2) { background: var(--card2-bg); box-shadow: var(--cs2); }
+    .report-card:nth-child(4n+3) { background: var(--card3-bg); box-shadow: var(--cs3); }
+    .report-card:nth-child(4n+4) { background: var(--card4-bg); box-shadow: var(--cs4); }
+    .report-card:hover { transform: translateY(-3px); }
+    .report-card-title { font-size: 12px; font-weight: 900; color: var(--text-dark); margin-bottom: 14px;
+      text-transform: uppercase; letter-spacing: 0.04em; }
+
+    /* CSS-only bar chart */
+    .bar-chart { display: flex; flex-direction: column; gap: 8px; }
+    .bar-row { display: flex; align-items: center; gap: 8px; }
+    .bar-label { font-size: 10px; font-weight: 700; color: var(--text-mid); width: 70px; flex-shrink: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .bar-track { flex: 1; height: 12px; background: rgba(255,255,255,0.35); border-radius: 99px; overflow: hidden;
+      box-shadow: inset 1px 1px 3px rgba(0,0,0,0.1); }
+    .bar-fill { height: 100%; border-radius: 99px; transition: width 1.2s cubic-bezier(0.4,0,0.2,1); }
+    .bar-fill.good { background: linear-gradient(90deg,#4ccea0,#80e8c0); }
+    .bar-fill.warn { background: linear-gradient(90deg,#ffaa55,#ffd080); }
+    .bar-fill.crit { background: linear-gradient(90deg,#ff7070,#ffaa88); }
+    .bar-val { font-size: 11px; font-weight: 800; color: var(--text-dark); width: 36px; text-align: right; flex-shrink: 0; }
+
+    /* Donut using conic-gradient */
+    .donut-wrap { display: flex; align-items: center; gap: 16px; margin-top: 8px; }
+    .donut {
+      width: 80px; height: 80px; border-radius: 50%; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; font-weight: 900; color: var(--text-dark);
+      box-shadow: 4px 4px 0 rgba(0,0,0,0.12), inset 2px 2px 6px rgba(255,255,255,0.5);
+    }
+    .donut-legend { display: flex; flex-direction: column; gap: 5px; }
+    .legend-row { display: flex; align-items: center; gap: 6px; font-size: 11px; font-weight: 700; color: var(--text-mid); }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+    /* Responsive */
+    @media (max-width: 600px) {
+      :root { --sidebar-w: 175px; }
+      .content { padding: 18px 14px 80px; }
+      .tt-content { padding: 14px 12px 60px; }
+      .report-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef, useCallback } = React;
+
+    /* ═══════════════════════════════════════════
+       DATA
+    ═══════════════════════════════════════════ */
+    const DEFAULT_SUBJECTS = [
+      { className: 'S.Y B.Voc(S.T)', subjectName: 'Software Engineering', totalStudents: 25, attendance: 82.67, nextLecture: '2026-08-20' },
+      { className: 'F.Y B.Voc(S.T)', subjectName: 'Data Structures',       totalStudents: 30, attendance: 57.25, nextLecture: '2026-08-21' },
+      { className: 'T.Y B.Voc(S.T)', subjectName: 'AI & Machine Learning', totalStudents: 22, attendance: 91.00, nextLecture: '2026-08-22' },
+      { className: 'S.Y B.Voc(S.T)', subjectName: 'Web Technologies',      totalStudents: 25, attendance: 68.40, nextLecture: '2026-08-22' },
+    ];
+
+    /* Time slots */
+    const TIME_SLOTS = [
+      '8:15–9:15',
+      '9:15–10:15',
+      '10:15–11:15',
+      '11:15–12:15',
+      '1:00–2:00',
+      '2:00–3:00',
+    ];
+
+    const DAYS = ['Mon','Tue','Wed','Thu','Fri','Sat'];
+
+    /* Timetable data per class */
+    const TIMETABLE_DATA = [
+      {
+        className: 'S.Y B.Voc(S.T)',
+        subjects: ['Software Eng', 'Data Struct', 'Web Tech', 'SE Lab', 'DS Lab', 'Project'],
+        mentor: 'Prof. Suraj Kumar Yadav',
+        schedule: {
+          Mon: ['Software Eng','Data Struct',null,'Web Tech',null,'Project'],
+          Tue: ['Data Struct','Software Eng','Web Tech',null,'DS Lab',null],
+          Wed: [null,'Web Tech','Software Eng','Data Struct',null,'SE Lab'],
+          Thu: ['Software Eng',null,'Data Struct','Web Tech','Project',null],
+          Fri: ['Web Tech','Software Eng',null,'SE Lab','Data Struct',null],
+          Sat: ['DS Lab',null,'Project','Software Eng',null,'Web Tech'],
+        },
+        rooms: {
+          'Software Eng': 'S-301', 'Data Struct': 'S-201',
+          'Web Tech': 'S-202', 'SE Lab': 'L-101',
+          'DS Lab': 'L-102', 'Project': 'P-01',
+        },
+        attendance: {
+          'Software Eng': 82, 'Data Struct': 76, 'Web Tech': 68,
+          'SE Lab': 90, 'DS Lab': 56, 'Project': 95,
+        },
+      },
+      {
+        className: 'F.Y B.Voc(S.T)',
+        subjects: ['C Programming', 'Maths', 'Digital Elec', 'C Lab', 'Maths Tut', 'Elec Lab'],
+        mentor: 'Prof. Anjali Sharma',
+        schedule: {
+          Mon: ['C Programming','Maths',null,'Digital Elec',null,'C Lab'],
+          Tue: ['Maths','C Programming','Digital Elec',null,'Maths Tut',null],
+          Wed: [null,'Digital Elec','C Programming','Maths',null,'Elec Lab'],
+          Thu: ['C Programming',null,'Maths','Digital Elec','C Lab',null],
+          Fri: ['Digital Elec','C Programming',null,'C Lab','Maths',null],
+          Sat: ['Maths Tut',null,'C Lab','C Programming',null,'Digital Elec'],
+        },
+        rooms: {
+          'C Programming': 'S-101', 'Maths': 'S-102',
+          'Digital Elec': 'S-103', 'C Lab': 'L-201',
+          'Maths Tut': 'S-102', 'Elec Lab': 'L-202',
+        },
+        attendance: {
+          'C Programming': 88, 'Maths': 57, 'Digital Elec': 79,
+          'C Lab': 92, 'Maths Tut': 63, 'Elec Lab': 85,
+        },
+      },
+      {
+        className: 'T.Y B.Voc(S.T)',
+        subjects: ['AI & ML', 'Cloud Comp', 'Cyber Sec', 'AI Lab', 'Cloud Lab', 'Final Project'],
+        mentor: 'Prof. Rakesh Mehta',
+        schedule: {
+          Mon: ['AI & ML','Cloud Comp',null,'Cyber Sec',null,'Final Project'],
+          Tue: ['Cloud Comp','AI & ML','Cyber Sec',null,'AI Lab',null],
+          Wed: [null,'Cyber Sec','AI & ML','Cloud Comp',null,'Cloud Lab'],
+          Thu: ['AI & ML',null,'Cloud Comp','Cyber Sec','Final Project',null],
+          Fri: ['Cyber Sec','AI & ML',null,'Cloud Lab','Cloud Comp',null],
+          Sat: ['AI Lab',null,'Final Project','AI & ML',null,'Cyber Sec'],
+        },
+        rooms: {
+          'AI & ML': 'S-401', 'Cloud Comp': 'S-402',
+          'Cyber Sec': 'S-403', 'AI Lab': 'L-301',
+          'Cloud Lab': 'L-302', 'Final Project': 'P-02',
+        },
+        attendance: {
+          'AI & ML': 91, 'Cloud Comp': 74, 'Cyber Sec': 83,
+          'AI Lab': 96, 'Cloud Lab': 69, 'Final Project': 88,
+        },
+      },
+    ];
+
+    /* ═══════════════════════════════════════════
+       UTILITIES
+    ═══════════════════════════════════════════ */
+    function formatDate(iso) {
+      if (!iso) return '—';
+      const [y, m, d] = iso.split('-');
+      return `${d}/${m}/${y}`;
+    }
+    function loadSubjects() {
+      try {
+        const s = localStorage.getItem('sdcce_subjects');
+        return s ? JSON.parse(s) : [...DEFAULT_SUBJECTS];
+      } catch { return [...DEFAULT_SUBJECTS]; }
+    }
+    function saveSubjectsLS(data) {
+      localStorage.setItem('sdcce_subjects', JSON.stringify(data));
+    }
+
+    /* ═══════════════════════════════════════════
+       TOAST
+    ═══════════════════════════════════════════ */
+    function Toast({ message }) {
+      if (!message) return null;
+      return <div className="toast">{message}</div>;
+    }
+
+    /* ═══════════════════════════════════════════
+       MODAL
+    ═══════════════════════════════════════════ */
+    function SubjectModal({ title, data, onChange, onSave, onCancel }) {
+      return (
+        <div className="modal-overlay" onClick={onCancel}>
+          <div className="modal" onClick={e => e.stopPropagation()}>
+            <h3 className="modal-title">{title}</h3>
+
+            <div className="form-group">
+              <label>Class</label>
+              <input type="text" placeholder="e.g. S.Y B.Voc(S.T)"
+                value={data.className} onChange={e => onChange('className', e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label>Subject Name</label>
+              <input type="text" placeholder="e.g. Software Engineering"
+                value={data.subjectName} onChange={e => onChange('subjectName', e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label>Total Students</label>
+              <input type="number" placeholder="e.g. 25"
+                value={data.totalStudents} onChange={e => onChange('totalStudents', e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label>Avg Lecture Attendance (%)</label>
+              <input type="number" placeholder="e.g. 82.67" min="0" max="100" step="0.01"
+                value={data.attendance} onChange={e => onChange('attendance', e.target.value)} />
+            </div>
+            <div className="form-group">
+              <label>Upcoming Lecture Date</label>
+              <input type="date"
+                value={data.nextLecture} onChange={e => onChange('nextLecture', e.target.value)} />
+            </div>
+
+            <div className="modal-actions">
+              <button className="btn-cancel" onClick={onCancel}>Cancel</button>
+              <button className="btn-save"   onClick={onSave}>Save</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    /* ═══════════════════════════════════════════
+       DASHBOARD
+    ═══════════════════════════════════════════ */
+    function Dashboard({ showToast }) {
+      const [subjects, setSubjects] = useState(loadSubjects);
+      const [addOpen, setAddOpen]   = useState(false);
+      const [editIdx, setEditIdx]   = useState(null);
+
+      const blankForm = { className:'', subjectName:'', totalStudents:'', attendance:'', nextLecture:'' };
+      const [addForm,  setAddForm]  = useState(blankForm);
+      const [editForm, setEditForm] = useState(blankForm);
+
+      function persist(data) { setSubjects(data); saveSubjectsLS(data); }
+
+      function handleSave() {
+        const { className, subjectName, totalStudents, attendance, nextLecture } = addForm;
+        if (!className||!subjectName||!totalStudents||!attendance||!nextLecture) {
+          showToast('⚠️ Please fill in all fields.'); return;
+        }
+        persist([...subjects, { className, subjectName,
+          totalStudents: parseInt(totalStudents),
+          attendance: parseFloat(attendance), nextLecture }]);
+        setAddOpen(false); setAddForm(blankForm);
+        showToast('✅ Subject added!');
+      }
+
+      function handleUpdate() {
+        const { className, subjectName, totalStudents, attendance, nextLecture } = editForm;
+        if (!className||!subjectName||!totalStudents||!attendance||!nextLecture) {
+          showToast('⚠️ Please fill in all fields.'); return;
+        }
+        const updated = [...subjects];
+        updated[editIdx] = { className, subjectName,
+          totalStudents: parseInt(totalStudents),
+          attendance: parseFloat(attendance), nextLecture };
+        persist(updated); setEditIdx(null);
+        showToast('✅ Subject updated!');
+      }
+
+      function openEdit(i) {
+        const s = subjects[i];
+        setEditForm({ className: s.className, subjectName: s.subjectName,
+          totalStudents: String(s.totalStudents), attendance: String(s.attendance),
+          nextLecture: s.nextLecture });
+        setEditIdx(i);
+      }
+
+      return (
+        <div className="content" style={{position:'relative'}}>
+          <h2 className="page-title">My Subjects</h2>
+
+          {subjects.length === 0 ? (
+            <div className="empty-state">
+              <span className="msym material-symbols-rounded">menu_book</span>
+              <p>No subjects yet. Tap <strong>+</strong> to add one.</p>
+            </div>
+          ) : (
+            <div className="subjects-list">
+              {subjects.map((s, i) => {
+                const pct = Math.min(Math.max(s.attendance, 0), 100);
+                const good = pct >= 75;
+                return (
+                  <div key={i} className="subject-card"
+                    style={{ animationDelay: `${i * 0.07}s` }}>
+                    <button className="edit-btn" onClick={() => openEdit(i)}>
+                      <span className="msym material-symbols-rounded">edit_square</span>
+                    </button>
+                    <div className="card-class">{s.className}</div>
+                    <div className="card-subject">{s.subjectName}</div>
+                    <div className="card-students">Total Students: {s.totalStudents}</div>
+                    <div className="card-info-row">
+                      <div className="info-block">
+                        <span className="info-label green">Avg Attendance</span>
+                        <span className="info-value">{pct.toFixed(2)}% / 100%</span>
+                        <div className="progress-track">
+                          <ProgressBar pct={pct} good={good} />
+                        </div>
+                      </div>
+                      <div className="info-block">
+                        <span className="info-label orange">Upcoming Lecture</span>
+                        <span className="info-value">{formatDate(s.nextLecture)}</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <button className="fab" onClick={() => { setAddForm(blankForm); setAddOpen(true); }}
+            aria-label="Add Subject">
+            <span className="msym material-symbols-rounded">add</span>
+          </button>
+
+          {addOpen && (
+            <SubjectModal title="Add New Subject" data={addForm}
+              onChange={(k,v) => setAddForm(f => ({...f,[k]:v}))}
+              onSave={handleSave} onCancel={() => setAddOpen(false)} />
+          )}
+          {editIdx !== null && (
+            <SubjectModal title="Edit Subject" data={editForm}
+              onChange={(k,v) => setEditForm(f => ({...f,[k]:v}))}
+              onSave={handleUpdate} onCancel={() => setEditIdx(null)} />
+          )}
+        </div>
+      );
+    }
+
+    /* Animated progress bar (uses effect for animation) */
+    function ProgressBar({ pct, good }) {
+      const [width, setWidth] = useState(0);
+      useEffect(() => {
+        const t = setTimeout(() => setWidth(pct), 80);
+        return () => clearTimeout(t);
+      }, [pct]);
+      return (
+        <div className={`progress-fill ${good ? 'good' : 'poor'}`}
+          style={{ width: `${width}%` }} />
+      );
+    }
+
+    /* ═══════════════════════════════════════════
+       TIMETABLE
+    ═══════════════════════════════════════════ */
+    function Timetable() {
+      return (
+        <div className="tt-content">
+          <h2 className="page-title">My TimeTable</h2>
+          {TIMETABLE_DATA.map((cls, ci) => (
+            <div key={ci} className="class-section" style={{ animationDelay: `${ci*0.1}s` }}>
+              <div className="class-header">
+                <span className="class-title">{cls.className}</span>
+                <span className="class-subject-badge">
+                  {cls.subjects.slice(0,3).join(' · ')}
+                </span>
+                <span className="mentor-badge">🎓 {cls.mentor}</span>
+              </div>
+              <div className="tt-table-wrap">
+                <table className="tt-table">
+                  <thead>
+                    <tr>
+                      <th className="tt-th-day">Day</th>
+                      {TIME_SLOTS.map(ts => (
+                        <th key={ts} className="tt-th-time">{ts}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {DAYS.map(day => (
+                      <tr key={day}>
+                        <td className="tt-th-day">{day}</td>
+                        {(cls.schedule[day] || []).map((subj, si) => {
+                          if (!subj) return (
+                            <td key={si} className="tt-cell">
+                              <div className="tt-cell-inner empty">
+                                <span className="tt-empty-dash">—</span>
+                              </div>
+                            </td>
+                          );
+                          const pct = cls.attendance[subj] ?? 0;
+                          const good = pct >= 75;
+                          return (
+                            <td key={si} className="tt-cell">
+                              <div className="tt-cell-inner">
+                                <span className="tt-subj">{subj}</span>
+                                <span className="tt-room">{cls.rooms[subj] ?? ''}</span>
+                                <span className={`tt-pct ${good ? 'good' : 'poor'}`}>
+                                  {pct}%
+                                </span>
+                              </div>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          ))}
+        </div>
+      );
+    }
+
+    /* ═══════════════════════════════════════════
+       MONITORING PAGE
+    ═══════════════════════════════════════════ */
+    function Monitoring() {
+      const subjects = JSON.parse(localStorage.getItem('sdcce_subjects') || '[]');
+      const allSubjects = subjects.length ? subjects : [
+        { className:'S.Y B.Voc(S.T)', subjectName:'Software Engineering', totalStudents:25, attendance:82.67 },
+        { className:'F.Y B.Voc(S.T)', subjectName:'Data Structures',      totalStudents:30, attendance:57.25 },
+        { className:'T.Y B.Voc(S.T)', subjectName:'AI & Machine Learning', totalStudents:22, attendance:91.00 },
+        { className:'S.Y B.Voc(S.T)', subjectName:'Web Technologies',     totalStudents:25, attendance:68.40 },
+      ];
+
+      const critCount = allSubjects.filter(s => s.attendance < 65).length;
+      const warnCount = allSubjects.filter(s => s.attendance >= 65 && s.attendance < 75).length;
+      const goodCount = allSubjects.filter(s => s.attendance >= 75).length;
+      const avgAtt = (allSubjects.reduce((a,s) => a + s.attendance, 0) / allSubjects.length).toFixed(1);
+
+      /* Mock at-risk students */
+      const atRisk = [
+        { name:'Aryan Shah',    class:'F.Y B.Voc', subject:'Data Structures', pct:48, avatar:'A', color:'#7c6fff' },
+        { name:'Priya Mehta',  class:'S.Y B.Voc', subject:'Web Technologies', pct:62, avatar:'P', color:'#ff88b0' },
+        { name:'Rohan Joshi',  class:'F.Y B.Voc', subject:'Maths',            pct:54, avatar:'R', color:'#4ccea0' },
+        { name:'Sneha Patil',  class:'T.Y B.Voc', subject:'Cloud Comp',       pct:71, avatar:'S', color:'#ffaa55' },
+        { name:'Karan Desai',  class:'S.Y B.Voc', subject:'Data Struct',      pct:58, avatar:'K', color:'#ff7070' },
+      ];
+
+      function barClass(p) { return p >= 75 ? 'good' : p >= 65 ? 'warn' : 'crit'; }
+
+      const [bars, setBars] = useState({});
+      useEffect(() => {
+        const timer = setTimeout(() => {
+          const b = {};
+          allSubjects.forEach((_,i) => { b[i] = true; });
+          setBars(b);
+        }, 100);
+        return () => clearTimeout(timer);
+      }, []);
+
+      return (
+        <div className="page-content">
+          <h2 className="page-title">Monitoring</h2>
+
+          {/* Stats strip */}
+          <div className="stat-strip">
+            <div className="stat-card">
+              <span className="stat-val">{allSubjects.length}</span>
+              <span className="stat-lbl">Total Subjects</span>
+              <span className="stat-sub">Being tracked</span>
+            </div>
+            <div className="stat-card">
+              <span className="stat-val">{avgAtt}%</span>
+              <span className="stat-lbl">Avg Attendance</span>
+              <span className="stat-sub">Across all classes</span>
+            </div>
+            <div className="stat-card">
+              <span className="stat-val">{critCount}</span>
+              <span className="stat-lbl">Critical (&lt;65%)</span>
+              <span className="stat-sub">Need attention</span>
+            </div>
+            <div className="stat-card">
+              <span className="stat-val">{goodCount}</span>
+              <span className="stat-lbl">Healthy (&ge;75%)</span>
+              <span className="stat-sub">On track</span>
+            </div>
+          </div>
+
+          {/* Per-subject health cards */}
+          <p className="section-title">Subject Health</p>
+          <div className="mon-grid">
+            {allSubjects.map((s, i) => {
+              const pct = Math.min(Math.max(s.attendance,0),100);
+              const bc = barClass(pct);
+              return (
+                <div key={i} className="mon-card">
+                  <div className="mon-class">{s.className}</div>
+                  <div className="mon-subject">{s.subjectName}</div>
+                  <div className="mon-bar-wrap">
+                    <div className={`mon-bar ${bc}`}
+                      style={{ width: bars[i] ? `${pct}%` : '0%' }} />
+                  </div>
+                  <div style={{display:'flex',alignItems:'center',gap:10}}>
+                    <span className={`mon-pct ${bc}`}>{pct.toFixed(1)}%</span>
+                    <span className="mon-meta">{s.totalStudents} students</span>
+                  </div>
+                  {pct < 65
+                    ? <span className="alert-badge"><span className="msym material-symbols-rounded" style={{fontSize:12}}>warning</span>Critical</span>
+                    : pct < 75
+                      ? <span className="warn-badge"><span className="msym material-symbols-rounded" style={{fontSize:12}}>info</span>Below Threshold</span>
+                      : <span className="good-badge"><span className="msym material-symbols-rounded" style={{fontSize:12}}>check_circle</span>On Track</span>
+                  }
+                </div>
+              );
+            })}
+          </div>
+
+          {/* At-risk students */}
+          <p className="section-title">⚠️ Students At Risk</p>
+          <div className="risk-list">
+            {atRisk.map((s,i) => (
+              <div key={i} className="risk-row">
+                <div className="risk-avatar" style={{background:s.color}}>{s.avatar}</div>
+                <div>
+                  <div className="risk-name">{s.name}</div>
+                  <div className="risk-sub">{s.class} · {s.subject}</div>
+                </div>
+                <span className={`risk-pct ${s.pct < 65 ? 'crit' : 'warn'}`}>{s.pct}%</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    /* ═══════════════════════════════════════════
+       STUDENTS PAGE
+    ═══════════════════════════════════════════ */
+    const STUDENTS_DATA = [
+      { name:'Aarav Shah',    roll:'SY01', class:'S.Y B.Voc(S.T)', attendance:88, status:'Present' },
+      { name:'Priya Mehta',  roll:'SY02', class:'S.Y B.Voc(S.T)', attendance:62, status:'Absent'  },
+      { name:'Rohan Joshi',  roll:'FY01', class:'F.Y B.Voc(S.T)', attendance:79, status:'Present' },
+      { name:'Sneha Patil',  roll:'FY02', class:'F.Y B.Voc(S.T)', attendance:54, status:'Absent'  },
+      { name:'Karan Desai',  roll:'TY01', class:'T.Y B.Voc(S.T)', attendance:92, status:'Present' },
+      { name:'Ananya Nair',  roll:'TY02', class:'T.Y B.Voc(S.T)', attendance:71, status:'Present' },
+      { name:'Vikas Rao',    roll:'SY03', class:'S.Y B.Voc(S.T)', attendance:95, status:'Present' },
+      { name:'Meera Iyer',   roll:'FY03', class:'F.Y B.Voc(S.T)', attendance:68, status:'Present' },
+      { name:'Dev Sharma',   roll:'TY03', class:'T.Y B.Voc(S.T)', attendance:83, status:'Present' },
+      { name:'Nisha Kumar',  roll:'SY04', class:'S.Y B.Voc(S.T)', attendance:57, status:'Absent'  },
+      { name:'Arjun Singh',  roll:'FY04', class:'F.Y B.Voc(S.T)', attendance:76, status:'Present' },
+      { name:'Pooja Verma',  roll:'TY04', class:'T.Y B.Voc(S.T)', attendance:89, status:'Present' },
+    ];
+
+    function Students() {
+      const [search, setSearch] = useState('');
+      const [filter, setFilter] = useState('All');
+      const classes = ['All', 'S.Y B.Voc(S.T)', 'F.Y B.Voc(S.T)', 'T.Y B.Voc(S.T)'];
+
+      const filtered = STUDENTS_DATA.filter(s => {
+        const matchClass = filter === 'All' || s.class === filter;
+        const matchSearch = s.name.toLowerCase().includes(search.toLowerCase()) ||
+                            s.roll.toLowerCase().includes(search.toLowerCase());
+        return matchClass && matchSearch;
+      });
+
+      function pillClass(p) { return p >= 75 ? 'good' : p >= 65 ? 'warn' : 'crit'; }
+
+      return (
+        <div className="page-content">
+          <h2 className="page-title">Students</h2>
+
+          <div className="student-search">
+            <span className="msym material-symbols-rounded">search</span>
+            <input placeholder="Search by name or roll number…"
+              value={search} onChange={e => setSearch(e.target.value)} />
+          </div>
+
+          <div className="filter-row">
+            {classes.map(c => (
+              <button key={c} className={`filter-chip${filter===c?' active':''}`}
+                onClick={() => setFilter(c)}>{c}</button>
+            ))}
+          </div>
+
+          <div className="student-table-wrap">
+            <table className="student-table">
+              <thead className="st-head">
+                <tr>
+                  <th>Roll No</th>
+                  <th>Name</th>
+                  <th>Class</th>
+                  <th>Attendance</th>
+                  <th>Today</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((s,i) => (
+                  <tr key={i} className="st-row">
+                    <td style={{color:'var(--text-mid)',fontWeight:700}}>{s.roll}</td>
+                    <td style={{fontWeight:800}}>{s.name}</td>
+                    <td style={{color:'var(--text-mid)'}}>{s.class}</td>
+                    <td>
+                      <span className={`st-pill ${pillClass(s.attendance)}`}>
+                        {s.attendance}%
+                      </span>
+                    </td>
+                    <td>
+                      <span className={`st-pill ${s.status==='Present'?'good':'crit'}`}>
+                        {s.status}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+                {filtered.length === 0 && (
+                  <tr><td colSpan={5} style={{textAlign:'center',padding:'24px',color:'var(--text-light)'}}>
+                    No students found.
+                  </td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      );
+    }
+
+    /* ═══════════════════════════════════════════
+       ATTENDANCE PAGE
+    ═══════════════════════════════════════════ */
+    function AttendancePage({ showToast }) {
+      const classes = ['S.Y B.Voc(S.T)', 'F.Y B.Voc(S.T)', 'T.Y B.Voc(S.T)'];
+      const [selClass, setSelClass] = useState(classes[0]);
+      const today = new Date().toISOString().split('T')[0];
+      const [date, setDate] = useState(today);
+
+      const classStudents = STUDENTS_DATA.filter(s => s.class === selClass);
+      const [attMap, setAttMap] = useState(() => {
+        const m = {};
+        classStudents.forEach(s => { m[s.roll] = 'Present'; });
+        return m;
+      });
+
+      useEffect(() => {
+        const m = {};
+        STUDENTS_DATA.filter(s => s.class === selClass).forEach(s => { m[s.roll] = 'Present'; });
+        setAttMap(m);
+      }, [selClass]);
+
+      function toggle(roll, val) {
+        setAttMap(m => ({ ...m, [roll]: val }));
+      }
+
+      const presentCount = Object.values(attMap).filter(v => v === 'Present').length;
+      const absentCount  = Object.values(attMap).filter(v => v === 'Absent').length;
+
+      function handleSave() {
+        showToast(`✅ Attendance saved for ${selClass} — ${presentCount} present, ${absentCount} absent`);
+      }
+
+      return (
+        <div className="page-content">
+          <h2 className="page-title">Mark Attendance</h2>
+
+          <div className="att-class-select">
+            {classes.map(c => (
+              <button key={c} className={`att-class-btn${selClass===c?' active':''}`}
+                onClick={() => setSelClass(c)}>{c}</button>
+            ))}
+          </div>
+
+          <div className="att-date-row">
+            <span className="att-date-label">Date:</span>
+            <input type="date" value={date} onChange={e => setDate(e.target.value)} />
+          </div>
+
+          <div className="att-summary">
+            <span>Class: <strong>{selClass}</strong></span>
+            <span>Present: <strong style={{color:'#2eaa6e'}}>{presentCount}</strong></span>
+            <span>Absent: <strong style={{color:'#e04444'}}>{absentCount}</strong></span>
+            <span>Total: <strong>{classStudents.length}</strong></span>
+          </div>
+
+          <table className="att-table">
+            <thead>
+              <tr>
+                <th>Roll</th>
+                <th>Name</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {classStudents.map((s,i) => (
+                <tr key={i} className={`att-row ${attMap[s.roll]==='Present'?'present':'absent'}`}>
+                  <td style={{fontWeight:700,color:'var(--text-mid)'}}>{s.roll}</td>
+                  <td style={{fontWeight:800}}>{s.name}</td>
+                  <td>
+                    <div className="att-toggle">
+                      <button className={`p-btn${attMap[s.roll]==='Present'?' sel':''}`}
+                        onClick={() => toggle(s.roll,'Present')}>P</button>
+                      <button className={`a-btn${attMap[s.roll]==='Absent'?' sel':''}`}
+                        onClick={() => toggle(s.roll,'Absent')}>A</button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+
+          <button className="att-save-btn" onClick={handleSave}>
+            <span className="msym material-symbols-rounded" style={{fontSize:16,verticalAlign:'middle',marginRight:6}}>save</span>
+            Save Attendance
+          </button>
+        </div>
+      );
+    }
+
+    /* ═══════════════════════════════════════════
+       NOTICES PAGE
+    ═══════════════════════════════════════════ */
+    const INIT_NOTICES = [
+      { id:1, tag:'urgent',   title:'Mid-Sem Exam Schedule', body:'Mid-semester examinations will be held from 25th August. All students must carry their ID cards.', date:'19 Aug 2026', by:'HOD' },
+      { id:2, tag:'academic', title:'Assignment Submission', body:'Final project submissions for T.Y B.Voc are due by 22nd August. Late submissions will not be accepted.', date:'18 Aug 2026', by:'Prof. Monica' },
+      { id:3, tag:'event',    title:'Annual Tech Fest',       body:'SDCCE Annual Tech Fest is scheduled for 5th September. Registrations open now!', date:'17 Aug 2026', by:'Admin' },
+      { id:4, tag:'general',  title:'Library Holiday Notice', body:'College library will remain closed on 21st August due to annual stock taking.', date:'16 Aug 2026', by:'Librarian' },
+    ];
+
+    function Notices({ showToast }) {
+      const [notices, setNotices] = useState(INIT_NOTICES);
+      const [title, setTitle]   = useState('');
+      const [body,  setBody]    = useState('');
+      const [tag,   setTag]     = useState('general');
+
+      function post() {
+        if (!title.trim() || !body.trim()) { showToast('⚠️ Please fill in title and message.'); return; }
+        const now = new Date().toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+        setNotices(n => [{ id: Date.now(), tag, title, body, date: now, by: 'Prof. Monica' }, ...n]);
+        setTitle(''); setBody('');
+        showToast('📢 Notice posted!');
+      }
+
+      function del(id) {
+        setNotices(n => n.filter(x => x.id !== id));
+        showToast('🗑️ Notice deleted.');
+      }
+
+      return (
+        <div className="page-content">
+          <h2 className="page-title">Notices & Announcements</h2>
+
+          {/* Compose */}
+          <div className="notice-compose">
+            <div className="notice-header-row" style={{marginBottom:10}}>
+              <input type="text" placeholder="Notice title…"
+                value={title} onChange={e => setTitle(e.target.value)} />
+              <select value={tag} onChange={e => setTag(e.target.value)}>
+                <option value="general">General</option>
+                <option value="urgent">Urgent</option>
+                <option value="academic">Academic</option>
+                <option value="event">Event</option>
+              </select>
+              <button className="notice-post-btn" onClick={post}>
+                <span className="msym material-symbols-rounded" style={{fontSize:14,verticalAlign:'middle',marginRight:4}}>send</span>
+                Post
+              </button>
+            </div>
+            <textarea placeholder="Write your announcement here…"
+              value={body} onChange={e => setBody(e.target.value)} />
+          </div>
+
+          {/* List */}
+          <p className="section-title">Posted Notices</p>
+          <div className="notice-list">
+            {notices.map(n => (
+              <div key={n.id} className="notice-item">
+                <span className={`notice-tag ${n.tag}`}>{n.tag}</span>
+                <div className="notice-title">{n.title}</div>
+                <div className="notice-body">{n.body}</div>
+                <div className="notice-meta">{n.date} · by {n.by}</div>
+                <button className="notice-del" onClick={() => del(n.id)}>
+                  <span className="msym material-symbols-rounded" style={{fontSize:14}}>delete</span>
+                </button>
+              </div>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    /* ═══════════════════════════════════════════
+       REPORTS PAGE
+    ═══════════════════════════════════════════ */
+    function Reports() {
+      const subjects = JSON.parse(localStorage.getItem('sdcce_subjects') || '[]');
+      const allSubjects = subjects.length ? subjects : [
+        { subjectName:'Software Eng', attendance:82.67, totalStudents:25 },
+        { subjectName:'Data Structures', attendance:57.25, totalStudents:30 },
+        { subjectName:'AI & ML',  attendance:91.00, totalStudents:22 },
+        { subjectName:'Web Tech', attendance:68.40, totalStudents:25 },
+      ];
+
+      const [bars, setBars] = useState(false);
+      useEffect(() => { setTimeout(() => setBars(true), 120); }, []);
+
+      function barClass(p) { return p >= 75 ? 'good' : p >= 65 ? 'warn' : 'crit'; }
+
+      const totalStudents = allSubjects.reduce((a,s) => a + (s.totalStudents||0), 0);
+      const avgAtt = allSubjects.reduce((a,s) => a + s.attendance, 0) / allSubjects.length;
+      const critCount = allSubjects.filter(s => s.attendance < 65).length;
+      const goodCount = allSubjects.filter(s => s.attendance >= 75).length;
+      const warnCount = allSubjects.length - critCount - goodCount;
+
+      /* Donut */
+      const gPct = Math.round(goodCount/allSubjects.length*100);
+      const wPct = Math.round(warnCount/allSubjects.length*100);
+      const cPct = 100 - gPct - wPct;
+      const donutBg = `conic-gradient(#4ccea0 0% ${gPct}%, #ffaa55 ${gPct}% ${gPct+wPct}%, #ff7070 ${gPct+wPct}% 100%)`;
+
+      return (
+        <div className="page-content">
+          <h2 className="page-title">Reports & Analytics</h2>
+
+          {/* Summary stats */}
+          <div className="stat-strip">
+            <div className="stat-card">
+              <span className="stat-val">{totalStudents}</span>
+              <span className="stat-lbl">Total Students</span>
+            </div>
+            <div className="stat-card">
+              <span className="stat-val">{avgAtt.toFixed(1)}%</span>
+              <span className="stat-lbl">Avg Attendance</span>
+            </div>
+            <div className="stat-card">
+              <span className="stat-val">{allSubjects.length}</span>
+              <span className="stat-lbl">Active Subjects</span>
+            </div>
+            <div className="stat-card">
+              <span className="stat-val">{critCount}</span>
+              <span className="stat-lbl">Critical Subjects</span>
+            </div>
+          </div>
+
+          <div className="report-grid">
+            {/* Bar chart */}
+            <div className="report-card">
+              <div className="report-card-title">Attendance by Subject</div>
+              <div className="bar-chart">
+                {allSubjects.map((s,i) => {
+                  const pct = Math.min(Math.max(s.attendance,0),100);
+                  return (
+                    <div key={i} className="bar-row">
+                      <span className="bar-label">{s.subjectName}</span>
+                      <div className="bar-track">
+                        <div className={`bar-fill ${barClass(pct)}`}
+                          style={{ width: bars ? `${pct}%` : '0%' }} />
+                      </div>
+                      <span className="bar-val">{pct.toFixed(0)}%</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Donut */}
+            <div className="report-card">
+              <div className="report-card-title">Health Distribution</div>
+              <div className="donut-wrap">
+                <div className="donut" style={{ background: donutBg }}>
+                  <div style={{
+                    width:54, height:54, borderRadius:'50%',
+                    background:'var(--card2-bg)',
+                    display:'flex', alignItems:'center', justifyContent:'center',
+                    fontSize:13, fontWeight:900, color:'var(--text-dark)'
+                  }}>{gPct}%</div>
+                </div>
+                <div className="donut-legend">
+                  <div className="legend-row"><div className="legend-dot" style={{background:'#4ccea0'}} /> Healthy ({goodCount})</div>
+                  <div className="legend-row"><div className="legend-dot" style={{background:'#ffaa55'}} /> Warning ({warnCount})</div>
+                  <div className="legend-row"><div className="legend-dot" style={{background:'#ff7070'}} /> Critical ({critCount})</div>
+                </div>
+              </div>
+            </div>
+
+            {/* Student count */}
+            <div className="report-card">
+              <div className="report-card-title">Students per Subject</div>
+              <div className="bar-chart">
+                {allSubjects.map((s,i) => (
+                  <div key={i} className="bar-row">
+                    <span className="bar-label">{s.subjectName}</span>
+                    <div className="bar-track">
+                      <div className={`bar-fill ${barClass(s.attendance)}`}
+                        style={{ width: bars ? `${Math.min((s.totalStudents||0)/40*100,100)}%` : '0%' }} />
+                    </div>
+                    <span className="bar-val">{s.totalStudents||'—'}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Weekly trend (mock) */}
+            <div className="report-card">
+              <div className="report-card-title">Weekly Attendance Trend</div>
+              <div className="bar-chart">
+                {[['Mon',78],['Tue',82],['Wed',74],['Thu',89],['Fri',71],['Sat',65]].map(([d,v],i) => (
+                  <div key={i} className="bar-row">
+                    <span className="bar-label">{d}</span>
+                    <div className="bar-track">
+                      <div className={`bar-fill ${barClass(v)}`}
+                        style={{ width: bars ? `${v}%` : '0%' }} />
+                    </div>
+                    <span className="bar-val">{v}%</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    /* ═══════════════════════════════════════════
+       SIDEBAR
+    ═══════════════════════════════════════════ */
+    function Sidebar({ page, setPage, collapsed, showToast }) {
+      return (
+        <aside className={`sidebar${collapsed ? ' collapsed' : ''}`}>
+          <div className="sidebar-top">
+            <div className="welcome-block">
+              <span className="welcome-label">Welcome,</span>
+              <span className="welcome-role">Teacher</span>
+              <span className="welcome-name">Monica</span>
+            </div>
+            <nav className="nav-links">
+              {[
+                { id:'dashboard',  icon:'dashboard',      label:'Dashboard'    },
+                { id:'timetable',  icon:'calendar_month', label:'TimeTable'    },
+                { id:'monitoring', icon:'monitor_heart',  label:'Monitoring'   },
+                { id:'students',   icon:'group',          label:'Students'     },
+                { id:'attendance', icon:'fact_check',     label:'Attendance'   },
+                { id:'notices',    icon:'campaign',       label:'Notices'      },
+                { id:'reports',    icon:'bar_chart',      label:'Reports'      },
+              ].map(({ id, icon, label }) => (
+                <button key={id}
+                  className={`nav-item${page===id?' active':''}`}
+                  onClick={() => setPage(id)}>
+                  <span className="msym material-symbols-rounded">{icon}</span>
+                  {label}
+                </button>
+              ))}
+            </nav>
+          </div>
+          <div className="sidebar-bottom">
+            <button className="signout-btn" onClick={() => showToast('👋 Signed out.')}>
+              <span className="msym material-symbols-rounded">logout</span>
+              Sign Out
+            </button>
+          </div>
+        </aside>
+      );
+    }
+
+    /* ═══════════════════════════════════════════
+       APP ROOT
+    ═══════════════════════════════════════════ */
+    function App() {
+      const [page,      setPage]      = useState('dashboard');
+      const [collapsed, setCollapsed] = useState(false);
+      const [toast,     setToast]     = useState('');
+      const [dark,      setDark]      = useState(() => localStorage.getItem('sdcce_dark') === 'true');
+      const toastTimer = useRef(null);
+
+      function showToast(msg) {
+        setToast(msg);
+        clearTimeout(toastTimer.current);
+        toastTimer.current = setTimeout(() => setToast(''), 2600);
+      }
+
+      function toggleDark() {
+        setDark(d => {
+          const next = !d;
+          localStorage.setItem('sdcce_dark', String(next));
+          return next;
+        });
+      }
+
+      return (
+        <div className={`app-root${dark ? ' dark' : ''}`}>
+          {/* Chrome bar */}
+          <div className="chrome-bar">Teacher Dashboard</div>
+
+          <div className="app-shell">
+            <Sidebar page={page} setPage={setPage}
+              collapsed={collapsed} showToast={showToast} />
+
+            <div className="main-panel">
+              {/* Top bar */}
+              <header className="top-bar">
+                <button className="hamburger"
+                  onClick={() => setCollapsed(c => !c)}
+                  aria-label="Toggle Sidebar">
+                  <span className="msym material-symbols-rounded">menu</span>
+                </button>
+                <h1 className="brand">SDCCE</h1>
+
+                {/* Dark / Light toggle */}
+                <button className="theme-toggle" onClick={toggleDark}
+                  aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+                  title={dark ? 'Light mode' : 'Dark mode'}>
+                  <span className="msym material-symbols-rounded">
+                    {dark ? 'light_mode' : 'dark_mode'}
+                  </span>
+                  {dark ? 'Light' : 'Dark'}
+                </button>
+              </header>
+
+              {/* Pages */}
+              {page === 'dashboard'  && <Dashboard  showToast={showToast} />}
+              {page === 'timetable'  && <Timetable />}
+              {page === 'monitoring' && <Monitoring />}
+              {page === 'students'   && <Students />}
+              {page === 'attendance' && <AttendancePage showToast={showToast} />}
+              {page === 'notices'    && <Notices showToast={showToast} />}
+              {page === 'reports'    && <Reports />}
+            </div>
+          </div>
+
+          {/* Toast */}
+          {toast && <Toast message={toast} />}
+        </div>
+      );
+    }
+
+    /* Mount */
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+</body>
+</html>
