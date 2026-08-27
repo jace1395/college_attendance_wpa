@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 
 const MonitoringTab = ({ duties }) => {
   const [currentTime, setCurrentTime] = useState(new Date());
-  
+
   useEffect(() => {
     const timer = setInterval(() => setCurrentTime(new Date()), 1000);
     return () => clearInterval(timer);
@@ -18,11 +18,11 @@ const MonitoringTab = ({ duties }) => {
 
   // Assuming 1 duty for simplicity based on mock data
   const duty = duties[0];
-  
+
   // Logic for countdown and lock
   // Parse time_start (e.g., "09:15")
   const [startHour, startMinute] = duty.time_start.split(':').map(Number);
-  
+
   const startTime = new Date();
   startTime.setHours(startHour, startMinute, 0, 0);
 
@@ -48,30 +48,36 @@ const MonitoringTab = ({ duties }) => {
       </div>
 
       <div className="bg-slate-900/50 p-6 rounded-2xl border border-white/5 mb-6">
-        <label className="block text-sm text-white/70 mb-2">Total Students Present in Area</label>
-        
+        <label className="block text-sm text-white/70 mb-2">Total Students Present in Class</label>
+
         {isLocked ? (
           <div className="flex items-center gap-4 text-orange-400 bg-orange-500/10 p-4 rounded-xl border border-orange-500/20">
             <svg className="w-6 h-6 animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
             <span className="font-semibold">Duty starts in: {formatTime(timeRemaining)}</span>
           </div>
         ) : (
-          <input 
-            type="number"
-            min="0"
-            className="w-full bg-slate-800 text-white text-lg rounded-xl px-4 py-3 outline-none border border-white/20 focus:border-blue-500 transition-colors"
-            placeholder="Enter count..."
-          />
+          <div className="relative flex items-center">
+            <input
+              type="number"
+              min="0"
+              className="w-full bg-slate-800 text-white text-lg rounded-xl px-4 py-3 outline-none border border-white/20 focus:border-blue-500 transition-colors pr-16"
+              placeholder="Enter count..."
+            />
+            {duty.total_students && (
+              <div className="absolute right-4 text-white/50 font-medium pointer-events-none">
+                / {duty.total_students}
+              </div>
+            )}
+          </div>
         )}
       </div>
 
-      <button 
+      <button
         disabled={isLocked}
-        className={`w-full py-3 rounded-xl font-bold transition-all shadow-lg text-lg ${
-          isLocked 
+        className={`w-full py-3 rounded-xl font-bold transition-all shadow-lg text-lg ${isLocked
             ? 'bg-slate-800 text-white/30 cursor-not-allowed border border-white/5'
-            : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white transform hover:-translate-y-1' 
-        }`}
+            : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white transform hover:-translate-y-1'
+          }`}
       >
         Submit Report
       </button>

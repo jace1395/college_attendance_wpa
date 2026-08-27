@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 
 const AttendanceGrid = () => {
@@ -8,22 +8,27 @@ const AttendanceGrid = () => {
   const [attendance, setAttendance] = useState({}); // shape: { "student_id_date": "status" }
   const [lockedDates, setLockedDates] = useState({}); // shape: { "date": boolean }
   const [loading, setLoading] = useState(true);
+  const [selectedMode, setSelectedMode] = useState('P'); // Active legend mode
+  const scrollContainerRef = useRef(null);
+  const todayColRef = useRef(null);
 
   // Helper to generate dates for the current month
   const generateDates = () => {
     const dts = [];
     const now = new Date();
-    // Generate dates for the past 14 days
-    for (let i = 14; i >= 0; i--) {
-      const d = new Date(now);
-      d.setDate(now.getDate() - i);
+    const year = now.getFullYear();
+    const month = now.getMonth();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+
+    for (let i = 1; i <= daysInMonth; i++) {
+      const d = new Date(year, month, i);
       const isSunday = d.getDay() === 0;
       
-      const dateStr = d.toISOString().split('T')[0];
+      const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(i).padStart(2, '0')}`;
       
-      // Calculate 24-hour lock logic (for mock purposes, let's say anything older than 1 day is locked)
+      // Calculate 24-hour lock logic
       const diffInHours = (now - d) / (1000 * 60 * 60);
-      const isLocked = diffInHours > 24 && !isSunday;
+      const isLocked = (diffInHours > 24 && !isSunday) || d > now;
 
       dts.push({
         dateStr,
@@ -51,17 +56,11 @@ const AttendanceGrid = () => {
         setRoster(mockRoster);
 
         // Populate initial mock attendance state
+        // By default, cells are unmarked (no entry) so they show off-white
         const initialAtt = {};
         const locks = {};
         dts.forEach(d => {
             locks[d.dateStr] = d.isLocked;
-            if (d.isSunday) return;
-            mockRoster.forEach(s => {
-                // Randomly assign P or A for mock
-                const statuses = ['P', 'P', 'P', 'A', 'OD', 'NI'];
-                const randomStat = statuses[Math.floor(Math.random() * statuses.length)];
-                initialAtt[`${s.student_id}_${d.dateStr}`] = randomStat;
-            });
         });
 
         setAttendance(initialAtt);
@@ -73,36 +72,55 @@ const AttendanceGrid = () => {
     fetchData();
   }, [class_id]);
 
+  // Auto-scroll to today's column after data loads
+  useEffect(() => {
+    if (!loading && todayColRef.current && scrollContainerRef.current) {
+      const container = scrollContainerRef.current;
+      const todayEl = todayColRef.current;
+      // Scroll so today's column is roughly centered
+      const scrollLeft = todayEl.offsetLeft - container.offsetWidth / 2 + todayEl.offsetWidth / 2;
+      container.scrollTo({ left: Math.max(0, scrollLeft), behavior: 'smooth' });
+    }
+  }, [loading]);
+
   const handleStatusClick = (studentId, dateStr, isSunday) => {
     if (isSunday || lockedDates[dateStr]) return;
 
     const key = `${studentId}_${dateStr}`;
-    const current = attendance[key];
-    
-    let next = 'P';
-    if (current === 'P') next = 'A';
-    else if (current === 'A') next = 'OD';
-    else if (current === 'OD') next = 'NI';
-    else if (current === 'NI') next = 'P';
-
-    setAttendance(prev => ({ ...prev, [key]: next }));
+    // Stamp with the currently selected legend mode
+    setAttendance(prev => ({ ...prev, [key]: selectedMode }));
   };
 
-  const markColumnAll = (dateStr, status) => {
+  // Legend click = select mode (does NOT bulk apply)
+  const handleLegendClick = (status) => {
+    setSelectedMode(status);
+  };
+
+  const modeLabels = { P: 'Present', A: 'Absent', OD: 'On Duty/Leave', NI: 'Non-Instructional' };
+
+  const markColumnAll = (dateStr) => {
     if (lockedDates[dateStr]) return;
     
-    setAttendance(prev => {
-        const next = { ...prev };
-        roster.forEach(student => {
-            next[`${student.student_id}_${dateStr}`] = status;
-        });
-        return next;
-    });
+    if (window.confirm(`Mark entire class as ${modeLabels[selectedMode]} (${selectedMode}) for ${dateStr}?`)) {
+      setAttendance(prev => {
+          const next = { ...prev };
+          roster.forEach(student => {
+              next[`${student.student_id}_${dateStr}`] = selectedMode;
+          });
+          return next;
+      });
+    }
   };
 
   const requestUnlock = (dateStr) => {
     alert(`Unlock request sent to Principal for ${dateStr}`);
   };
+
+  // Get today's date string for highlighting
+  const todayStr = (() => {
+    const now = new Date();
+    return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  })();
 
   const getStatusColor = (status, isSunday) => {
     if (isSunday) return 'bg-slate-700/30 text-slate-500 border-slate-700/50 cursor-not-allowed';
@@ -111,7 +129,7 @@ const AttendanceGrid = () => {
       case 'A': return 'bg-red-500/20 text-red-400 border-red-500/30 hover:bg-red-500/30 cursor-pointer';
       case 'OD': return 'bg-blue-500/20 text-blue-400 border-blue-500/30 hover:bg-blue-500/30 cursor-pointer';
       case 'NI': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30 hover:bg-yellow-500/30 cursor-pointer';
-      default: return 'bg-white/5 text-white/50 border-white/10 hover:bg-white/10 cursor-pointer'; // empty state
+      default: return 'bg-amber-50/10 text-white/40 border-amber-100/20 hover:bg-amber-50/20 cursor-pointer'; // off-white unmarked
     }
   };
 
@@ -143,56 +161,69 @@ const AttendanceGrid = () => {
                 <p className="text-xl text-white/70">Class ID: {class_id}</p>
             </div>
             
-            {/* Legend */}
-            <div className="flex flex-wrap gap-3 bg-slate-900/50 backdrop-blur-md p-3 rounded-2xl border border-white/10">
-                <div className="flex items-center gap-2 text-xs font-medium"><div className="w-3 h-3 rounded bg-green-500/50 border border-green-500/50"></div> P (Present)</div>
-                <div className="flex items-center gap-2 text-xs font-medium"><div className="w-3 h-3 rounded bg-red-500/50 border border-red-500/50"></div> A (Absent)</div>
-                <div className="flex items-center gap-2 text-xs font-medium"><div className="w-3 h-3 rounded bg-blue-500/50 border border-blue-500/50"></div> OD (On Duty)</div>
-                <div className="flex items-center gap-2 text-xs font-medium"><div className="w-3 h-3 rounded bg-yellow-500/50 border border-yellow-500/50"></div> NI (Non-Inst)</div>
+            {/* Legend - Mode Selector */}
+            <div className="flex flex-wrap gap-2 bg-slate-900/50 backdrop-blur-md p-2 rounded-2xl border border-white/10">
+                {[
+                  { key: 'P', label: 'P (Present)', dot: 'bg-green-500/50 border-green-500/50', activeBg: 'bg-green-500/20 ring-2 ring-green-400 shadow-[0_0_12px_rgba(34,197,94,0.3)]' },
+                  { key: 'A', label: 'A (Absent)', dot: 'bg-red-500/50 border-red-500/50', activeBg: 'bg-red-500/20 ring-2 ring-red-400 shadow-[0_0_12px_rgba(239,68,68,0.3)]' },
+                  { key: 'OD', label: 'OD (On Duty/Leave)', dot: 'bg-blue-500/50 border-blue-500/50', activeBg: 'bg-blue-500/20 ring-2 ring-blue-400 shadow-[0_0_12px_rgba(59,130,246,0.3)]' },
+                  { key: 'NI', label: 'NI (Non-Inst)', dot: 'bg-yellow-500/50 border-yellow-500/50', activeBg: 'bg-yellow-500/20 ring-2 ring-yellow-400 shadow-[0_0_12px_rgba(234,179,8,0.3)]' },
+                ].map(item => (
+                  <button
+                    key={item.key}
+                    onClick={() => handleLegendClick(item.key)}
+                    className={`flex items-center gap-2 text-xs font-medium p-2 px-3 rounded-xl transition-all ${
+                      selectedMode === item.key
+                        ? `${item.activeBg} text-white font-bold scale-105`
+                        : 'hover:bg-white/10 text-white/60'
+                    }`}
+                  >
+                    <div className={`w-3 h-3 rounded border ${item.dot}`}></div>
+                    {item.label}
+                  </button>
+                ))}
             </div>
         </div>
 
         {/* Excel-Like Grid */}
         <div className="bg-slate-900/60 backdrop-blur-xl border border-white/10 rounded-2xl overflow-hidden shadow-2xl flex-1 max-w-full">
-            <div className="overflow-x-auto h-[65vh]">
+            <div className="overflow-x-auto h-[65vh]" ref={scrollContainerRef}>
                 <table className="w-full text-left border-collapse whitespace-nowrap min-w-max">
                     <thead className="sticky top-0 bg-slate-800 z-20 shadow-md">
                         <tr>
-                            <th className="p-4 font-semibold text-white/90 border-r border-white/10 sticky left-0 bg-slate-800 z-30 min-w-[200px]">
+                            <th className="p-2 md:p-4 font-semibold text-white/90 border-r border-white/10 sticky left-0 bg-slate-800 z-30 min-w-[120px] md:min-w-[200px]">
                                 Student Details
                             </th>
-                            {dates.map((d, idx) => (
-                                <th key={idx} className={`p-4 font-semibold border-r border-white/10 text-center ${d.isSunday ? 'text-slate-500 bg-slate-800/80' : 'text-white/90'}`}>
+                            {dates.map((d, idx) => {
+                                const isToday = d.dateStr === todayStr;
+                                return (
+                                <th
+                                  key={idx}
+                                  ref={isToday ? todayColRef : null}
+                                  onClick={() => !d.isSunday && !lockedDates[d.dateStr] && markColumnAll(d.dateStr)}
+                                  title={!d.isSunday && !lockedDates[d.dateStr] ? `Click to mark entire class as ${modeLabels[selectedMode]} for this date` : d.isSunday ? 'Holiday' : '24h lock active'}
+                                  className={`p-2 md:p-4 font-semibold border-r border-white/10 text-center transition-colors ${d.isSunday ? 'text-slate-500 bg-slate-800/80' : isToday ? 'bg-blue-900/40 text-blue-300 hover:bg-blue-900/60 cursor-pointer' : lockedDates[d.dateStr] ? 'text-white/90 opacity-60 cursor-not-allowed' : 'text-white/90 hover:bg-white/10 cursor-pointer'}`}
+                                >
                                     <div className="flex flex-col items-center">
-                                        <span className="text-sm">{d.dayName}</span>
-                                        <span className="text-xs text-white/50">{d.dateStr.slice(5)}</span>
+                                        <span className="text-xs md:text-sm">{isToday ? '📍 Today' : d.dayName}</span>
+                                        <span className="text-[10px] md:text-xs text-white/50">{d.dateStr.slice(5)}</span>
                                         
-                                        {/* Lock / Bulk Actions */}
-                                        {!d.isSunday && (
-                                            <div className="mt-3">
-                                                {lockedDates[d.dateStr] ? (
-                                                    <button 
-                                                        onClick={() => requestUnlock(d.dateStr)}
-                                                        className="px-2 py-1 bg-red-500/10 text-red-400 text-[10px] rounded border border-red-500/20 hover:bg-red-500/20 transition-colors uppercase tracking-wider font-bold w-full"
-                                                        title="24h lock active. Request Principal Unlock."
-                                                    >
-                                                        Locked (Req Unlock)
-                                                    </button>
-                                                ) : (
-                                                    <div className="flex flex-col gap-1 w-full">
-                                                        <button 
-                                                            onClick={() => markColumnAll(d.dateStr, 'P')}
-                                                            className="px-2 py-1 bg-green-500/10 text-green-400 text-[10px] rounded border border-green-500/20 hover:bg-green-500/20 transition-colors uppercase font-bold"
-                                                        >
-                                                            Mark All P
-                                                        </button>
-                                                    </div>
-                                                )}
+                                        {/* Lock indicator */}
+                                        {!d.isSunday && lockedDates[d.dateStr] && (
+                                            <div className="mt-2">
+                                                <button 
+                                                    onClick={(e) => { e.stopPropagation(); requestUnlock(d.dateStr); }}
+                                                    className="px-1 md:px-2 py-1 bg-red-500/10 text-red-400 text-[9px] md:text-[10px] rounded border border-red-500/20 hover:bg-red-500/20 transition-colors uppercase tracking-wider font-bold w-full truncate"
+                                                    title="24h lock active. Request Principal Unlock."
+                                                >
+                                                    Locked
+                                                </button>
                                             </div>
                                         )}
                                     </div>
                                 </th>
-                            ))}
+                                );
+                            })}
                         </tr>
                     </thead>
                     <tbody>
@@ -211,15 +242,15 @@ const AttendanceGrid = () => {
                                     return (
                                         <td 
                                             key={`${s_idx}_${d_idx}`} 
-                                            className={`p-2 border-r border-white/5 text-center ${d.isSunday ? 'bg-slate-800/30' : ''}`}
+                                            className={`p-2 border-r border-white/5 text-center ${d.isSunday ? 'bg-slate-800/30' : d.dateStr === todayStr ? 'bg-blue-900/10' : ''}`}
                                             onClick={() => handleStatusClick(student.student_id, d.dateStr, d.isSunday)}
                                         >
                                             <div className="flex justify-center items-center h-full">
                                                 {d.isSunday ? (
-                                                    <span className="text-slate-600 text-xs uppercase font-bold tracking-widest rotate-[-90deg]">Holiday</span>
+                                                    <span className="text-slate-600 text-[9px] md:text-xs uppercase font-bold tracking-widest rotate-[-90deg]">Holiday</span>
                                                 ) : (
-                                                    <div className={`w-10 h-10 flex items-center justify-center rounded-lg border font-bold shadow-inner select-none transition-all ${getStatusColor(status, d.isSunday)} ${lockedDates[d.dateStr] ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                                                        {status || '-'}
+                                                    <div className={`w-7 h-7 md:w-10 md:h-10 text-xs md:text-sm flex items-center justify-center rounded-lg border font-bold shadow-inner select-none transition-all ${getStatusColor(status, d.isSunday)} ${lockedDates[d.dateStr] ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                                                        {status || '·'}
                                                     </div>
                                                 )}
                                             </div>

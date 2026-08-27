@@ -48,7 +48,7 @@ const NoticeBoard = () => {
               className="bg-white text-slate-900 hover:bg-slate-100 font-bold rounded-2xl py-4 px-6 shadow-lg flex items-center justify-center gap-2 transition-transform transform hover:-translate-y-1"
             >
               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
-              Compose
+              Raise Ticket
             </button>
             
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-2 flex-1">
@@ -111,7 +111,7 @@ const NoticeBoard = () => {
           
           <div className="bg-slate-800 border border-slate-600 w-full max-w-2xl rounded-2xl shadow-2xl relative z-10 flex flex-col overflow-hidden animate-fade-in-up">
             <div className="bg-slate-900 px-6 py-4 flex justify-between items-center border-b border-slate-700">
-              <h3 className="font-bold">New Message</h3>
+              <h3 className="font-bold">Raise Ticket</h3>
               <button onClick={() => setIsComposeOpen(false)} className="text-slate-400 hover:text-white">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
               </button>
@@ -119,26 +119,36 @@ const NoticeBoard = () => {
             
             <div className="p-6 flex flex-col gap-4">
               <div className="flex items-center border-b border-slate-700 pb-2">
-                <span className="text-slate-400 w-16 text-sm">From:</span>
+                <span className="text-slate-400 w-32 text-sm">From:</span>
                 <input type="text" disabled value={user?.email || ''} className="bg-transparent flex-1 outline-none text-white/70 text-sm" />
               </div>
               
               <div className="flex items-center border-b border-slate-700 pb-2">
-                <span className="text-slate-400 w-16 text-sm">To:</span>
+                <span className="text-slate-400 w-32 text-sm">Subject:</span>
                 <select className="bg-transparent flex-1 outline-none text-white text-sm appearance-none">
-                  <option className="bg-slate-800">Teachers</option>
-                  <option className="bg-slate-800">Principal</option>
-                  <option className="bg-slate-800">Admin</option>
+                  <option className="bg-slate-800">Web Development</option>
+                  <option className="bg-slate-800">Software Engineering</option>
+                  <option className="bg-slate-800">Database Systems</option>
                 </select>
               </div>
 
               <div className="flex items-center border-b border-slate-700 pb-2">
-                <input type="text" placeholder="Subject" className="bg-transparent flex-1 outline-none text-white placeholder-slate-500 font-medium" />
+                <span className="text-slate-400 w-32 text-sm">Date of Absence:</span>
+                <input 
+                  type="date" 
+                  className="bg-transparent flex-1 outline-none text-white text-sm" 
+                  min={new Date(Date.now() - 86400000).toISOString().split('T')[0]}
+                  max={new Date().toISOString().split('T')[0]}
+                />
+              </div>
+              
+              <div className="text-xs text-blue-400 font-medium">
+                Note: Tickets can only be raised for absences within the last 24 hours.
               </div>
               
               <textarea 
-                className="w-full h-48 bg-transparent outline-none text-white placeholder-slate-500 resize-none mt-2"
-                placeholder="Write your message here..."
+                className="w-full h-32 bg-transparent outline-none text-white placeholder-slate-500 resize-none mt-2"
+                placeholder="Please state the reason for absence..."
               ></textarea>
             </div>
             

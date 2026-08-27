@@ -137,9 +137,10 @@ const StudentDashboard = () => {
         {/* Navigation / Header */}
         <div className="flex justify-between items-center mb-10">
           <h1 className="text-2xl font-bold tracking-wider">
-            CAS <span className="text-blue-400">{departmentName} STUDENT</span>
+            Welcome {student?.name || user?.name || 'Student'} <span className="text-blue-400">| Attendance</span>
           </h1>
           <div className="flex gap-4">
+            <Link to="/student/dashboard" className="px-4 py-2 bg-blue-600/30 hover:bg-blue-600/50 rounded-xl backdrop-blur-md transition-colors border border-blue-500/30 text-blue-200 text-sm font-bold shadow-[0_0_15px_rgba(59,130,246,0.2)]">Subjects</Link>
             <Link to="/student/timetable" className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl backdrop-blur-md transition-colors border border-white/20 text-sm font-medium">Timetable</Link>
             <Link to="/student/notices" className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl backdrop-blur-md transition-colors border border-white/20 text-sm font-medium">Notices</Link>
             <button 

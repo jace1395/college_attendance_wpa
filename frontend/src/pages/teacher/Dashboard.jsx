@@ -85,7 +85,8 @@ const TeacherDashboard = () => {
                 "duty_id": "MON_101",
                 "time_start": "09:15",
                 "time_end": "10:15",
-                "room": "Corridor A",
+                "room": "F101 (FY B.Voc 1 class)",
+                "total_students": 60,
                 "status": "pending"
               }
             ]
@@ -142,7 +143,7 @@ const TeacherDashboard = () => {
         {/* Header */}
         <div className="flex flex-wrap justify-between items-center mb-8 gap-4">
           <h1 className="text-2xl font-bold tracking-wider">
-            CAS <span className="text-blue-400">TEACHER</span>
+            VVM <span className="text-blue-400">ATTENDANCE</span>
           </h1>
           <button 
             onClick={handleLogout}
