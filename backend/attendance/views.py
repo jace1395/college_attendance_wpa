@@ -1,53 +1,69 @@
-import pandas as pd
-import io
-from django.http import FileResponse, HttpResponseForbidden, HttpResponse
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.views import APIView
 from rest_framework.response import Response
-from django.contrib.auth.decorators import login_required
-from .models import Attendance
+from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.permissions import IsAuthenticated
+from django.core.validators import FileExtensionValidator
+from django.core.exceptions import ValidationError
+from django.http import FileResponse
+from .services import generate_attendance_report, process_timetable_upload
+from users.services import process_user_upload
 
-@api_view(['GET'])
-@permission_classes([IsAuthenticated])
-def my_attendance_view(request):
-    if request.user.role != 'Student':
-        return Response({"error": "Only students can access this endpoint."}, status=403)
 
-    records = Attendance.objects.filter(student=request.user).select_related('class_batch__subject')
-    data = [{"date": r.date, "subject": r.class_batch.subject.name, "status": r.status} for r in records]
-    return Response(data)
+class ReportAPIView(APIView):
+    permission_classes = [IsAuthenticated]
 
-@login_required
-def generate_attendance_report(request):
-    if request.user.role not in ['Admin', 'Principal', 'HOD']:
-        return HttpResponseForbidden("You do not have permission to generate reports.")
+    def get(self, request):
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+        download_format = request.query_params.get('download')  # 'csv' or 'excel'
 
-    qs = Attendance.objects.all().values('student__roll_no', 'class_batch__subject__name', 'status')
-    df = pd.DataFrame(list(qs))
-    
-    if df.empty:
-        return HttpResponse("No attendance data available.", status=404)
+        if not start_date or not end_date:
+            return Response({"error": "Please provide start_date and end_date."}, status=400)
 
-    df['is_present'] = df['status'].apply(lambda x: 1 if x == 'Present' else 0)
-    report_df = df.groupby(['student__roll_no', 'class_batch__subject__name']).agg(
-        total_classes=('status', 'count'),
-        present_classes=('is_present', 'sum')
-    ).reset_index()
-    
-    report_df['attendance_percentage'] = (report_df['present_classes'] / report_df['total_classes']) * 100
-    report_df['attendance_percentage'] = report_df['attendance_percentage'].round(2)
+        try:
+            result = generate_attendance_report(request.user, start_date, end_date, download_format)
 
-    report_df.rename(columns={
-        'student__roll_no': 'Roll Number',
-        'class_batch__subject__name': 'Subject',
-        'total_classes': 'Total Classes',
-        'present_classes': 'Classes Attended',
-        'attendance_percentage': 'Attendance (%)'
-    }, inplace=True)
+            # If result is a FileResponse (CSV/Excel download)
+            if isinstance(result, FileResponse):
+                return result
 
-    buffer = io.BytesIO()
-    with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
-        report_df.to_excel(writer, index=False, sheet_name='Attendance Report')
-    
-    buffer.seek(0)
-    return FileResponse(buffer, as_attachment=True, filename='Attendance_Report.xlsx', content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+            # Otherwise, return JSON for Recharts
+            return Response(result)
+
+        except PermissionError as e:
+            return Response({"error": str(e)}, status=403)
+        except Exception as e:
+            return Response({"error": str(e)}, status=400)
+
+
+class FileUploadAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser]
+
+    def post(self, request):
+        if request.user.role not in ['Admin', 'Principal'] and not request.user.is_timetable_incharge:
+            return Response({"error": "Unauthorized"}, status=403)
+
+        upload_type = request.data.get('type')  # 'users' or 'timetable'
+        file_obj = request.FILES.get('file')
+
+        if not file_obj:
+            return Response({"error": "No file provided"}, status=400)
+
+        validator = FileExtensionValidator(allowed_extensions=['csv', 'xls', 'xlsx'])
+        try:
+            validator(file_obj)
+        except ValidationError:
+            return Response({"error": "Only .csv, .xls, and .xlsx files are allowed."}, status=400)
+
+        try:
+            if upload_type == 'users':
+                count = process_user_upload(file_obj)
+                return Response({"message": f"Successfully created {count} users."})
+            elif upload_type == 'timetable':
+                count = process_timetable_upload(file_obj)
+                return Response({"message": f"Successfully scheduled {count} classes."})
+            else:
+                return Response({"error": "Invalid upload type."}, status=400)
+        except Exception as e:
+            return Response({"error": str(e)}, status=400)
