@@ -44,6 +44,18 @@ class User(AbstractBaseUser, PermissionsMixin):
     is_first_login = models.BooleanField(default=True)
     is_archived = models.BooleanField(default=False)
     is_timetable_incharge = models.BooleanField(default=False)
+    is_hod = models.BooleanField(default=False)
+    is_mentor = models.BooleanField(default=False)
+
+    # This links a student to their specific mentor!
+    mentor = models.ForeignKey(
+        'self',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='mentees',
+        limit_choices_to={'is_mentor': True}
+    )
 
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
