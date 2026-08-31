@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import SubjectReports from '../../components/student/SubjectReports';
+import SubjectReports from './components/SubjectReports';
 
 const SubjectDetail = () => {
   const { subject_id } = useParams();

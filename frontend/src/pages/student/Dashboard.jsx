@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { getDepartmentFromId } from '../../utils/studentUtils';
+import ThemeToggle from '../../components/shared/ThemeToggle';
 
 const StudentDashboard = () => {
   const { user, logout } = useAuth();
@@ -139,10 +140,13 @@ const StudentDashboard = () => {
           <h1 className="text-2xl font-bold tracking-wider">
             Welcome {student?.name || user?.name || 'Student'} <span className="text-blue-400">| Attendance</span>
           </h1>
-          <div className="flex gap-4">
+          <div className="flex gap-4 items-center">
+            <ThemeToggle />
             <Link to="/student/dashboard" className="px-4 py-2 bg-blue-600/30 hover:bg-blue-600/50 rounded-xl backdrop-blur-md transition-colors border border-blue-500/30 text-blue-200 text-sm font-bold shadow-[0_0_15px_rgba(59,130,246,0.2)]">Subjects</Link>
             <Link to="/student/timetable" className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl backdrop-blur-md transition-colors border border-white/20 text-sm font-medium">Timetable</Link>
             <Link to="/student/notices" className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl backdrop-blur-md transition-colors border border-white/20 text-sm font-medium">Notices</Link>
+            <Link to="/student/leave" className="px-4 py-2 bg-amber-500/20 hover:bg-amber-500/30 rounded-xl backdrop-blur-md transition-colors border border-amber-500/30 text-amber-200 text-sm font-medium">Leave</Link>
+            <Link to="/student/messages" className="px-4 py-2 bg-violet-500/20 hover:bg-violet-500/30 rounded-xl backdrop-blur-md transition-colors border border-violet-500/30 text-violet-200 text-sm font-medium">Messages</Link>
             <button 
               onClick={handleLogout}
               className="px-4 py-2 bg-red-500/20 text-red-200 hover:bg-red-500/40 rounded-xl backdrop-blur-md transition-colors border border-red-500/30 text-sm font-medium"
