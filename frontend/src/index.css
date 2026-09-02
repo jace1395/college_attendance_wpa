@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+@layer base {
+  body {
+    @apply antialiased bg-slate-900 text-white;
+    transition: background-color 0.3s, filter 0.3s;
+  }
+}
+
+/* Global Light Mode Hack for Dark-First App */
+html.light {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+html.light img, 
+html.light video, 
+html.light [style*="background-image"] {
+  filter: invert(1) hue-rotate(180deg);
+}
