@@ -9,6 +9,12 @@ const UserManagement = () => {
   const [isDragOver, setIsDragOver] = useState(false);
   const [uploadStatus, setUploadStatus] = useState(null);
 
+  // Password Reset State
+  const [resetModalUser, setResetModalUser] = useState(null);
+  const [adminPassword, setAdminPassword] = useState('');
+  const [isResetting, setIsResetting] = useState(false);
+  const [resetError, setResetError] = useState('');
+
   // Empty state — will be populated from API
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -81,6 +87,35 @@ const UserManagement = () => {
     if (window.confirm(`Are you sure you want to deactivate user ${id}?`)) {
       setUsers(users.map(u => u.id === id ? { ...u, status: 'inactive' } : u));
       // TODO: PATCH /api/admin/users/{id}/deactivate/
+    }
+  };
+
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    setResetError('');
+    setIsResetting(true);
+
+    try {
+      // POST to /api/admin/users/{id}/reset-password/
+      const res = await fetch(`/api/admin/users/${resetModalUser.id}/reset-password/`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ admin_password: adminPassword })
+      });
+      
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}));
+        throw new Error(errData.detail || 'Invalid admin password or request failed');
+      }
+      
+      alert(`Password for ${resetModalUser.name} has been reset successfully!`);
+      setResetModalUser(null);
+    } catch (err) {
+      setResetError(err.message || 'Failed to reset password');
+    } finally {
+      setIsResetting(false);
     }
   };
 
@@ -239,6 +274,13 @@ const UserManagement = () => {
                         <button className="p-2 bg-blue-500/10 text-blue-400 rounded hover:bg-blue-500/20 transition-colors" title="Edit">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
                         </button>
+                        <button
+                          onClick={() => { setResetModalUser(user); setAdminPassword(''); setResetError(''); }}
+                          className="p-2 bg-yellow-500/10 text-yellow-400 rounded hover:bg-yellow-500/20 transition-colors"
+                          title="Reset Password"
+                        >
+                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+                        </button>
                         {user.role !== 'student' && (
                           <button
                             onClick={() => handleDelete(user.id)}
@@ -324,6 +366,59 @@ const UserManagement = () => {
                 Save User
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Reset Password Modal */}
+      {resetModalUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => !isResetting && setResetModalUser(null)}></div>
+
+          <div className="bg-slate-800 border border-slate-600 w-full max-w-md rounded-2xl shadow-2xl relative z-10 flex flex-col overflow-hidden animate-fade-in-up">
+            <div className="bg-slate-900 px-6 py-4 flex justify-between items-center border-b border-slate-700">
+              <h3 className="font-bold text-lg text-white">Reset Password</h3>
+              <button onClick={() => !isResetting && setResetModalUser(null)} className="text-slate-400 hover:text-white" disabled={isResetting}>
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleResetPassword}>
+              <div className="p-6 flex flex-col gap-4">
+                <p className="text-white/80 text-sm">
+                  Are you sure you want to reset <strong>{resetModalUser.name}</strong>'s password to the system default? Please enter your admin password to confirm.
+                </p>
+                {resetError && (
+                  <div className="p-3 bg-red-500/20 border border-red-500/50 rounded-xl text-red-200 text-sm text-center">
+                    {resetError}
+                  </div>
+                )}
+                <div>
+                  <label className="block text-sm text-white/60 mb-1 ml-1">Admin Password</label>
+                  <input 
+                    type="password" 
+                    required
+                    value={adminPassword}
+                    onChange={(e) => setAdminPassword(e.target.value)}
+                    className="w-full bg-slate-900/50 text-white rounded-xl px-4 py-2.5 outline-none border border-slate-600 focus:border-blue-500" 
+                    placeholder="Enter your admin password"
+                  />
+                </div>
+              </div>
+
+              <div className="bg-slate-900 px-6 py-4 flex justify-end gap-3 border-t border-slate-700">
+                <button type="button" onClick={() => setResetModalUser(null)} className="px-4 py-2 text-white/70 hover:text-white transition-colors" disabled={isResetting}>
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isResetting || !adminPassword}
+                  className="bg-red-600 hover:bg-red-500 text-white px-6 py-2 rounded-xl font-bold shadow-lg transition-transform transform hover:-translate-y-0.5 disabled:opacity-50"
+                >
+                  {isResetting ? 'Resetting...' : 'Confirm Reset'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}

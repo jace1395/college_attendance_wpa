@@ -3,11 +3,11 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 const Login = () => {
-  const [isLogin, setIsLogin] = useState(true);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
+  const [isForgotModalOpen, setIsForgotModalOpen] = useState(false);
 
   const navigate = useNavigate();
   const { login, isLoading } = useAuth();
@@ -71,10 +71,10 @@ const Login = () => {
         <div className="relative z-20">
           <div className="text-center mb-8">
             <h1 className="text-3xl font-bold text-white tracking-tight mb-2">
-              {isLogin ? 'Welcome Back' : 'Create Account'}
+              Welcome Back
             </h1>
             <p className="text-white/90 text-sm">
-              {isLogin ? 'Enter your credentials to access your dashboard' : 'Join the College Attendance System'}
+              Enter your credentials to access your dashboard
             </p>
           </div>
 
@@ -82,18 +82,6 @@ const Login = () => {
             {error && (
               <div className="p-3 bg-red-500/20 border border-red-500/50 rounded-xl text-red-200 text-sm text-center backdrop-blur-sm">
                 {error}
-              </div>
-            )}
-
-            {!isLogin && (
-              <div>
-                <label className="block text-sm font-medium text-white mb-1">Full Name</label>
-                <input
-                  type="text"
-                  required
-                  className="w-full px-4 py-3 rounded-xl bg-slate-700/50 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-slate-700/70 transition-all border-none"
-                  placeholder="John Doe"
-                />
               </div>
             )}
 
@@ -163,32 +151,57 @@ const Login = () => {
               </div>
             </div>
 
-            {isLogin && (
-              <div className="flex justify-end">
-                <a href="#" className="text-sm text-white/90 hover:text-white transition-colors">Forgot password?</a>
-              </div>
-            )}
+            <div className="flex justify-end">
+              <button 
+                type="button" 
+                onClick={() => setIsForgotModalOpen(true)}
+                className="text-sm text-white/90 hover:text-white transition-colors"
+              >
+                Forgot password?
+              </button>
+            </div>
 
             <button
               type="submit"
               disabled={isLoading}
               className="w-full py-3.5 px-4 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-xl shadow-lg transition-all transform hover:-translate-y-0.5 disabled:opacity-70 disabled:hover:translate-y-0"
             >
-              {isLoading ? 'Processing...' : (isLogin ? 'Sign In' : 'Sign Up')}
+              {isLoading ? 'Processing...' : 'Sign In'}
             </button>
           </form>
-
-          <div className="mt-8 text-center text-sm text-white/90">
-            {isLogin ? "Don't have an account? " : "Already have an account? "}
-            <button
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-white font-bold hover:underline transition-all"
-            >
-              {isLogin ? 'Sign Up' : 'Sign In'}
-            </button>
-          </div>
         </div>
       </div>
+
+      {/* Forgot Password Modal */}
+      {isForgotModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsForgotModalOpen(false)}></div>
+          
+          <div className="bg-slate-800 border border-slate-600 w-full max-w-sm rounded-2xl shadow-2xl relative z-10 flex flex-col overflow-hidden animate-fade-in-up">
+            <div className="bg-slate-900 px-6 py-4 flex justify-between items-center border-b border-slate-700">
+              <h3 className="font-bold text-lg text-white">Reset Password</h3>
+              <button onClick={() => setIsForgotModalOpen(false)} className="text-slate-400 hover:text-white">
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+              </button>
+            </div>
+            
+            <div className="p-6">
+              <p className="text-white/90 text-sm leading-relaxed">
+                Please contact your Department HOD or the System Administrator (<a href="mailto:admin@vvm.edu.in" className="text-blue-400 hover:underline">admin@vvm.edu.in</a>) to reset your password.
+              </p>
+            </div>
+            
+            <div className="bg-slate-900 px-6 py-4 flex justify-end border-t border-slate-700">
+              <button
+                onClick={() => setIsForgotModalOpen(false)}
+                className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-xl font-bold shadow-lg transition-transform transform hover:-translate-y-0.5"
+              >
+                Got it
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
