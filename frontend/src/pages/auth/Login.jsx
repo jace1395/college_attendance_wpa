@@ -1,4 +1,4 @@
-﻿import React, { useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
@@ -109,8 +109,6 @@ const Login = () => {
                       <p className="font-semibold mb-1">Format Guide:</p>
                       <ul className="space-y-1 text-slate-300">
                         <li><span className="text-blue-300">Principal:</span> principal</li>
-                        <li><span className="text-blue-300">Timetable:</span> timetable.name</li>
-                        <li><span class="text-blue-300">Timetable:</span> timetable.name</li>
                         <li><span className="text-blue-300">Admin:</span> admin</li>
                         <li><span className="text-blue-300">Teacher:</span> firstname.lastname</li>
                         <li><span className="text-blue-300">Student:</span> 0000000.name</li>

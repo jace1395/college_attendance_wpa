@@ -3,17 +3,103 @@
 @layer base {
   body {
     @apply antialiased bg-slate-900 text-white;
-    transition: background-color 0.3s, filter 0.3s;
+    transition: background-color 0.4s ease, color 0.4s ease;
   }
 }
 
-/* Global Light Mode Hack for Dark-First App */
-html.light {
-  filter: invert(1) hue-rotate(180deg);
+/* ============================================================
+   LIGHT MODE — Glassmorphic / Frosted Glass Aesthetic
+   The app is dark-first (Tailwind dark: prefix).
+   In light mode we: tint the background, make glass panels
+   use semi-transparent white, and ensure text remains legible.
+   ============================================================ */
+
+html.light body {
+  /* Warm off-white base — no invert hack */
+  background-color: #f0f4f8;
+  color: #0f172a;
 }
 
-html.light img, 
-html.light video, 
+/* Background image overlay — tint to light slate instead of dark slate */
+html.light .fixed.inset-0.bg-slate-900\/80,
+html.light .fixed.inset-0.bg-slate-900\/85,
+html.light .absolute.inset-0.bg-slate-900\/80 {
+  background-color: rgba(241, 245, 249, 0.70) !important; /* slate-100/70 */
+  backdrop-filter: blur(16px);
+}
+
+/* Glass card surfaces */
+html.light .bg-white\/5  { background-color: rgba(255, 255, 255, 0.50) !important; }
+html.light .bg-white\/10 { background-color: rgba(255, 255, 255, 0.65) !important; }
+html.light .bg-white\/20 { background-color: rgba(255, 255, 255, 0.75) !important; }
+
+/* Dark panel override — nav bars, sidebars, modals */
+html.light .bg-slate-900,
+html.light .bg-slate-900\/50,
+html.light .bg-slate-900\/60,
+html.light .bg-slate-900\/80,
+html.light .bg-slate-900\/95 {
+  background-color: rgba(255, 255, 255, 0.75) !important;
+  backdrop-filter: blur(20px);
+}
+html.light .bg-slate-800,
+html.light .bg-slate-800\/70 {
+  background-color: rgba(255, 255, 255, 0.65) !important;
+}
+
+/* Border colors */
+html.light .border-white\/10 { border-color: rgba(100, 116, 139, 0.20) !important; }
+html.light .border-white\/20 { border-color: rgba(100, 116, 139, 0.30) !important; }
+
+/* Text — ensure dark text on light background */
+html.light .text-white        { color: #0f172a !important; }
+html.light .text-white\/90    { color: #1e293b !important; }
+html.light .text-white\/80    { color: #334155 !important; }
+html.light .text-white\/70    { color: #475569 !important; }
+html.light .text-white\/60    { color: #64748b !important; }
+html.light .text-white\/50    { color: #94a3b8 !important; }
+html.light .text-white\/40    { color: #94a3b8 !important; }
+html.light .text-white\/30    { color: #cbd5e1 !important; }
+
+/* Input fields */
+html.light input,
+html.light select,
+html.light textarea {
+  background-color: rgba(241, 245, 249, 0.80) !important;
+  color: #0f172a !important;
+  border-color: rgba(100, 116, 139, 0.30) !important;
+}
+html.light input::placeholder,
+html.light textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+/* Preserve images and video — don't invert them */
+html.light img,
+html.light video {
+  filter: none !important;
+}
+
+/* Background images (hero/login backgrounds) — use lighter overlay rather than inverting */
 html.light [style*="background-image"] {
-  filter: invert(1) hue-rotate(180deg);
+  filter: none !important;
+}
+
+/* Tables in light mode */
+html.light .bg-slate-900\/50.border-b {
+  background-color: rgba(241, 245, 249, 0.80) !important;
+}
+
+/* Subtle shadow enhancement for glass cards in light mode */
+html.light .shadow-xl   { box-shadow: 0 10px 40px rgba(15, 23, 42, 0.10) !important; }
+html.light .shadow-2xl  { box-shadow: 0 20px 60px rgba(15, 23, 42, 0.12) !important; }
+
+/* Animations */
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in-up {
+  animation: fade-in-up 0.35s ease-out both;
 }

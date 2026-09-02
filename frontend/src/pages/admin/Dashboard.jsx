@@ -14,6 +14,9 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [academicYear, setAcademicYear] = useState('2026-2027');
+
+  const ACADEMIC_YEARS = ['2024-2025', '2025-2026', '2026-2027', '2027-2028'];
 
   const handleLogout = () => {
     logout();
@@ -56,7 +59,7 @@ const AdminDashboard = () => {
   }, [user]);
 
   const handleManualBackup = () => {
-      alert("Triggering manual database backup to Google Cloud Storage...");
+      alert(`Triggering backup for Academic Year ${academicYear} to Google Cloud Storage...`);
   };
 
   if (loading && !dashboardData) {
@@ -92,7 +95,14 @@ const AdminDashboard = () => {
               </div>
           </div>
           
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3 flex-wrap">
+              <select
+                value={academicYear}
+                onChange={(e) => setAcademicYear(e.target.value)}
+                className="bg-slate-800/70 text-white/80 text-sm rounded-xl px-3 py-2 border border-white/10 focus:border-blue-500 outline-none cursor-pointer"
+              >
+                {ACADEMIC_YEARS.map(yr => <option key={yr} value={yr}>{yr}</option>)}
+              </select>
               <button 
                 onClick={handleManualBackup}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-500 rounded-xl transition-colors text-sm font-bold shadow-lg shadow-blue-500/20 flex items-center gap-2"
@@ -121,7 +131,7 @@ const AdminDashboard = () => {
                             activeTab === tab ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'text-white/60 hover:text-white hover:bg-white/5'
                         }`}
                     >
-                        {tab === 'data-entry' ? 'Data Entry' : tab === 'student-reports' ? 'Student Reports' : tab}
+                         {tab === 'data-entry' ? 'Manage Data' : tab === 'student-reports' ? 'Student Reports' : tab}
                     </button>
                 ))}
             </div>

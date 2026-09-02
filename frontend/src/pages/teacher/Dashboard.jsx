@@ -4,6 +4,9 @@ import { useNavigate, Link } from 'react-router-dom';
 import MonitoringTab from './MonitoringTab';
 import TeacherNoticeBoard from './TeacherNoticeBoard';
 import TeacherReports from './TeacherReports';
+import HODDashboard from './HODDashboard';
+import MentorDashboard from './MentorDashboard';
+import TimetablePanel from './TimetablePanel';
 import ThemeToggle from '../../components/shared/ThemeToggle';
 
 const TeacherDashboard = () => {
@@ -48,8 +51,11 @@ const TeacherDashboard = () => {
                 department: "BCA",
                 available_semesters: ["Semester 1", "Semester 3", "Semester 5"],
                 current_semester: "Semester 3",
-                isHOD: true,
-                isMentor: true
+                // Role flags — set from API in production.
+                // Only tabs where the flag is true will be visible.
+                isHOD: false,
+                isMentor: false,
+                isTimetableIncharge: false,
             },
             assigned_classes: [],
             monitoring_duties: []
@@ -117,18 +123,35 @@ const TeacherDashboard = () => {
             </div>
           </div>
 
+          {/* Dynamic tabs based on teacher role flags */}
           <div className="flex flex-wrap justify-center gap-2 bg-slate-900/50 p-1.5 rounded-2xl border border-white/10 shadow-sm">
-            {['dashboard', 'monitoring', 'notices', 'reports'].map(tab => (
+            {[
+              { key: 'dashboard',   label: 'Dashboard',  always: true },
+              { key: 'monitoring',  label: 'Monitoring', always: true },
+              { key: 'notices',     label: 'Notices',    always: true },
+              { key: 'reports',     label: 'Reports',    always: true },
+              { key: 'mentor',      label: '★ Mentor',   show: teacher?.isMentor || user?.is_mentor },
+              { key: 'hod',         label: '★ HOD',      show: teacher?.isHOD || user?.is_hod },
+              { key: 'timetable',   label: '★ Timetable',show: teacher?.isTimetableIncharge || user?.is_timetable_incharge },
+            ]
+              .filter(tab => tab.always || tab.show)
+              .map(tab => (
                 <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`px-6 py-2.5 rounded-xl text-sm font-bold capitalize transition-all ${
-                        activeTab === tab ? 'bg-blue-600 text-white shadow-lg' : 'text-white/60 hover:text-white hover:bg-white/5'
-                    }`}
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`px-5 py-2.5 rounded-xl text-sm font-bold capitalize transition-all ${
+                    activeTab === tab.key
+                      ? tab.key === 'hod'       ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20'
+                        : tab.key === 'mentor'  ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20'
+                        : tab.key === 'timetable' ? 'bg-amber-600 text-white shadow-lg shadow-amber-500/20'
+                        : 'bg-blue-600 text-white shadow-lg'
+                      : 'text-white/60 hover:text-white hover:bg-white/5'
+                  }`}
                 >
-                    {tab}
+                  {tab.label}
                 </button>
-            ))}
+              ))
+            }
           </div>
         </div>
         )}
@@ -188,8 +211,11 @@ const TeacherDashboard = () => {
             )}
 
             {activeTab === 'monitoring' && <MonitoringTab duties={monitoring_duties} />}
-            {activeTab === 'notices' && <TeacherNoticeBoard />}
-            {activeTab === 'reports' && <TeacherReports classes={assigned_classes} />}
+            {activeTab === 'notices'    && <TeacherNoticeBoard />}
+            {activeTab === 'reports'    && <TeacherReports classes={assigned_classes} />}
+            {activeTab === 'hod'        && <HODDashboard onBack={() => setActiveTab('dashboard')} />}
+            {activeTab === 'mentor'     && <MentorDashboard onBack={() => setActiveTab('dashboard')} />}
+            {activeTab === 'timetable'  && <TimetablePanel onBack={() => setActiveTab('dashboard')} />}
         </div>
 
         {/* Quick Stats Modal */}

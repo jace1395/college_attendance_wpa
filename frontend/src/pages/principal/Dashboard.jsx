@@ -64,22 +64,6 @@ const PrincipalDashboard = () => {
     fetchDashboard();
   }, [user]);
 
-  const handleApproveUnlock = (requestId) => {
-      // Mock API call to unlock
-      alert(`Request ${requestId} approved! The teacher's grid for this date has been unlocked.`);
-      setDashboardData(prev => ({
-          ...prev,
-          pending_approvals: prev.pending_approvals.filter(r => r.request_id !== requestId)
-      }));
-  };
-
-  const handleDenyUnlock = (requestId) => {
-      alert(`Request ${requestId} denied.`);
-      setDashboardData(prev => ({
-          ...prev,
-          pending_approvals: prev.pending_approvals.filter(r => r.request_id !== requestId)
-      }));
-  };
 
   if (loading && !dashboardData) {
     return (
@@ -89,7 +73,7 @@ const PrincipalDashboard = () => {
     );
   }
 
-  const { principal, college_stats_today, streams_available, pending_approvals } = dashboardData || {};
+  const { principal, college_stats_today, streams_available } = dashboardData || {};
 
   return (
     <div 
@@ -183,54 +167,14 @@ const PrincipalDashboard = () => {
                         </div>
                     </div>
 
-                    {/* Action Center - Pending Approvals */}
-                    <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl">
-                        <div className="flex items-center gap-3 mb-6 pb-4 border-b border-white/10">
-                            <div className="p-2 bg-yellow-500/20 rounded-lg text-yellow-400">
-                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
-                            </div>
-                            <h3 className="text-xl font-bold text-yellow-100">Action Center: Unlock Requests</h3>
+                    {/* Info Banner */}
+                    <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl flex items-center gap-4">
+                        <div className="p-3 bg-blue-500/20 rounded-xl text-blue-400 shrink-0">
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                         </div>
-
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                            {pending_approvals?.map(req => (
-                                <div key={req.request_id} className="bg-slate-900/60 p-5 rounded-2xl border border-white/10 flex flex-col justify-between">
-                                    <div>
-                                        <div className="flex justify-between items-start mb-2">
-                                            <h4 className="font-bold text-lg">{req.teacher_name}</h4>
-                                            <span className="text-xs font-mono bg-white/10 px-2 py-1 rounded text-white/60">{req.request_id}</span>
-                                        </div>
-                                        <p className="text-sm text-white/70 mb-1">
-                                            <span className="font-semibold text-white/90">Class:</span> {req.class_name} • {req.subject}
-                                        </p>
-                                        <p className="text-sm text-white/70 mb-1">
-                                            <span className="font-semibold text-white/90">Date to Unlock:</span> {req.date_to_unlock}
-                                        </p>
-                                        <p className="text-sm text-yellow-200/70 italic mt-3 bg-yellow-500/10 p-3 rounded-lg border border-yellow-500/20">
-                                            "{req.reason}"
-                                        </p>
-                                    </div>
-                                    <div className="flex gap-3 mt-6">
-                                        <button 
-                                            onClick={() => handleApproveUnlock(req.request_id)}
-                                            className="flex-1 bg-green-600 hover:bg-green-500 text-white py-2 rounded-xl font-bold shadow-lg transition-transform transform hover:-translate-y-1"
-                                        >
-                                            Approve
-                                        </button>
-                                        <button 
-                                            onClick={() => handleDenyUnlock(req.request_id)}
-                                            className="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-2 rounded-xl font-bold transition-colors border border-white/10"
-                                        >
-                                            Deny
-                                        </button>
-                                    </div>
-                                </div>
-                            ))}
-                            {(!pending_approvals || pending_approvals.length === 0) && (
-                                <div className="col-span-1 lg:col-span-2 text-center py-10 text-white/50">
-                                    No pending unlock requests at this time.
-                                </div>
-                            )}
+                        <div>
+                            <p className="font-semibold text-white/90">Attendance Unlock Requests</p>
+                            <p className="text-sm text-white/50 mt-0.5">Unlock requests from teachers are now managed in the <span className="text-blue-300 font-medium">Admin Console → System Overrides</span>.</p>
                         </div>
                     </div>
 

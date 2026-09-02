@@ -101,9 +101,8 @@ const StudentDashboard = () => {
           <div className="flex gap-4">
             <Link to="/student/dashboard" className="px-4 py-2 bg-blue-600/30 hover:bg-blue-600/50 rounded-xl backdrop-blur-md transition-colors border border-blue-500/30 text-blue-200 text-sm font-bold shadow-[0_0_15px_rgba(59,130,246,0.2)]">Subjects</Link>
             <Link to="/student/timetable" className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl backdrop-blur-md transition-colors border border-white/20 text-sm font-medium">Timetable</Link>
-            <Link to="/student/notices" className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl backdrop-blur-md transition-colors border border-white/20 text-sm font-medium">Notices</Link>
+            <Link to="/student/notices" className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl backdrop-blur-md transition-colors border border-white/20 text-sm font-medium">Notifications</Link>
             <Link to="/student/leave" className="px-4 py-2 bg-amber-500/20 hover:bg-amber-500/30 rounded-xl backdrop-blur-md transition-colors border border-amber-500/30 text-amber-200 text-sm font-medium">Leave</Link>
-            <Link to="/student/messages" className="px-4 py-2 bg-violet-500/20 hover:bg-violet-500/30 rounded-xl backdrop-blur-md transition-colors border border-violet-500/30 text-violet-200 text-sm font-medium">Messages</Link>
             <ThemeToggle />
             <button 
               onClick={handleLogout}

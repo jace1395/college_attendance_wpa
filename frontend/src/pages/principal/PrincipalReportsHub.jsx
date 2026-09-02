@@ -35,84 +35,11 @@ const PROGRAMME_COLORS = {
   "BBA(FS)": { tab: "from-rose-600 to-pink-600",       pill: "bg-rose-500/20 border-rose-500/40 text-rose-300",      accent: "#f43f5e" },
 };
 
-const STUDENTS_BY_PROGRAMME = {
-  BCom: [
-    { roll: "BC001", name: "Aarav Sharma",    year: "FY", total: 80, attended: 75, absent: 5  },
-    { roll: "BC002", name: "Priya Naik",      year: "SY", total: 80, attended: 65, absent: 15 },
-    { roll: "BC003", name: "Rohit Dessai",    year: "FY", total: 80, attended: 79, absent: 1  },
-    { roll: "BC004", name: "Sneha Vernekar",  year: "TY", total: 80, attended: 56, absent: 24 },
-    { roll: "BC005", name: "Kiran Kamat",     year: "SY", total: 80, attended: 80, absent: 0  },
-    { roll: "BC006", name: "Megha Shirodkar", year: "TY", total: 80, attended: 60, absent: 20 },
-    { roll: "BC007", name: "Suraj Gawas",     year: "FY", total: 80, attended: 72, absent: 8  },
-    { roll: "BC008", name: "Tanvi Lotlikar",  year: "SY", total: 80, attended: 38, absent: 42 },
-    { roll: "BC009", name: "Akash Parsekar",  year: "TY", total: 80, attended: 77, absent: 3  },
-    { roll: "BC010", name: "Pallavi Amonkar", year: "FY", total: 80, attended: 68, absent: 12 },
-  ],
-  BCA: [
-    { roll: "CA001", name: "Nikhil Parab",    year: "FY", total: 80, attended: 78, absent: 2  },
-    { roll: "CA002", name: "Riya Shenvi",     year: "SY", total: 80, attended: 70, absent: 10 },
-    { roll: "CA003", name: "Dev Malvankar",   year: "TY", total: 80, attended: 80, absent: 0  },
-    { roll: "CA004", name: "Pooja Nayak",     year: "FY", total: 80, attended: 50, absent: 30 },
-    { roll: "CA005", name: "Arnav Chari",     year: "SY", total: 80, attended: 76, absent: 4  },
-    { roll: "CA006", name: "Manasi Kholkar",  year: "TY", total: 80, attended: 62, absent: 18 },
-    { roll: "CA007", name: "Tushar Bhandari", year: "FY", total: 80, attended: 80, absent: 0  },
-    { roll: "CA008", name: "Aditi Gaonkar",   year: "SY", total: 80, attended: 40, absent: 40 },
-  ],
-  BVoc: [
-    { roll: "BV001", name: "Vikram Sinai",     year: "FY", total: 80, attended: 74, absent: 6  },
-    { roll: "BV002", name: "Anjali Fernandes", year: "SY", total: 80, attended: 60, absent: 20 },
-    { roll: "BV003", name: "Sagar Naik",       year: "TY", total: 80, attended: 78, absent: 2  },
-    { roll: "BV004", name: "Deepika Fal",      year: "FY", total: 80, attended: 55, absent: 25 },
-    { roll: "BV005", name: "Harish Raikar",    year: "SY", total: 80, attended: 80, absent: 0  },
-    { roll: "BV006", name: "Smita Sawant",     year: "TY", total: 80, attended: 66, absent: 14 },
-  ],
-  BBA: [
-    { roll: "BA001", name: "Rahul Gawade",    year: "FY", total: 80, attended: 73, absent: 7  },
-    { roll: "BA002", name: "Neha Borkar",     year: "SY", total: 80, attended: 69, absent: 11 },
-    { roll: "BA003", name: "Arjun Naik",      year: "TY", total: 80, attended: 79, absent: 1  },
-    { roll: "BA004", name: "Shruti Dessai",   year: "FY", total: 80, attended: 52, absent: 28 },
-    { roll: "BA005", name: "Vivek Parsekar",  year: "SY", total: 80, attended: 80, absent: 0  },
-    { roll: "BA006", name: "Kavya Shirodkar", year: "TY", total: 80, attended: 58, absent: 22 },
-    { roll: "BA007", name: "Omkar Tari",      year: "FY", total: 80, attended: 77, absent: 3  },
-    { roll: "BA008", name: "Leena Bhosle",    year: "SY", total: 80, attended: 45, absent: 35 },
-    { roll: "BA009", name: "Pratik Velip",    year: "TY", total: 80, attended: 76, absent: 4  },
-  ],
-  "BBA(FS)": [
-    { roll: "FS001", name: "Gaurav Hegde",   year: "FY", total: 80, attended: 71, absent: 9  },
-    { roll: "FS002", name: "Roshni Kamat",   year: "SY", total: 80, attended: 68, absent: 12 },
-    { roll: "FS003", name: "Nitin Lotlikar", year: "TY", total: 80, attended: 77, absent: 3  },
-    { roll: "FS004", name: "Sanika Fal",     year: "FY", total: 80, attended: 54, absent: 26 },
-    { roll: "FS005", name: "Yash Amonkar",   year: "SY", total: 80, attended: 80, absent: 0  },
-  ],
-};
+// Student data is loaded from API — empty state ready for Axios integration
+const STUDENTS_BY_PROGRAMME = {};
 
-const CLASS_DATA_BY_PROGRAMME = {
-  BCom: [
-    { id: 1, class: "FY BCom", subject: "Accountancy",    total: 60, present: 54, absent: 6  },
-    { id: 2, class: "SY BCom", subject: "Economics",       total: 58, present: 46, absent: 12 },
-    { id: 3, class: "TY BCom", subject: "Business Law",    total: 55, present: 48, absent: 7  },
-  ],
-  BCA: [
-    { id: 4, class: "FY BCA",  subject: "Mathematics",     total: 52, present: 50, absent: 2  },
-    { id: 5, class: "SY BCA",  subject: "Data Structures", total: 50, present: 40, absent: 10 },
-    { id: 6, class: "TY BCA",  subject: "Cloud Computing", total: 48, present: 45, absent: 3  },
-  ],
-  BVoc: [
-    { id: 7, class: "FY BVoc", subject: "Web Development",    total: 45, present: 40, absent: 5  },
-    { id: 8, class: "SY BVoc", subject: "Software Eng.",      total: 45, present: 33, absent: 12 },
-    { id: 9, class: "TY BVoc", subject: "Project Management", total: 42, present: 39, absent: 3  },
-  ],
-  BBA: [
-    { id: 10, class: "FY BBA", subject: "Marketing",     total: 45, present: 20, absent: 25 },
-    { id: 11, class: "SY BBA", subject: "Finance",       total: 44, present: 38, absent: 6  },
-    { id: 12, class: "TY BBA", subject: "HR Management", total: 43, present: 41, absent: 2  },
-  ],
-  "BBA(FS)": [
-    { id: 13, class: "FY BBA(FS)", subject: "Financial Mkt.", total: 30, present: 27, absent: 3 },
-    { id: 14, class: "SY BBA(FS)", subject: "Banking",         total: 28, present: 20, absent: 8 },
-    { id: 15, class: "TY BBA(FS)", subject: "Insurance",       total: 27, present: 24, absent: 3 },
-  ],
-};
+// Class data is loaded from API — empty state ready for Axios integration
+const CLASS_DATA_BY_PROGRAMME = {};
 
 const ChevronDown = () => (
   <svg className="w-4 h-4 text-white/30 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -143,6 +70,8 @@ const PrincipalReportsHub = ({ streams, onNavigateToView }) => {
   const [year, setYear]               = useState("");
   const [semester, setSemester]       = useState("");
   const [dateRange, setDateRange]     = useState("monthly");
+  const [customStart, setCustomStart] = useState("");
+  const [customEnd, setCustomEnd]     = useState("");
   const [isExporting, setIsExporting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -296,9 +225,19 @@ const PrincipalReportsHub = ({ streams, onNavigateToView }) => {
                 <option value="weekly">Weekly</option>
                 <option value="monthly">Monthly</option>
                 <option value="semester">Full Semester</option>
+                <option value="custom">Custom Range</option>
               </select>
               <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none"><ChevronDown /></div>
             </div>
+            {dateRange === 'custom' && (
+              <div className="flex gap-2 mt-1">
+                <input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)}
+                  className="flex-1 bg-slate-900/80 text-white/80 text-xs rounded-lg px-3 py-2 border border-white/10 focus:border-blue-500 outline-none" />
+                <span className="text-white/30 self-center text-xs">→</span>
+                <input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)}
+                  className="flex-1 bg-slate-900/80 text-white/80 text-xs rounded-lg px-3 py-2 border border-white/10 focus:border-blue-500 outline-none" />
+              </div>
+            )}
           </div>
         </div>
       </div>
