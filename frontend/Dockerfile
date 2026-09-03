@@ -1,20 +1,29 @@
-# Use the rock-solid Node.js 22 LTS base image
-FROM node:22-alpine
+# Stage 1: Build the React + Vite application
+FROM node:22-alpine AS builder
 
-# Set the working directory inside the container
+# Set working directory
 WORKDIR /app
 
-# Copy package management files to cache dependencies
+# Copy package configuration files
 COPY package*.json ./
 
-# Install frontend dependencies
-RUN npm install
+# Install dependencies cleanly
+RUN npm ci
 
-# Copy the rest of your React frontend source code
+# Copy the rest of the application code
 COPY . .
 
-# Expose the standard React development server port
-EXPOSE 3000
+# Build the Vite application (outputs to dist/ by default)
+RUN npm run build
 
-# Automatically start the React development environment
-CMD ["npm", "start"]
+# Stage 2: Serve the static files using Nginx
+FROM nginx:alpine
+
+# Copy the built assets from Stage 1 into the Nginx static serving directory
+COPY --from=builder /app/dist /usr/share/nginx/html
+
+# Expose port 80 for Nginx
+EXPOSE 80
+
+# Start Nginx daemon
+CMD ["nginx", "-g", "daemon off;"]

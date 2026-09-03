@@ -89,20 +89,16 @@ const StudentDashboard = () => {
       className="min-h-screen bg-cover bg-fixed text-white"
       style={{ backgroundImage: 'url("/imgs/login-signup.jpg")' }}
     >
-      <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md fixed pointer-events-none"></div>
+      <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md pointer-events-none"></div>
 
       <div className="relative z-10 p-6 md:p-10 max-w-7xl mx-auto min-h-screen flex flex-col">
         
-        {/* Navigation / Header */}
-        <div className="flex justify-between items-center mb-10">
+        {/* Header */}
+        <div className="flex flex-wrap justify-between items-center mb-8 gap-4">
           <h1 className="text-2xl font-bold tracking-wider">
-            Welcome {student?.name || user?.name || 'Student'} <span className="text-blue-400">| Attendance</span>
+            SDCCE | <span className="text-blue-400">ATTENDANCE</span>
           </h1>
-          <div className="flex gap-4">
-            <Link to="/student/dashboard" className="px-4 py-2 bg-blue-600/30 hover:bg-blue-600/50 rounded-xl backdrop-blur-md transition-colors border border-blue-500/30 text-blue-200 text-sm font-bold shadow-[0_0_15px_rgba(59,130,246,0.2)]">Subjects</Link>
-            <Link to="/student/timetable" className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl backdrop-blur-md transition-colors border border-white/20 text-sm font-medium">Timetable</Link>
-            <Link to="/student/notices" className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl backdrop-blur-md transition-colors border border-white/20 text-sm font-medium">Notifications</Link>
-            <Link to="/student/leave" className="px-4 py-2 bg-amber-500/20 hover:bg-amber-500/30 rounded-xl backdrop-blur-md transition-colors border border-amber-500/30 text-amber-200 text-sm font-medium">Leave</Link>
+          <div className="flex items-center gap-4">
             <ThemeToggle />
             <button 
               onClick={handleLogout}
@@ -122,60 +118,69 @@ const StudentDashboard = () => {
              </div>
         )}
 
-        {/* Profile Header Card - Glassmorphism */}
+        {/* Profile Card & Navigation Tabs */}
         {student && (
-        <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl p-8 mb-10 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-8">
-          <div>
-            <h2 className="text-3xl md:text-4xl font-bold mb-2">{student.name}</h2>
-            <p className="text-white/70 text-lg mb-1">Roll No: <span className="text-white font-medium">{student.student_id}</span></p>
-            <div className="flex items-center gap-2 text-white/70">
-                <span>{student.program} | Semester</span>
-                <select 
-                    value={selectedSemester}
-                    onChange={handleSemesterChange}
-                    className="bg-slate-800 text-white text-sm rounded-lg px-2 py-1 outline-none border border-white/20 focus:border-blue-500 cursor-pointer"
-                >
-                    {student.available_semesters.map(sem => (
-                        <option key={sem} value={sem}>{sem}</option>
-                    ))}
-                </select>
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-6">
-            <div className="text-right">
-              <p className="text-sm text-white/70 mb-1">Overall Attendance</p>
-              <p className="text-2xl font-bold">{student.overall_attendance}%</p>
-            </div>
-            {/* Circular Progress */}
-            <div className="relative w-24 h-24">
-              <svg className="w-24 h-24 transform -rotate-90">
-                <circle
-                  className="text-white/10"
-                  strokeWidth="8"
-                  stroke="currentColor"
-                  fill="transparent"
-                  r={radius}
-                  cx="48"
-                  cy="48"
-                />
-                <circle
-                  className="transition-all duration-1000 ease-in-out"
-                  strokeWidth="8"
-                  strokeDasharray={circumference}
-                  strokeDashoffset={strokeDashoffset}
-                  strokeLinecap="round"
-                  stroke={getProgressStrokeColor(student.overall_attendance)}
-                  fill="transparent"
-                  r={radius}
-                  cx="48"
-                  cy="48"
-                />
-              </svg>
-              <div className="absolute inset-0 flex items-center justify-center text-sm font-bold">
-                {student.overall_attendance}%
+        <div className="bg-white/10 backdrop-blur-md border border-white/20 rounded-3xl p-6 md:p-8 mb-8 shadow-2xl flex flex-col items-center gap-8">
+          <div className="flex flex-col md:flex-row w-full items-center justify-between gap-6">
+            <div className="text-center md:text-left">
+              <h2 className="text-3xl font-bold mb-1">{student.name}</h2>
+              <p className="text-white/70 text-lg mb-2">{student.program || departmentName} | Roll No: <span className="text-white font-medium">{student.student_id}</span></p>
+              <div className="flex items-center justify-center md:justify-start gap-2 text-white/70">
+                  <span>Semester</span>
+                  <select 
+                      value={selectedSemester}
+                      onChange={handleSemesterChange}
+                      className="bg-slate-800 text-white text-sm rounded-lg px-2 py-1 outline-none border border-white/20 focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                  >
+                      {student.available_semesters.map(sem => (
+                          <option key={sem} value={sem}>{sem}</option>
+                      ))}
+                  </select>
               </div>
             </div>
+            
+            <div className="flex items-center gap-4 bg-slate-900/40 p-4 rounded-2xl border border-white/10">
+              <div className="text-right">
+                <p className="text-sm text-white/70 mb-1">Overall Attendance</p>
+                <p className="text-2xl font-bold">{student.overall_attendance}%</p>
+              </div>
+              {/* Circular Progress */}
+              <div className="relative w-20 h-20 md:w-24 md:h-24">
+                <svg className="w-20 h-20 md:w-24 md:h-24 transform -rotate-90">
+                  <circle
+                    className="text-white/10"
+                    strokeWidth="8"
+                    stroke="currentColor"
+                    fill="transparent"
+                    r={radius}
+                    cx="50%"
+                    cy="50%"
+                  />
+                  <circle
+                    className="transition-all duration-1000 ease-in-out"
+                    strokeWidth="8"
+                    strokeDasharray={circumference}
+                    strokeDashoffset={strokeDashoffset}
+                    strokeLinecap="round"
+                    stroke={getProgressStrokeColor(student.overall_attendance)}
+                    fill="transparent"
+                    r={radius}
+                    cx="50%"
+                    cy="50%"
+                  />
+                </svg>
+                <div className="absolute inset-0 flex items-center justify-center text-sm font-bold">
+                  {student.overall_attendance}%
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="flex flex-wrap justify-center gap-2 bg-slate-900/50 p-1.5 rounded-2xl border border-white/10 shadow-sm w-full md:w-auto">
+            <Link to="/student/dashboard" className="px-5 py-2.5 bg-blue-600 text-white shadow-lg rounded-xl text-sm font-bold capitalize transition-all">Dashboard</Link>
+            <Link to="/student/timetable" className="px-5 py-2.5 text-white/60 hover:text-white hover:bg-white/5 rounded-xl text-sm font-bold capitalize transition-all">Timetable</Link>
+            <Link to="/student/notices" className="px-5 py-2.5 text-white/60 hover:text-white hover:bg-white/5 rounded-xl text-sm font-bold capitalize transition-all">Notices</Link>
+            <Link to="/student/leave" className="px-5 py-2.5 text-white/60 hover:text-white hover:bg-white/5 rounded-xl text-sm font-bold capitalize transition-all">Leave</Link>
           </div>
         </div>
         )}

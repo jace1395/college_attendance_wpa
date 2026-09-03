@@ -155,7 +155,7 @@ const AttendanceGrid = () => {
       className="min-h-screen bg-cover bg-fixed text-white pb-10"
       style={{ backgroundImage: 'url("/imgs/login-signup.jpg")' }}
     >
-      <div className="absolute inset-0 bg-slate-900/90 backdrop-blur-md fixed pointer-events-none"></div>
+      <div className="absolute inset-0 bg-slate-900/90 backdrop-blur-md pointer-events-none"></div>
 
       <div className="relative z-10 p-4 md:p-8 w-full max-w-[100vw] overflow-x-hidden mx-auto min-h-screen flex flex-col">
         

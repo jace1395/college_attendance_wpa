@@ -83,14 +83,14 @@ const TeacherDashboard = () => {
       className="min-h-screen bg-cover bg-fixed text-white pb-10"
       style={{ backgroundImage: 'url("/imgs/login-signup.jpg")' }}
     >
-      <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md fixed pointer-events-none"></div>
+      <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md pointer-events-none"></div>
 
       <div className="relative z-10 p-4 md:p-8 max-w-7xl mx-auto min-h-screen flex flex-col">
         
         {/* Header */}
         <div className="flex flex-wrap justify-between items-center mb-8 gap-4">
           <h1 className="text-2xl font-bold tracking-wider">
-            VVM <span className="text-blue-400">ATTENDANCE</span>
+            SDCCE | <span className="text-blue-400">ATTENDANCE</span>
           </h1>
           <div className="flex items-center gap-4">
             <ThemeToggle />
@@ -114,7 +114,7 @@ const TeacherDashboard = () => {
                 <select 
                     value={selectedSemester}
                     onChange={(e) => setSelectedSemester(e.target.value)}
-                    className="bg-slate-800 text-white text-sm rounded-lg px-2 py-1 outline-none border border-white/20 focus:border-blue-500 cursor-pointer"
+                    className="bg-slate-800 text-white text-sm rounded-lg px-2 py-1 outline-none border border-white/20 focus:ring-1 focus:ring-blue-500 cursor-pointer"
                 >
                     {teacher.available_semesters.map(sem => (
                         <option key={sem} value={sem}>{sem}</option>
@@ -158,7 +158,7 @@ const TeacherDashboard = () => {
 
         {/* Smart Open Logic Banner */}
         {smartAlert && activeTab === 'dashboard' && (
-            <div className="bg-gradient-to-r from-blue-600/90 to-indigo-600/90 backdrop-blur-xl border border-blue-400/50 rounded-2xl p-6 mb-8 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-4 animate-fade-in-up">
+            <div className="bg-linear-to-r from-blue-600/90 to-indigo-600/90 backdrop-blur-xl border border-blue-400/50 rounded-2xl p-6 mb-8 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-4 animate-fade-in-up">
                 <div className="flex items-center gap-4">
                     <div className="bg-white/20 p-3 rounded-full">
                         <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
