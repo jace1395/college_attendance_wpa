@@ -9,22 +9,26 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 WORKDIR /app
 
 # Install system dependencies
+# build-essential is needed by some C-extension packages (e.g. pandas).
+# libpq-dev is NOT required because we use psycopg2-binary (self-contained).
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
-    libpq-dev \
     && rm -rf /var/lib/apt/lists/*
 
 # Install python dependencies
+# Everything (gunicorn, psycopg2-binary, etc.) is declared in requirements.txt.
 COPY requirements.txt .
 RUN pip install --upgrade pip && \
-    pip install -r requirements.txt && \
-    pip install gunicorn psycopg2
+    pip install --no-cache-dir -r requirements.txt
 
 # Copy project
 COPY . .
 
 # Expose port
 EXPOSE 8000
+
+# Collect static files (needed if WhiteNoise / admin is in use)
+# RUN python manage.py collectstatic --noinput
 
 # Run gunicorn
 CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "3", "attendance_wpa.wsgi:application"]

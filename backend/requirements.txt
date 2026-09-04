@@ -1,1 +1,28 @@
-django 
+# ── Core Django ────────────────────────────────────────────────────────────────
+Django==5.2.4
+asgiref==3.9.1
+sqlparse==0.5.3
+
+# ── Django REST Framework ───────────────────────────────────────────────────────
+djangorestframework==3.15.2
+
+# ── JWT Authentication ──────────────────────────────────────────────────────────
+djangorestframework-simplejwt==5.4.0
+PyJWT==2.10.1
+
+# ── CORS (React ↔ Django communication) ────────────────────────────────────────
+django-cors-headers==4.7.0
+
+# ── PostgreSQL driver (binary — no system libpq needed in Docker) ───────────────
+psycopg2-binary==2.9.10
+
+# ── Environment variables ───────────────────────────────────────────────────────
+python-dotenv==1.1.1
+
+# ── Data processing & Excel export ─────────────────────────────────────────────
+pandas==2.3.2
+openpyxl==3.1.5
+numpy==2.3.2
+
+# ── Production WSGI server ──────────────────────────────────────────────────────
+gunicorn==23.0.0
