@@ -1,169 +1,193 @@
 /**
- * Mock API Service for AMS
- * These functions simulate asynchronous API calls to the Django backend.
+ * API Service — wired to the live Django REST Framework backend.
+ * All functions use the centralized apiClient (Axios instance) which
+ * automatically handles auth tokens and silent token refresh.
  */
 
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+import apiClient from './apiClient';
 
-// ==========================================
+// ============================================================
 // STUDENT
-// ==========================================
+// ============================================================
+
+/**
+ * Fetches the full student dashboard payload.
+ * Includes attendance summary, subject trend data, etc.
+ */
+export const getStudentDashboard = async () => {
+  const { data } = await apiClient.get('/api/student/dashboard/');
+  return data;
+};
+
+// Convenience wrappers — extract the relevant slice from the dashboard
+// so existing component call-sites require minimal changes.
+
 export const getMyAttendanceSummary = async () => {
-  await delay(500);
-  return { percentage: 78.5 };
+  const data = await getStudentDashboard();
+  return data.attendance_summary ?? data;
 };
 
 export const getMySubjectTrend = async (subjectId) => {
-  await delay(500);
-  return [
-    { label: 'Week 1', value: 80 },
-    { label: 'Week 2', value: 75 },
-    { label: 'Week 3', value: 78 },
-  ];
+  const { data } = await apiClient.get('/api/student/dashboard/', {
+    params: { subject_id: subjectId },
+  });
+  return data.subject_trend ?? data;
 };
 
-// ==========================================
+// ============================================================
 // TEACHER
-// ==========================================
+// ============================================================
+
+/**
+ * Fetches the full teacher dashboard payload.
+ * Includes subjects overview, session grids, monitoring reports, etc.
+ */
+export const getTeacherDashboard = async () => {
+  const { data } = await apiClient.get('/api/teacher/dashboard/');
+  return data;
+};
+
 export const getMySubjectsOverview = async () => {
-  await delay(500);
-  return [
-    { label: 'DSA', value: 82 },
-    { label: 'DBMS', value: 74 }
-  ];
+  const data = await getTeacherDashboard();
+  return data.subjects_overview ?? data;
 };
 
 export const getSubjectAttendanceGrid = async (subjectId) => {
-  await delay(500);
-  return [
-    { session: 'Lecture 1', present: 45, absent: 5, od: 2, late: 3 },
-    { session: 'Lecture 2', present: 42, absent: 8, od: 1, late: 4 }
-  ];
-};
-
-export const submitLiveHeadcount = async (subjectId, count) => {
-  await delay(500);
-  return { success: true };
+  const { data } = await apiClient.get('/api/teacher/dashboard/', {
+    params: { subject_id: subjectId },
+  });
+  return data.attendance_grid ?? data;
 };
 
 export const getMonitoringReport = async (subjectId) => {
-  await delay(500);
-  return [
-    { label: 'Mon', value: 50 },
-    { label: 'Tue', value: 48 },
-    { label: 'Wed', value: 45 }
-  ];
+  const { data } = await apiClient.get('/api/teacher/dashboard/', {
+    params: { subject_id: subjectId },
+  });
+  return data.monitoring_report ?? data;
 };
 
-// ==========================================
+// ============================================================
+// ATTENDANCE
+// ============================================================
+
+/**
+ * Marks attendance for a session.
+ * @param {Object} payload — e.g. { subject_id, date, records: [{student_id, status}] }
+ */
+export const markAttendance = async (payload) => {
+  const { data } = await apiClient.post('/api/attendance/mark/', payload);
+  return data;
+};
+
+// Alias kept for backward-compat with any code calling submitLiveHeadcount
+export const submitLiveHeadcount = async (subjectId, count) =>
+  markAttendance({ subject_id: subjectId, headcount: count });
+
+// ============================================================
 // HOD
-// ==========================================
+// ============================================================
+
 export const getDepartmentOverview = async (departmentId) => {
-  await delay(500);
-  return { percentage: 81.2 };
+  const { data } = await apiClient.get('/api/teacher/dashboard/', {
+    params: { department_id: departmentId },
+  });
+  return data.department_overview ?? data;
 };
 
 export const getStreamComparison = async (departmentId) => {
-  await delay(500);
-  return [
-    { label: 'FY BCA', value: 85 },
-    { label: 'SY BCA', value: 78 },
-    { label: 'TY BCA', value: 82 }
-  ];
+  const { data } = await apiClient.get('/api/teacher/dashboard/', {
+    params: { department_id: departmentId },
+  });
+  return data.stream_comparison ?? data;
 };
 
 export const getDefaulterMatrix = async (departmentId) => {
-  await delay(500);
-  return {
-    streams: ['BCA', 'BCOM', 'BVOC'],
-    years: ['FY', 'SY', 'TY'],
-    data: [
-      [12, 5, 8],
-      [15, 6, 9],
-      [10, 4, 7]
-    ]
-  };
+  const { data } = await apiClient.get('/api/teacher/dashboard/', {
+    params: { department_id: departmentId },
+  });
+  return data.defaulter_matrix ?? data;
 };
 
 export const getFacultyCompletionTrend = async (departmentId) => {
-  await delay(500);
-  return [
-    { label: 'Week 1', value: 90 },
-    { label: 'Week 2', value: 88 },
-    { label: 'Week 3', value: 92 }
-  ];
+  const { data } = await apiClient.get('/api/teacher/dashboard/', {
+    params: { department_id: departmentId },
+  });
+  return data.faculty_completion_trend ?? data;
 };
 
-// ==========================================
+// ============================================================
 // MENTOR
-// ==========================================
+// ============================================================
+
 export const getMenteeAttendanceRanking = async (mentorId) => {
-  await delay(500);
-  return [
-    { name: 'Alice', value: 65 },
-    { name: 'Bob', value: 72 },
-    { name: 'Charlie', value: 88 }
-  ];
+  const { data } = await apiClient.get('/api/teacher/dashboard/', {
+    params: { mentor_id: mentorId },
+  });
+  return data.mentee_ranking ?? data;
 };
 
-// ==========================================
+// ============================================================
 // PRINCIPAL
-// ==========================================
+// ============================================================
+
+/**
+ * Fetches the full principal dashboard payload.
+ */
+export const getPrincipalDashboard = async () => {
+  const { data } = await apiClient.get('/api/principal/dashboard/');
+  return data;
+};
+
 export const getInstituteOverview = async () => {
-  await delay(500);
-  return { percentage: 79.4 };
+  const data = await getPrincipalDashboard();
+  return data.institute_overview ?? data;
 };
 
 export const getDepartmentComparison = async () => {
-  await delay(500);
-  return [
-    { label: 'Computer Science', value: 84 },
-    { label: 'Commerce', value: 76 },
-    { label: 'Arts', value: 81 }
-  ];
+  const data = await getPrincipalDashboard();
+  return data.department_comparison ?? data;
 };
 
 export const getInstituteTrend = async () => {
-  await delay(500);
-  return [
-    { label: 'Aug', value: 82 },
-    { label: 'Sep', value: 80 },
-    { label: 'Oct', value: 78 },
-    { label: 'Nov', value: 81 }
-  ];
+  const data = await getPrincipalDashboard();
+  return data.institute_trend ?? data;
 };
 
 export const getStreamDetail = async (year, stream) => {
-  await delay(500);
-  return [
-    { label: 'Div A', value: 85 },
-    { label: 'Div B', value: 80 }
-  ];
+  const { data } = await apiClient.get('/api/principal/dashboard/', {
+    params: { year, stream },
+  });
+  return data.stream_detail ?? data;
 };
 
-// ==========================================
+// ============================================================
 // ADMIN
-// ==========================================
+// ============================================================
+
+/**
+ * Fetches the full admin dashboard payload.
+ */
+export const getAdminDashboard = async () => {
+  const { data } = await apiClient.get('/api/admin/dashboard/');
+  return data;
+};
+
 export const getAccountCountsByRole = async () => {
-  await delay(500);
-  return [
-    { label: 'Students', value: 1200 },
-    { label: 'Teachers', value: 85 },
-    { label: 'HODs', value: 5 },
-    { label: 'Mentors', value: 20 },
-    { label: 'Admins', value: 3 }
-  ];
+  const data = await getAdminDashboard();
+  return data.account_counts ?? data;
 };
 
 export const getUsersByFilter = async (role, stream, year) => {
-  await delay(500);
-  return [
-    { id: 1, name: 'User 1' },
-    { id: 2, name: 'User 2' }
-  ];
+  const { data } = await apiClient.get('/api/admin/dashboard/', {
+    params: { role, stream, year },
+  });
+  return data.users ?? data;
 };
 
 export const archiveStudentBatch = async (batchId) => {
-  await delay(500);
-  return { success: true };
+  const { data } = await apiClient.post('/api/admin/dashboard/', {
+    action: 'archive_batch',
+    batch_id: batchId,
+  });
+  return data;
 };
