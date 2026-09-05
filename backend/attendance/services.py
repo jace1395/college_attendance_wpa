@@ -32,18 +32,29 @@ def generate_attendance_report(user, start_date, end_date, download_format=None)
     report_df['attendance_percentage'] = (report_df['present_classes'] / report_df['total_classes']) * 100
     report_df['attendance_percentage'] = report_df['attendance_percentage'].round(2)
 
-    # 4. Return JSON for Frontend Charts (Recharts)
+    # 4a. Rename to consistent snake_case keys for ALL return paths.
+    #     Recharts components must use these exact dataKey strings.
+    report_df.rename(columns={
+        'student__roll_no':               'roll_number',
+        'student__name':                  'name',
+        'class_batch__subject__name':     'subject',
+        'total_classes':                  'total_classes',
+        'present_classes':                'classes_attended',
+        'attendance_percentage':          'attendance_percentage',
+    }, inplace=True)
+
+    # 4b. Return JSON for Frontend Charts (Recharts)
     if not download_format:
         return report_df.to_dict(orient='records')
 
-    # 5. Return FileResponse for Downloads
+    # 5. Return FileResponse for Downloads — apply human-readable display names
     report_df.rename(columns={
-        'student__roll_no': 'Roll Number',
-        'student__name': 'Name',
-        'class_batch__subject__name': 'Subject',
-        'total_classes': 'Total Classes',
-        'present_classes': 'Classes Attended',
-        'attendance_percentage': 'Attendance (%)'
+        'roll_number':           'Roll Number',
+        'name':                  'Name',
+        'subject':               'Subject',
+        'total_classes':         'Total Classes',
+        'classes_attended':      'Classes Attended',
+        'attendance_percentage': 'Attendance (%)',
     }, inplace=True)
 
     if download_format == 'excel':
@@ -59,6 +70,7 @@ def generate_attendance_report(user, start_date, end_date, download_format=None)
         report_df.to_csv(buffer, index=False)
         buffer.seek(0)
         return FileResponse(buffer, as_attachment=True, filename='Attendance_Report.csv', content_type='text/csv')
+
 
 
 def process_timetable_upload(file_obj):

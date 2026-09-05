@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-d
 import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import RouteGuard from "./components/RouteGuard";
+import OfflineBanner from "./components/shared/OfflineBanner";
 
 // Auth
 import Login from "./pages/auth/Login";
@@ -35,6 +36,7 @@ function App() {
     <ThemeProvider>
       <AuthProvider>
         <Router>
+          <OfflineBanner />
           <Routes>
             {/* Public */}
             <Route path="/login" element={<Login />} />

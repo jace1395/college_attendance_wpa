@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
+import apiClient from '../../services/apiClient';
 
 const YEARS   = ['FY', 'SY', 'TY'];
 const STREAMS = ['BVoc', 'BCA', 'BBA', 'BCom', 'BBA(FS)'];
@@ -28,13 +29,11 @@ const UserManagement = () => {
     const fetchUsers = async () => {
       setLoading(true);
       try {
-        const params = new URLSearchParams();
-        params.set('role', activeSubTab === 'students' ? 'student' : activeSubTab === 'teachers' ? 'teacher' : 'admin');
-        if (yearFilter   !== 'All') params.set('year',   yearFilter);
-        if (streamFilter !== 'All') params.set('stream', streamFilter);
-        const res = await fetch(`/api/admin/users/?${params}`);
-        if (!res.ok) throw new Error();
-        const data = await res.json();
+        const params = {};
+        params.role = activeSubTab === 'students' ? 'student' : activeSubTab === 'teachers' ? 'teacher' : 'admin';
+        if (yearFilter   !== 'All') params.year   = yearFilter;
+        if (streamFilter !== 'All') params.stream = streamFilter;
+        const { data } = await apiClient.get('/api/admin/users/', { params });
         setUsers(data.users || []);
       } catch {
         setUsers([]);
@@ -74,19 +73,32 @@ const UserManagement = () => {
     }
   };
 
-  const simulateCsvUpload = (file) => {
+  const simulateCsvUpload = async (file) => {
     setUploadStatus({ type: 'loading', msg: `Uploading ${file.name}...` });
-    // POST to /api/admin/users/bulk/
-    setTimeout(() => {
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('type', 'users');
+      await apiClient.post('/api/attendance/upload/', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
       setUploadStatus({ type: 'success', msg: 'CSV Processed! Users added successfully.' });
+    } catch (err) {
+      const msg = err.response?.data?.error || 'Upload failed. Please check the file format.';
+      setUploadStatus({ type: 'error', msg });
+    } finally {
       setTimeout(() => setUploadStatus(null), 4000);
-    }, 2000);
+    }
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     if (window.confirm(`Are you sure you want to deactivate user ${id}?`)) {
-      setUsers(users.map(u => u.id === id ? { ...u, status: 'inactive' } : u));
-      // TODO: PATCH /api/admin/users/{id}/deactivate/
+      try {
+        await apiClient.patch(`/api/admin/users/${id}/deactivate/`);
+        setUsers(users.map(u => u.id === id ? { ...u, status: 'inactive' } : u));
+      } catch (err) {
+        alert(err.response?.data?.error || 'Failed to deactivate user.');
+      }
     }
   };
 
@@ -94,26 +106,15 @@ const UserManagement = () => {
     e.preventDefault();
     setResetError('');
     setIsResetting(true);
-
     try {
-      // POST to /api/admin/users/{id}/reset-password/
-      const res = await fetch(`/api/admin/users/${resetModalUser.id}/reset-password/`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ admin_password: adminPassword })
+      await apiClient.post(`/api/admin/users/${resetModalUser.id}/reset-password/`, {
+        admin_password: adminPassword,
       });
-      
-      if (!res.ok) {
-        const errData = await res.json().catch(() => ({}));
-        throw new Error(errData.detail || 'Invalid admin password or request failed');
-      }
-      
       alert(`Password for ${resetModalUser.name} has been reset successfully!`);
       setResetModalUser(null);
     } catch (err) {
-      setResetError(err.message || 'Failed to reset password');
+      const msg = err.response?.data?.detail || 'Invalid admin password or request failed';
+      setResetError(msg);
     } finally {
       setIsResetting(false);
     }

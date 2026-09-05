@@ -2,6 +2,8 @@ from django.shortcuts import render
 
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
+from rest_framework.permissions import AllowAny
+from users.throttles import LoginRateThrottle
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
@@ -21,3 +23,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
+    # Explicitly open to anonymous requests (login endpoint)
+    permission_classes = [AllowAny]
+    # 5 attempts per minute per IP — brute-force protection
+    throttle_classes = [LoginRateThrottle]

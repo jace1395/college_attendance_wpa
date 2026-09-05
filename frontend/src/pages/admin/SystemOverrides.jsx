@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import apiClient from '../../services/apiClient';
 
 const SystemOverrides = () => {
   const [teacherEmail, setTeacherEmail] = useState('');
@@ -21,9 +22,7 @@ const SystemOverrides = () => {
     const fetchRequests = async () => {
       setLoadingRequests(true);
       try {
-        const res = await fetch('/api/admin/unlock-requests/');
-        if (!res.ok) throw new Error();
-        const data = await res.json();
+        const { data } = await apiClient.get('/api/admin/unlock-requests/');
         setUnlockRequests(data.requests || []);
       } catch {
         setUnlockRequests([]);
@@ -45,9 +44,9 @@ const SystemOverrides = () => {
       setIsLoadingSubjects(true);
       setSelectedSubject('');
       try {
-        const res = await fetch(`/api/admin/teacher-subjects/?email=${encodeURIComponent(teacherEmail)}`);
-        if (!res.ok) throw new Error();
-        const data = await res.json();
+        const { data } = await apiClient.get('/api/admin/teacher-subjects/', {
+          params: { email: teacherEmail },
+        });
         setTeacherSubjects(data.subjects || []);
       } catch {
         setTeacherSubjects([]);
@@ -58,52 +57,73 @@ const SystemOverrides = () => {
     return () => clearTimeout(timer);
   }, [teacherEmail]);
 
-  const handleForceUnlock = () => {
+  const handleForceUnlock = async () => {
     if (!teacherEmail || !selectedSubject) {
       alert('Please provide both Teacher Email and select a Subject/Class.');
       return;
     }
     setIsUnlocking(true);
-    setTimeout(() => {
-      setIsUnlocking(false);
-      alert(`SUCCESS: Master unlock applied for ${teacherEmail}'s class "${selectedSubject}". 24-hour lock bypassed.`);
+    try {
+      await apiClient.post('/api/admin/force-unlock/', {
+        teacher_email: teacherEmail,
+        subject_id: selectedSubject,
+      });
+      alert(`SUCCESS: Master unlock applied for ${teacherEmail}'s class. 24-hour lock bypassed.`);
       setTeacherEmail('');
       setSelectedSubject('');
       setTeacherSubjects([]);
-    }, 1000);
-  };
-
-  const handleBulkUnlock = () => {
-    const confirm = window.confirm("WARNING: This will unlock ALL grids for ALL teachers globally. Proceed?");
-    if (confirm) {
-      setIsBulkUnlocking(true);
-      setTimeout(() => {
-        setIsBulkUnlocking(false);
-        alert('SUCCESS: All grids unlocked successfully.');
-      }, 1500);
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to unlock. Please try again.');
+    } finally {
+      setIsUnlocking(false);
     }
   };
 
-  const handleInitSemester = () => {
-    const confirm = window.confirm("WARNING: This will archive all current attendance data and initialize a new semester. This action is irreversible. Proceed?");
-    if (confirm) {
-      setIsArchiving(true);
-      setTimeout(() => {
-        setIsArchiving(false);
-        alert(`New Semester Initialized. Range: ${semStart} to ${semEnd}. Past data securely compressed and archived.`);
-      }, 2000);
+  const handleBulkUnlock = async () => {
+    if (!window.confirm('WARNING: This will unlock ALL grids for ALL teachers globally. Proceed?')) return;
+    setIsBulkUnlocking(true);
+    try {
+      await apiClient.post('/api/admin/bulk-unlock/');
+      alert('SUCCESS: All grids unlocked successfully.');
+    } catch (err) {
+      alert(err.response?.data?.error || 'Bulk unlock failed.');
+    } finally {
+      setIsBulkUnlocking(false);
     }
   };
 
-  const handleApproveRequest = (requestId) => {
-    setUnlockRequests(prev => prev.filter(r => r.id !== requestId));
-    alert(`Request #${requestId} approved. The teacher's grid has been unlocked.`);
-    // TODO: POST /api/admin/unlock-requests/{requestId}/approve/
+  const handleInitSemester = async () => {
+    if (!window.confirm('WARNING: This will archive all current attendance data and initialize a new semester. This action is irreversible. Proceed?')) return;
+    setIsArchiving(true);
+    try {
+      await apiClient.post('/api/admin/init-semester/', {
+        start_date: semStart,
+        end_date: semEnd,
+      });
+      alert(`New Semester Initialized. Range: ${semStart} to ${semEnd}. Past data securely compressed and archived.`);
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to initialize semester.');
+    } finally {
+      setIsArchiving(false);
+    }
   };
 
-  const handleDenyRequest = (requestId) => {
-    setUnlockRequests(prev => prev.filter(r => r.id !== requestId));
-    // TODO: POST /api/admin/unlock-requests/{requestId}/deny/
+  const handleApproveRequest = async (requestId) => {
+    try {
+      await apiClient.post(`/api/admin/unlock-requests/${requestId}/approve/`);
+      setUnlockRequests(prev => prev.filter(r => r.id !== requestId));
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to approve request.');
+    }
+  };
+
+  const handleDenyRequest = async (requestId) => {
+    try {
+      await apiClient.post(`/api/admin/unlock-requests/${requestId}/deny/`);
+      setUnlockRequests(prev => prev.filter(r => r.id !== requestId));
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to deny request.');
+    }
   };
 
   return (

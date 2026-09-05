@@ -8,6 +8,7 @@ import HODDashboard from './HODDashboard';
 import MentorDashboard from './MentorDashboard';
 import TimetablePanel from './TimetablePanel';
 import ThemeToggle from '../../components/shared/ThemeToggle';
+import apiClient from '../../services/apiClient';
 
 const TeacherDashboard = () => {
   const { user, logout } = useAuth();
@@ -32,36 +33,20 @@ const TeacherDashboard = () => {
     const fetchDashboard = async () => {
       setLoading(true);
       try {
-        const semParam = selectedSemester ? `&semester=${selectedSemester}` : '';
-        const response = await fetch(`/api/teacher/dashboard/?email=${user.email}${semParam}`);
-        if (!response.ok) throw new Error('API not available');
-        const data = await response.json();
+        // SECURITY FIX: Identity is derived from the JWT token on the backend.
+        // Never pass ?email= in the URL — it enables IDOR attacks.
+        const params = {};
+        if (selectedSemester) params.semester = selectedSemester;
+        const { data } = await apiClient.get('/api/teacher/dashboard/', { params });
         setDashboardData(data);
         if (!selectedSemester && data.teacher?.current_semester) {
-            setSelectedSemester(data.teacher.current_semester.toString());
+          setSelectedSemester(data.teacher.current_semester.toString());
         }
       } catch (err) {
-        // Provide empty mock data to prevent crashing and remove dummy data
-        setTimeout(() => {
-          setDashboardData({
-            teacher: {
-                id: 1,
-                name: user?.name || "Teacher",
-                email: user?.email || "teacher@vvm.edu.in",
-                department: "BCA",
-                available_semesters: ["Semester 1", "Semester 3", "Semester 5"],
-                current_semester: "Semester 3",
-                // Role flags — set from API in production.
-                // Only tabs where the flag is true will be visible.
-                isHOD: false,
-                isMentor: false,
-                isTimetableIncharge: false,
-            },
-            assigned_classes: [],
-            monitoring_duties: []
-          });
-          setLoading(false);
-        }, 600);
+        // On API failure, render empty state — do NOT hardcode personal data
+        setDashboardData({ teacher: null, assigned_classes: [], monitoring_duties: [] });
+      } finally {
+        setLoading(false);
       }
     };
 

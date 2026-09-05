@@ -32,7 +32,7 @@ const Login = () => {
     const fullEmail = `${username}${getSuffix()}`;
 
     try {
-      const role = await login(fullEmail);
+      const role = await login(fullEmail, password);
 
       // Navigate based on assigned role
       switch (role) {

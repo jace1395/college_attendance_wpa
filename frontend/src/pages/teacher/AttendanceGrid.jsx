@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import ThemeToggle from '../../components/shared/ThemeToggle';
+import { getSubjectAttendanceGrid, markAttendance } from '../../services/api';
+import { saveAttendanceLocally } from '../../utils/indexedDB';
 
 const AttendanceGrid = () => {
   const { class_id } = useParams();
@@ -9,6 +11,8 @@ const AttendanceGrid = () => {
   const [attendance, setAttendance] = useState({}); // shape: { "student_id_date": "status" }
   const [lockedDates, setLockedDates] = useState({}); // shape: { "date": boolean }
   const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [saveMessage, setSaveMessage] = useState(null); // { type: 'success'|'error'|'offline', text }
   const [selectedMode, setSelectedMode] = useState('P'); // Active legend mode
   const [viewFilter, setViewFilter] = useState('Present'); // 'Past', 'Present', 'Future'
   const scrollContainerRef = useRef(null);
@@ -45,26 +49,34 @@ const AttendanceGrid = () => {
   useEffect(() => {
     const fetchData = async () => {
       setLoading(true);
-      setTimeout(() => {
-        // Mock roster
-        const mockRoster = [];
-        
+      try {
+        const data = await getSubjectAttendanceGrid(class_id);
         const dts = generateDates();
         setDates(dts);
-        setRoster(mockRoster);
+        setRoster(data.roster || []);
 
-        // Populate initial mock attendance state
-        // By default, cells are unmarked (no entry) so they show off-white
+        // Build initial attendance state from API data
         const initialAtt = {};
         const locks = {};
-        dts.forEach(d => {
-            locks[d.dateStr] = d.isLocked;
+        dts.forEach(d => { locks[d.dateStr] = d.isLocked; });
+        (data.attendance_records || []).forEach(rec => {
+          initialAtt[`${rec.student_id}_${rec.date}`] = rec.status;
         });
 
         setAttendance(initialAtt);
         setLockedDates(locks);
+      } catch (err) {
+        console.error('[AttendanceGrid] Failed to fetch grid data:', err);
+        // Render date skeleton with empty roster on error
+        const dts = generateDates();
+        setDates(dts);
+        setRoster([]);
+        const locks = {};
+        dts.forEach(d => { locks[d.dateStr] = d.isLocked; });
+        setLockedDates(locks);
+      } finally {
         setLoading(false);
-      }, 600);
+      }
     };
 
     fetchData();
@@ -80,6 +92,42 @@ const AttendanceGrid = () => {
       container.scrollTo({ left: Math.max(0, scrollLeft), behavior: 'smooth' });
     }
   }, [loading]);
+
+  // Save today's attendance — falls back to IndexedDB when offline
+  const handleSaveAttendance = async () => {
+    if (roster.length === 0) {
+      alert('No students in roster to save.');
+      return;
+    }
+    setIsSaving(true);
+    setSaveMessage(null);
+
+    const records = roster.map(student => ({
+      student_id: student.student_id,
+      status: attendance[`${student.student_id}_${todayStr}`] || 'Absent',
+    }));
+    const payload = { subject_id: class_id, date: todayStr, records };
+
+    if (!navigator.onLine) {
+      await saveAttendanceLocally(payload);
+      setSaveMessage({ type: 'offline', text: 'Offline: Attendance saved locally. Will auto-sync when reconnected.' });
+      setIsSaving(false);
+      return;
+    }
+
+    try {
+      await markAttendance(payload);
+      setSaveMessage({ type: 'success', text: "Today's attendance saved successfully!" });
+    } catch (err) {
+      // Network failed mid-flight — persist locally as fallback
+      await saveAttendanceLocally(payload);
+      setSaveMessage({ type: 'offline', text: 'Save failed. Stored locally and will sync automatically.' });
+      console.error('[AttendanceGrid] Save failed, stored offline:', err);
+    } finally {
+      setIsSaving(false);
+      setTimeout(() => setSaveMessage(null), 5000);
+    }
+  };
 
   const handleStatusClick = (studentId, dateStr, isSunday) => {
     if (isSunday || lockedDates[dateStr]) return;
@@ -165,10 +213,39 @@ const AttendanceGrid = () => {
               <div className="flex items-center gap-4 mb-4">
                 <Link to="/teacher/dashboard" className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl transition-colors border border-white/20 text-sm font-medium">Dashboard</Link>
                 <ThemeToggle />
+                {/* Save Attendance Button */}
+                <button
+                  onClick={handleSaveAttendance}
+                  disabled={isSaving || roster.length === 0}
+                  className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded-xl transition-all text-sm font-bold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                >
+                  {isSaving ? (
+                    <>
+                      <svg className="w-4 h-4 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" /></svg>
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" /></svg>
+                      Save Attendance
+                    </>
+                  )}
+                </button>
               </div>
+              {/* Save feedback banner */}
+              {saveMessage && (
+                <div className={`mb-3 px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 animate-fade-in-up ${
+                  saveMessage.type === 'success' ? 'bg-green-500/20 border border-green-500/40 text-green-300' :
+                  saveMessage.type === 'offline' ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300' :
+                  'bg-red-500/20 border border-red-500/40 text-red-300'
+                }`}>
+                  {saveMessage.text}
+                </div>
+              )}
                 <h1 className="text-3xl font-bold mb-1">Attendance Register</h1>
                 <p className="text-xl text-white/70">Class ID: {class_id}</p>
             </div>
+
             
             {/* View Filter */}
             <div className="flex bg-slate-900/50 p-1 rounded-xl border border-white/10 mb-4 md:mb-0">
@@ -215,7 +292,7 @@ const AttendanceGrid = () => {
                 <table className="w-full text-left border-collapse whitespace-nowrap min-w-max">
                     <thead className="sticky top-0 bg-slate-800 z-20 shadow-md">
                         <tr>
-                            <th className="p-2 md:p-4 font-semibold text-white/90 border-r border-white/10 sticky left-0 bg-slate-800 z-30 min-w-[120px] md:min-w-[200px]">
+                            <th className="p-2 md:p-4 font-semibold text-white/90 border-r border-white/10 sticky left-0 bg-slate-800 z-30 min-w-30 md:min-w-50">
                                 Student Details
                             </th>
                             {filteredDates.map((d, idx) => {
@@ -271,7 +348,7 @@ const AttendanceGrid = () => {
                                         >
                                             <div className="flex justify-center items-center h-full">
                                                 {d.isSunday ? (
-                                                    <span className="text-slate-600 text-[9px] md:text-xs uppercase font-bold tracking-widest rotate-[-90deg]">Holiday</span>
+                                                    <span className="text-slate-600 text-[9px] md:text-xs uppercase font-bold tracking-widest -rotate-90">Holiday</span>
                                                 ) : (
                                                     <div className={`w-7 h-7 md:w-10 md:h-10 text-xs md:text-sm flex items-center justify-center rounded-lg border font-bold shadow-inner select-none transition-all ${getStatusColor(status, d.isSunday)} ${lockedDates[d.dateStr] ? 'opacity-50 cursor-not-allowed' : ''}`}>
                                                         {status || '·'}

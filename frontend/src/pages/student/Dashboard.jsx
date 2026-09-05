@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import { getDepartmentFromId } from '../../utils/studentUtils';
 import ThemeToggle from '../../components/shared/ThemeToggle';
+import apiClient from '../../services/apiClient';
 
 const StudentDashboard = () => {
   const { user, logout } = useAuth();
@@ -22,30 +23,20 @@ const StudentDashboard = () => {
     const fetchDashboard = async () => {
       setLoading(true);
       try {
-        const semParam = selectedSemester ? `&semester=${selectedSemester}` : '';
-        const response = await fetch(`/api/student/dashboard/?email=${user.email}${semParam}`);
-        if (!response.ok) throw new Error('API not available');
-        const data = await response.json();
+        // SECURITY FIX: Identity is derived from the JWT token on the backend.
+        // Never pass ?email= in the URL — it enables IDOR attacks.
+        const params = {};
+        if (selectedSemester) params.semester = selectedSemester;
+        const { data } = await apiClient.get('/api/student/dashboard/', { params });
         setDashboardData(data);
         if (!selectedSemester && data.student?.current_semester) {
-            setSelectedSemester(data.student.current_semester.toString());
+          setSelectedSemester(data.student.current_semester.toString());
         }
       } catch (err) {
-        // Fallback to empty state mock
-        setTimeout(() => {
-          setDashboardData({
-            student: {
-              student_id: user?.email?.split('@')[0] || "2201049",
-              name: user?.name || "Student",
-              email: user?.email || "student@vvm.edu.in",
-              overall_attendance: 0,
-              available_semesters: ["Semester 1", "Semester 3"],
-              current_semester: "Semester 3"
-            },
-            subjects: []
-          });
-          setLoading(false);
-        }, 600);
+        // On API failure, render empty state — do NOT hardcode personal data
+        setDashboardData({ student: null, subjects: [] });
+      } finally {
+        setLoading(false);
       }
     };
 
