@@ -27,9 +27,8 @@ services:
     restart: unless-stopped
     ports:
       - "8000:8000"
-    environment:
-      - DEBUG=False
-      - DATABASE_URL=postgres://postgres_user:my_secure_password123@db:5432/attendance_db
+    env_file:
+      - ./backend/.env # <--- THIS IS THE FIX! It now uses your Neon DB.
     depends_on:
       db:
         condition: service_healthy
