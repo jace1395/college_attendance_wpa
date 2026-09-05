@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import ThemeToggle from "../../components/shared/ThemeToggle";
+import apiClient from "../../services/apiClient";
 
 const RECIPIENTS = [
   { id: "mentor",  label: "Class Mentor",  icon: "M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" },
@@ -46,22 +47,42 @@ const LeaveRequest = () => {
     return e;
   };
 
-  const handleSubmit = (e) => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length > 0) { setErrors(errs); return; }
-    const newRequest = {
-      id: "LR" + String(history.length + 100 + 1).padStart(3, "0"),
-      type: leaveType,
-      from: fromDate,
-      to: toDate,
-      status: "Pending",
-      recipient: RECIPIENTS.find(r => r.id === recipient)?.label || recipient,
-    };
-    setHistory(prev => [newRequest, ...prev]);
-    setSubmitted(true);
-    setLeaveType(""); setFromDate(""); setToDate(""); setRecipient(""); setReason(""); setErrors({});
-    setTimeout(() => setSubmitted(false), 4000);
+
+    setIsSubmitting(true);
+    try {
+      const payload = {
+        leave_type: leaveType,
+        from_date: fromDate,
+        to_date: toDate,
+        reason: reason
+      };
+      
+      const response = await apiClient.post("/api/student/leave/", payload);
+
+      const newRequest = {
+        id: response.data?.id || "LR" + String(history.length + 100 + 1).padStart(3, "0"),
+        type: leaveType,
+        from: fromDate,
+        to: toDate,
+        status: "Pending",
+        recipient: RECIPIENTS.find(r => r.id === recipient)?.label || recipient,
+      };
+      setHistory(prev => [newRequest, ...prev]);
+      setSubmitted(true);
+      setLeaveType(""); setFromDate(""); setToDate(""); setRecipient(""); setReason(""); setErrors({});
+      setTimeout(() => setSubmitted(false), 4000);
+    } catch (error) {
+      console.error("Failed to submit leave request:", error);
+      alert(error.response?.data?.error || "Failed to submit leave request.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const inp = "w-full bg-slate-900/70 text-white rounded-xl px-4 py-2.5 border border-white/10 focus:border-blue-500/70 outline-none text-sm transition-colors";
@@ -166,10 +187,13 @@ const LeaveRequest = () => {
           </div>
 
           <div className="flex justify-end mt-6">
-            <button type="submit"
-              className="px-8 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl shadow-lg shadow-blue-500/20 transition-all text-sm">
-              Submit Application
-            </button>
+                <button 
+                  type="submit" 
+                  disabled={isSubmitting}
+                  className="px-6 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition-all text-sm font-bold shadow-lg shadow-blue-500/20 disabled:opacity-50"
+                >
+                  {isSubmitting ? "Submitting..." : "Submit Application"}
+                </button>
           </div>
         </form>
 

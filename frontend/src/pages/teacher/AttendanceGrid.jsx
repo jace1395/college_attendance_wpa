@@ -106,7 +106,7 @@ const AttendanceGrid = () => {
       student_id: student.student_id,
       status: attendance[`${student.student_id}_${todayStr}`] || 'Absent',
     }));
-    const payload = { subject_id: class_id, date: todayStr, records };
+    const payload = { class_id: class_id, date: todayStr, time_slot: 'Regular', records };
 
     if (!navigator.onLine) {
       await saveAttendanceLocally(payload);
