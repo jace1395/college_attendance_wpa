@@ -35,7 +35,7 @@ const Login = () => {
       const role = await login(fullEmail, password);
 
       // Navigate based on assigned role
-      switch (role) {
+      switch (role?.toLowerCase()) {
         case 'student':
           navigate('/student/dashboard');
           break;
@@ -152,8 +152,8 @@ const Login = () => {
             </div>
 
             <div className="flex justify-end">
-              <button 
-                type="button" 
+              <button
+                type="button"
                 onClick={() => setIsForgotModalOpen(true)}
                 className="text-sm text-white/90 hover:text-white transition-colors"
               >
@@ -176,7 +176,7 @@ const Login = () => {
       {isForgotModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsForgotModalOpen(false)}></div>
-          
+
           <div className="bg-slate-800 border border-slate-600 w-full max-w-sm rounded-2xl shadow-2xl relative z-10 flex flex-col overflow-hidden animate-fade-in-up">
             <div className="bg-slate-900 px-6 py-4 flex justify-between items-center border-b border-slate-700">
               <h3 className="font-bold text-lg text-white">Reset Password</h3>
@@ -184,13 +184,13 @@ const Login = () => {
                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
               </button>
             </div>
-            
+
             <div className="p-6">
               <p className="text-white/90 text-sm leading-relaxed">
                 Please contact your Department HOD or the System Administrator (<a href="mailto:admin@vvm.edu.in" className="text-blue-400 hover:underline">admin@vvm.edu.in</a>) to reset your password.
               </p>
             </div>
-            
+
             <div className="bg-slate-900 px-6 py-4 flex justify-end border-t border-slate-700">
               <button
                 onClick={() => setIsForgotModalOpen(false)}

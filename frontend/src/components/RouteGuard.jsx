@@ -13,7 +13,7 @@ const RouteGuard = ({ allowedRoles }) => {
   }
 
   // Check role
-  if (allowedRoles && !allowedRoles.includes(user.role)) {
+  if (allowedRoles && (!user?.role || !allowedRoles.map(r => r.toLowerCase()).includes(user.role.toLowerCase()))) {
     return <Navigate to="/unauthorized" replace />;
   }
 

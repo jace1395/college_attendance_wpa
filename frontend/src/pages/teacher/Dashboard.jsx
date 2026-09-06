@@ -115,9 +115,9 @@ const TeacherDashboard = () => {
               { key: 'monitoring',  label: 'Monitoring', always: true },
               { key: 'notices',     label: 'Notices',    always: true },
               { key: 'reports',     label: 'Reports',    always: true },
-              { key: 'mentor',      label: '★ Mentor',   show: teacher?.isMentor || user?.is_mentor },
-              { key: 'hod',         label: '★ HOD',      show: teacher?.isHOD || user?.is_hod },
-              { key: 'timetable',   label: '★ Timetable',show: teacher?.isTimetableIncharge || user?.is_timetable_incharge },
+              { key: 'mentor',      label: '★ Mentor',   show: Boolean(teacher?.isMentor || user?.is_mentor) },
+              { key: 'hod',         label: '★ HOD',      show: Boolean(teacher?.isHOD || user?.is_hod) },
+              { key: 'timetable',   label: '★ Timetable',show: Boolean(teacher?.isTimetableIncharge || user?.is_timetable_incharge) },
             ]
               .filter(tab => tab.always || tab.show)
               .map(tab => (
