@@ -1,7 +1,7 @@
 import pandas as pd
 import io
 from django.http import FileResponse
-from .models import Attendance, ClassBatch, Timetable
+from .models import Attendance, ClassBatch, Timetable, Notification
 
 
 def generate_attendance_report(user, start_date, end_date, download_format=None):
@@ -86,13 +86,30 @@ def process_timetable_upload(file_obj):
     for index, row in df.iterrows():
         try:
             batch = ClassBatch.objects.get(id=row['Subject_ID'])
-            Timetable.objects.update_or_create(
+            timetable, created = Timetable.objects.update_or_create(
                 class_batch=batch,
                 day_of_week=row['Day'],
                 start_time=row['Start_Time'],
                 defaults={'end_time': row['End_Time']}
             )
             count += 1
+
+            # Notification Logic
+            subject_name = batch.subject.name if batch.subject else "Subject"
+            msg = f"Your timetable for {subject_name} has been updated."
+
+            # 1. Notify Teacher
+            if batch.teacher:
+                Notification.objects.create(user=batch.teacher, message=msg)
+
+            # 2. Notify Students
+            enrollments = batch.enrollments.select_related('student')
+            notifications = [
+                Notification(user=enrollment.student, message=msg)
+                for enrollment in enrollments if enrollment.student
+            ]
+            if notifications:
+                Notification.objects.bulk_create(notifications)
         except ClassBatch.DoesNotExist:
             continue
     return count

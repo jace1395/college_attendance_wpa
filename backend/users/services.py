@@ -42,14 +42,18 @@ def process_user_upload(file_obj):
         else:
             raw_password = f"{first_name}.staff@{current_year}"
 
-        if not User.objects.filter(email=email).exists():
-            User.objects.create_user(
-                email=email if email else None,
-                roll_no=roll_no,
-                password=raw_password,
-                name=name,
-                role=role
-            )
+        user, created = User.objects.update_or_create(
+            email=email if email else None,
+            defaults={
+                'roll_no': roll_no,
+                'name': name,
+                'role': role,
+            }
+        )
+        
+        if created:
+            user.set_password(raw_password)
+            user.save()
             created_count += 1
 
     return created_count
