@@ -22,6 +22,9 @@ FROM nginx:alpine
 # Copy the built assets from Stage 1 into the Nginx static serving directory
 COPY --from=builder /app/dist /usr/share/nginx/html
 
+# nginx.conf
+COPY nginx.conf /etc/nginx/conf.d/default.conf
+
 # Expose port 80 for Nginx
 EXPOSE 80
 

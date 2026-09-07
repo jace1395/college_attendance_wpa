@@ -20,4 +20,7 @@ from django.urls import path, include
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/auth/', include('users.urls')),
+    
+    # ADD THIS LINE: This unlocks all the Student, Teacher, and Admin dashboards!
+    path('', include('attendance.urls')), 
 ]
