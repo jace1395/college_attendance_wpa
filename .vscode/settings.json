@@ -1,16 +1,13 @@
 {
-    "python.defaultInterpreterPath": "${workspaceFolder}\\backend\\venv\\Scripts\\python.exe",
+    "python.defaultInterpreterPath": "${workspaceFolder}/backend/.venv/Scripts/python.exe",
     "python.analysis.extraPaths": [
         "${workspaceFolder}/backend",
-        "${workspaceFolder}/backend/venv/Lib/site-packages",
-        "c:/Users/Jace/Desktop/college_attendance_wpa/backend",
-        "c:/Users/Jace/Desktop/college_attendance_wpa/backend/venv/Lib/site-packages"
+        "${workspaceFolder}/backend/.venv/Lib/site-packages"
     ],
     "python.autoComplete.extraPaths": [
         "${workspaceFolder}/backend",
-        "${workspaceFolder}/backend/venv/Lib/site-packages",
-        "c:/Users/Jace/Desktop/college_attendance_wpa/backend",
-        "c:/Users/Jace/Desktop/college_attendance_wpa/backend/venv/Lib/site-packages"
+        "${workspaceFolder}/backend/.venv/Lib/site-packages"
     ],
-    "json.schemas": []
+    "json.schemas": [],
+    "python.languageServer": "Jedi"
 }
