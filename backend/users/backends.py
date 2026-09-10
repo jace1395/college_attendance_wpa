@@ -13,17 +13,28 @@ class EmailOrRollNoBackend(ModelBackend):
             return None
             
         try:
-            # Search by email OR roll number
-            user = User.objects.get(Q(email=login_id) | Q(roll_no=login_id))
+            # Search by email OR roll number (case-insensitive)
+            user = User.objects.get(Q(email__iexact=login_id) | Q(roll_no__iexact=login_id))
             
             if user.check_password(password):
                 return user
                 
         except User.DoesNotExist:
+            from django.db.models.functions import Replace
+            from django.db.models import Value
+            # Fallback for missing dots in username (e.g. "SumitKumar" instead of "sumit.kumar")
+            stripped_login_id = login_id.replace('.', '')
+            user = User.objects.annotate(
+                stripped_email=Replace('email', Value('.'), Value(''))
+            ).filter(stripped_email__iexact=stripped_login_id).first()
+            
+            if user and user.check_password(password):
+                return user
+                
             return None
         except User.MultipleObjectsReturned:
             # Safety fallback just in case of duplicate data
-            user = User.objects.filter(Q(email=login_id) | Q(roll_no=login_id)).first()
+            user = User.objects.filter(Q(email__iexact=login_id) | Q(roll_no__iexact=login_id)).first()
             if user and user.check_password(password):
                 return user
             return None
