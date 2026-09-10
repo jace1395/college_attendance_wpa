@@ -207,15 +207,20 @@ class StudentSubjectDetailView(APIView):
 
         attendances = Attendance.objects.filter(class_batch=cb, student=user).order_by('-date')
 
+        from rest_framework.pagination import PageNumberPagination
+        paginator = PageNumberPagination()
+        paginator.page_size = 10
+        paginated_attendances = paginator.paginate_queryset(attendances, request)
+
         history = []
-        for att in attendances:
+        for att in paginated_attendances:
             history.append({
                 "date": att.date.strftime('%Y-%m-%d') if att.date else "",
                 "type": "Regular",
                 "status": att.status
             })
 
-        return Response({
+        response_data = {
             "student": {
                 "student_id": user.roll_no or str(user.id),
                 "name": user.name or "Student",
@@ -229,7 +234,9 @@ class StudentSubjectDetailView(APIView):
                 "teacher_name": (teacher.name or teacher.email) if teacher else "Not Assigned",
             }],
             "subject_attendance_history": history
-        })
+        }
+
+        return paginator.get_paginated_response(response_data)
 
 
 class StudentNotificationsView(APIView):

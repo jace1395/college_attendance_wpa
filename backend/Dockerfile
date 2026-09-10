@@ -18,8 +18,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Install python dependencies
 # Everything (gunicorn, psycopg2-binary, etc.) is declared in requirements.txt.
 COPY requirements.txt .
-RUN pip install --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir uv && \
+    uv pip install --system -r requirements.txt
 
 # Copy project
 COPY . .

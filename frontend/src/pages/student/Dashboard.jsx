@@ -169,10 +169,10 @@ const StudentDashboard = () => {
           </div>
 
           <div className="flex flex-wrap justify-center gap-2 bg-slate-900/50 p-1.5 rounded-2xl border border-white/10 shadow-sm w-full md:w-auto">
-            <Link to="/student/dashboard" className="px-5 py-2.5 bg-blue-600 text-white shadow-lg rounded-xl text-sm font-bold capitalize transition-all">Dashboard</Link>
             <Link to="/student/timetable" className="px-5 py-2.5 text-white/60 hover:text-white hover:bg-white/5 rounded-xl text-sm font-bold capitalize transition-all">Timetable</Link>
             <Link to="/student/notices" className="px-5 py-2.5 text-white/60 hover:text-white hover:bg-white/5 rounded-xl text-sm font-bold capitalize transition-all">Notices</Link>
             <Link to="/student/leave" className="px-5 py-2.5 text-white/60 hover:text-white hover:bg-white/5 rounded-xl text-sm font-bold capitalize transition-all">Leave</Link>
+            <Link to="/student/settings" className="px-5 py-2.5 text-white/60 hover:text-white hover:bg-white/5 rounded-xl text-sm font-bold capitalize transition-all">Settings</Link>
           </div>
         </div>
         )}

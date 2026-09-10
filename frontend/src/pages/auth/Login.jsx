@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import ThemeToggle from '../../components/shared/ThemeToggle';
 
 const Login = () => {
   const [username, setUsername] = useState('');
@@ -63,17 +64,22 @@ const Login = () => {
       className="min-h-screen bg-cover bg-center flex items-center justify-center p-4 relative"
       style={{ backgroundImage: 'url("/imgs/login-signup.jpg")' }}
     >
-      <div className="relative z-10 w-full max-w-md bg-white/30 backdrop-blur-2xl border border-white/40 p-8 sm:p-10 rounded-3xl shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] overflow-hidden">
+      {/* Theme Toggle */}
+      <div className="absolute top-4 right-4 z-50">
+        <ThemeToggle />
+      </div>
+
+      <div className="relative z-10 w-full max-w-md bg-white/60 dark:bg-white/10 backdrop-blur-2xl border border-white/50 dark:border-white/20 p-8 sm:p-10 rounded-3xl shadow-[0_8px_32px_0_rgba(0,0,0,0.2)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] overflow-hidden">
         {/* Abstract decorative shapes inside the card for premium feel */}
         <div className="absolute top-0 right-0 w-48 h-48 rounded-full bg-white/30 blur-3xl mix-blend-overlay"></div>
         <div className="absolute bottom-0 left-0 w-48 h-48 rounded-full bg-blue-400/30 blur-3xl mix-blend-overlay"></div>
 
         <div className="relative z-20">
           <div className="text-center mb-8">
-            <h1 className="text-3xl font-bold text-white tracking-tight mb-2">
+            <h1 className="text-3xl font-bold text-slate-900 dark:text-white tracking-tight mb-2">
               Welcome Back
             </h1>
-            <p className="text-white/90 text-sm">
+            <p className="text-slate-700 dark:text-white/90 text-sm">
               Enter your credentials to access your dashboard
             </p>
           </div>
@@ -87,9 +93,9 @@ const Login = () => {
 
             <div>
               <div className="flex justify-between items-center mb-1">
-                <label className="block text-sm font-medium text-white">Username</label>
+                <label className="block text-sm font-medium text-slate-800 dark:text-white">Username</label>
                 <div className="group relative cursor-help">
-                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-white/70 hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-slate-500 hover:text-slate-800 dark:text-white/70 dark:hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
                   <div className="absolute bottom-full right-0 mb-2 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
@@ -112,30 +118,30 @@ const Login = () => {
                   required
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full px-4 py-3 rounded-l-xl bg-slate-700/50 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-slate-700/70 transition-all border-none"
+                  className="w-full px-4 py-3 rounded-l-xl bg-white/70 text-slate-900 placeholder-slate-500 border border-slate-300 dark:border-transparent dark:bg-slate-700/50 dark:text-white dark:placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:bg-slate-700/70 transition-all"
                   placeholder="e.g. name/number.name"
                 />
-                <div className="flex items-center px-4 bg-slate-800/60 rounded-r-xl border-l border-white/10 text-white/70 text-sm whitespace-nowrap">
+                <div className="flex items-center px-4 bg-slate-100 text-slate-700 border-y border-r border-slate-300 dark:bg-slate-800/60 dark:border-none dark:border-l dark:border-white/10 dark:text-white/70 text-sm whitespace-nowrap rounded-r-xl">
                   {getSuffix()}
                 </div>
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-white mb-1">Password</label>
+              <label className="block text-sm font-medium text-slate-800 dark:text-white mb-1">Password</label>
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-slate-700/50 text-white placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-slate-700/70 transition-all border-none pr-12"
+                  className="w-full px-4 py-3 rounded-xl bg-white/70 text-slate-900 placeholder-slate-500 border border-slate-300 dark:border-transparent dark:bg-slate-700/50 dark:text-white dark:placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:bg-slate-700/70 transition-all pr-12"
                   placeholder="enter the pasword"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/60 hover:text-white focus:outline-none"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-slate-800 dark:text-white/60 dark:hover:text-white focus:outline-none"
                 >
                   {showPassword ? (
                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
@@ -155,7 +161,7 @@ const Login = () => {
               <button
                 type="button"
                 onClick={() => setIsForgotModalOpen(true)}
-                className="text-sm text-white/90 hover:text-white transition-colors"
+                className="text-sm text-slate-700 hover:text-slate-900 dark:text-white/90 dark:hover:text-white transition-colors"
               >
                 Forgot password?
               </button>

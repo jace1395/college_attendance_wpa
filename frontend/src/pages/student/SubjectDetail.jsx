@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import SubjectReports from './SubjectReports';
 import ThemeToggle from '../../components/shared/ThemeToggle';
+import Pagination from '../../components/shared/Pagination';
 import apiClient from '../../services/apiClient';
 
 const SubjectDetail = () => {
@@ -9,13 +10,21 @@ const SubjectDetail = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState('grid'); // 'grid' | 'reports'
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
 
   useEffect(() => {
     const fetchSubjectData = async () => {
       setLoading(true);
       try {
-        const { data } = await apiClient.get(`/api/student/subject/${subject_id}/`);
-        setData(data);
+        const { data: response } = await apiClient.get(`/api/student/subject/${subject_id}/?page=${currentPage}`);
+        // Backend pagination wraps the actual dictionary inside 'results'
+        const responseData = response.results || response;
+        setData(responseData);
+        
+        if (response.count) {
+          setTotalPages(Math.ceil(response.count / 10));
+        }
       } catch (err) {
         console.error("Failed to fetch subject details", err);
         setData({ subjects: [], subject_attendance_history: [] });
@@ -25,7 +34,7 @@ const SubjectDetail = () => {
     };
 
     fetchSubjectData();
-  }, [subject_id]);
+  }, [subject_id, currentPage]);
 
   if (loading || !data) {
     return (
@@ -143,6 +152,14 @@ const SubjectDetail = () => {
                         </table>
                     </div>
                 </div>
+
+                {history.length > 0 && (
+                    <Pagination 
+                        currentPage={currentPage}
+                        totalPages={totalPages}
+                        onPageChange={setCurrentPage}
+                    />
+                )}
             </div>
         ) : (
             <SubjectReports subject={subject} history={history} />

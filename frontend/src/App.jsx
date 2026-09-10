@@ -27,6 +27,7 @@ import TimeTable from "./pages/student/TimeTable";
 import NoticeBoard from "./pages/student/NoticeBoard";
 import LeaveRequest from "./pages/student/LeaveRequest";
 import Messages from "./pages/student/Messages";
+import Settings from "./pages/student/Settings";
 
 // Timetable Incharge
 import TimetableDashboard from "./pages/timetable/Dashboard";
@@ -72,6 +73,7 @@ function App() {
           {/* Student Routes */}
           <Route element={<RouteGuard allowedRoles={["student", "admin"]} />}>
             <Route path="/student/dashboard" element={<StudentDashboard />} />
+            <Route path="/student/settings" element={<Settings />} />
             <Route path="/student/subject/:subject_id" element={<SubjectDetail />} />
             <Route path="/student/timetable" element={<TimeTable />} />
             <Route path="/student/notices" element={<NoticeBoard />} />
