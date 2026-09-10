@@ -51,7 +51,7 @@ const SubjectDetail = () => {
 
   return (
     <div 
-      className="min-h-screen bg-cover bg-center bg-fixed text-white pb-10"
+      className="min-h-screen bg-cover bg-center bg-fixed bg-no-repeat text-white pb-10"
       style={{ backgroundImage: 'url("/imgs/login-signup.jpg")' }}
     >
       <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md pointer-events-none"></div>
