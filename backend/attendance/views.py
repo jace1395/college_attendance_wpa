@@ -188,6 +188,50 @@ class StudentDashboardView(APIView):
         })
 
 
+class StudentSubjectDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, subject_id):
+        user = get_target_user(request)
+        if user.role != 'Student' and request.user.role == 'Student':
+            return Response({"error": "Unauthorized access"}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            cb = ClassBatch.objects.get(id=subject_id)
+            Enrollment.objects.get(student=user, class_batch=cb)
+        except (ClassBatch.DoesNotExist, Enrollment.DoesNotExist):
+            return Response({"error": "Subject not found or not enrolled"}, status=status.HTTP_404_NOT_FOUND)
+
+        subject = cb.subject
+        teacher = cb.teacher
+
+        attendances = Attendance.objects.filter(class_batch=cb, student=user).order_by('-date')
+
+        history = []
+        for att in attendances:
+            history.append({
+                "date": att.date.strftime('%Y-%m-%d') if att.date else "",
+                "type": "Regular",
+                "status": att.status
+            })
+
+        return Response({
+            "student": {
+                "student_id": user.roll_no or str(user.id),
+                "name": user.name or "Student",
+                "email": user.email,
+                "program": subject.stream if subject else "General",
+                "current_semester": subject.semester if subject else "Unknown"
+            },
+            "subjects": [{
+                "subject_id": cb.id,
+                "subject_name": subject.name if subject else "Unknown",
+                "teacher_name": (teacher.name or teacher.email) if teacher else "Not Assigned",
+            }],
+            "subject_attendance_history": history
+        })
+
+
 class StudentNotificationsView(APIView):
     permission_classes = [IsAuthenticated]
 

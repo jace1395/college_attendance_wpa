@@ -2,6 +2,7 @@ from django.urls import path
 from .views import (
     # Student Views
     StudentDashboardView,
+    StudentSubjectDetailView,
     StudentNotificationsView,
     StudentLeaveRequestView,
     
@@ -45,6 +46,7 @@ urlpatterns = [
     # 1. Student Routes
     # --------------------------------------------------------------------------
     path('api/student/dashboard/', StudentDashboardView.as_view(), name='student-dashboard'),
+    path('api/student/subject/<int:subject_id>/', StudentSubjectDetailView.as_view(), name='student-subject-detail'),
     path('api/student/notifications/', StudentNotificationsView.as_view(), name='student-notifications'),
     path('api/student/leave/', StudentLeaveRequestView.as_view(), name='student-leave'),
 

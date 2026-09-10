@@ -77,10 +77,11 @@ const StudentDashboard = () => {
 
   return (
     <div 
-      className="min-h-screen bg-cover bg-fixed text-white"
+      className="min-h-screen bg-cover bg-center bg-fixed text-white"
       style={{ backgroundImage: 'url("/imgs/login-signup.jpg")' }}
     >
-      <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md pointer-events-none"></div>
+      {/* Dark overlay with blur */}
+      <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md pointer-events-none"></div>
 
       <div className="relative z-10 p-6 md:p-10 max-w-7xl mx-auto min-h-screen flex flex-col">
         

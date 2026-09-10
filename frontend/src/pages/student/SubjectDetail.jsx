@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import SubjectReports from './SubjectReports';
 import ThemeToggle from '../../components/shared/ThemeToggle';
+import apiClient from '../../services/apiClient';
 
 const SubjectDetail = () => {
   const { subject_id } = useParams();
@@ -12,20 +13,15 @@ const SubjectDetail = () => {
   useEffect(() => {
     const fetchSubjectData = async () => {
       setLoading(true);
-      setTimeout(() => {
-        setData({
-          student: {
-            student_id: "2511011",
-            name: "JACE",
-            email: "2511011.jace.sdcce@vvm.edu.in",
-            program: "BVoc Software Technologies",
-            current_semester: 3
-          },
-          subjects: [],
-          subject_attendance_history: []
-        });
+      try {
+        const { data } = await apiClient.get(`/api/student/subject/${subject_id}/`);
+        setData(data);
+      } catch (err) {
+        console.error("Failed to fetch subject details", err);
+        setData({ subjects: [], subject_attendance_history: [] });
+      } finally {
         setLoading(false);
-      }, 500);
+      }
     };
 
     fetchSubjectData();
@@ -55,10 +51,10 @@ const SubjectDetail = () => {
 
   return (
     <div 
-      className="min-h-screen bg-cover bg-fixed text-white pb-10"
+      className="min-h-screen bg-cover bg-center bg-fixed text-white pb-10"
       style={{ backgroundImage: 'url("/imgs/login-signup.jpg")' }}
     >
-      <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md pointer-events-none"></div>
+      <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md pointer-events-none"></div>
 
       <div className="relative z-10 p-4 md:p-8 max-w-6xl mx-auto min-h-screen flex flex-col">
         {/* Breadcrumb Navigation */}
