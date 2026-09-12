@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import apiClient from '../../services/apiClient';
 import PrincipalViewTab from '../principal/PrincipalViewTab';
 import PrincipalNoticeBoard from '../principal/PrincipalNoticeBoard';
 
@@ -42,12 +43,9 @@ const HODDashboard = ({ onBack }) => {
     const fetchDepts = async () => {
       setLoadingDepts(true);
       try {
-        const res = await fetch(`/api/teacher/hod/info/?email=${encodeURIComponent(user.email)}`);
-        if (!res.ok) throw new Error();
-        const data = await res.json();
+        const { data } = await apiClient.get('/api/teacher/hod/info/');
         setDepartments(data.departments || []);
       } catch {
-        // Fallback: empty — no departments until API is connected
         setDepartments([]);
       } finally {
         setLoadingDepts(false);
@@ -71,9 +69,7 @@ const HODDashboard = ({ onBack }) => {
       setLoadingClass(true);
       try {
         const [year, dept] = selectedClass.split(' ');
-        const res = await fetch(`/api/teacher/hod/class-stats/?email=${encodeURIComponent(user.email)}&year=${year}&dept=${dept}`);
-        if (!res.ok) throw new Error();
-        const data = await res.json();
+        const { data } = await apiClient.get('/api/teacher/hod/class-stats/', { params: { year, dept } });
         setClassData(prev => ({ ...prev, [selectedClass]: data }));
       } catch {
         setClassData(prev => ({ ...prev, [selectedClass]: { total: 0, present: 0, absent: 0, students: [] } }));

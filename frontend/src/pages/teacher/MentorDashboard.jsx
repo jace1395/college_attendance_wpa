@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import apiClient from '../../services/apiClient';
 
 // MentorDashboard renders as an embedded tab inside TeacherDashboard.
 // It receives an onBack callback to return to the Teacher Dashboard.
@@ -17,12 +18,9 @@ const MentorDashboard = ({ onBack }) => {
     const fetchMentees = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/api/teacher/mentor/mentees/?email=${encodeURIComponent(user.email)}`);
-        if (!res.ok) throw new Error();
-        const data = await res.json();
+        const { data } = await apiClient.get('/api/teacher/mentor/mentees/');
         setMentees(data.mentees || []);
       } catch {
-        // API not available yet — empty state
         setMentees([]);
       } finally {
         setLoading(false);

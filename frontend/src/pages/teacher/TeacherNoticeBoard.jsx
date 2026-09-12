@@ -1,5 +1,6 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import apiClient from '../../services/apiClient';
 
 const TeacherNoticeBoard = () => {
   const { user } = useAuth();
@@ -12,8 +13,45 @@ const TeacherNoticeBoard = () => {
   const [selectedTo, setSelectedTo] = useState([]);
   const [showToDropdown, setShowToDropdown] = useState(false);
   
-  // Mock Messages
-  const messages = [];
+  // API-driven data
+  const [messages, setMessages] = useState([]);
+  const [availableRecipients, setAvailableRecipients] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch messages and recipients from API
+  useEffect(() => {
+    const fetchData = async () => {
+      setLoading(true);
+      try {
+        const { data } = await apiClient.get('/api/student/notifications/');
+        const notifications = data.notifications || [];
+        setMessages(notifications.map(n => ({
+          id: n.id,
+          sender: n.title || 'System',
+          subject: n.message?.substring(0, 50) || '',
+          body: n.message || '',
+          time: n.timestamp || '',
+          read: n.read ?? true,
+          type: 'inbox'
+        })));
+      } catch {
+        setMessages([]);
+      }
+      
+      try {
+        const { data } = await apiClient.get('/api/teacher/dashboard/');
+        const classes = data.assigned_classes || [];
+        setAvailableRecipients(classes.map(c => c.class_name).filter(Boolean));
+      } catch {
+        setAvailableRecipients([]);
+      }
+      
+      setLoading(false);
+    };
+    fetchData();
+  }, []);
+
+  const unreadCount = messages.filter(m => m.type === 'inbox' && !m.read).length;
 
   const filteredMessages = messages
     .filter(m => m.type === activeTab)
@@ -23,13 +61,8 @@ const TeacherNoticeBoard = () => {
         return true;
     });
 
-  const availableRecipients = [
-      "Principal", 
-      "Admin", 
-      "SY BVoc(ST)", 
-      "FY BBA", 
-      "John Doe (Student)"
-  ].filter(r => !selectedTo.includes(r) && r.toLowerCase().includes(toSearch.toLowerCase()));
+  const filteredRecipients = availableRecipients
+    .filter(r => !selectedTo.includes(r) && r.toLowerCase().includes(toSearch.toLowerCase()));
 
   const handleSelectTo = (recipient) => {
       setSelectedTo([...selectedTo, recipient]);
@@ -42,17 +75,19 @@ const TeacherNoticeBoard = () => {
   };
 
   return (
-    <div className="h-[calc(100vh-140px)] flex flex-col md:flex-row gap-6 animate-fade-in-up relative">
+    <div className="min-h-[600px] flex-1 flex flex-col md:flex-row gap-6 animate-fade-in-up relative">
         {/* Sidebar */}
         <div className="w-full md:w-64 shrink-0 flex flex-col gap-4">
-            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-2 flex-1 shadow-xl">
+            <div className="bg-slate-900/80 backdrop-blur-2xl border border-white/20 rounded-2xl p-2 flex-1 shadow-2xl">
                 <button 
                 onClick={() => setActiveTab('inbox')}
                 className={`w-full text-left px-4 py-3 rounded-xl transition-colors ${activeTab === 'inbox' ? 'bg-blue-500/20 text-blue-400 font-medium' : 'hover:bg-white/5 text-white/70'}`}
                 >
                 <div className="flex justify-between items-center">
                     <span>Inbox</span>
-                    <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">1</span>
+                    {unreadCount > 0 && (
+                      <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">{unreadCount}</span>
+                    )}
                 </div>
                 </button>
                 <button 
@@ -65,7 +100,7 @@ const TeacherNoticeBoard = () => {
         </div>
 
         {/* Main View */}
-        <div className="flex-1 bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden flex flex-col shadow-xl">
+        <div className="flex-1 bg-slate-900/80 backdrop-blur-2xl border border-white/20 rounded-3xl overflow-hidden flex flex-col shadow-2xl min-h-[500px]">
             {/* Header / Filters */}
             <div className="p-4 border-b border-white/10 flex flex-wrap justify-between items-center bg-slate-900/40 gap-4">
                 <h2 className="font-semibold capitalize text-lg">{activeTab}</h2>
@@ -86,7 +121,15 @@ const TeacherNoticeBoard = () => {
             
             {/* List */}
             <div className="overflow-y-auto flex-1 p-2">
-                {filteredMessages.map(msg => (
+                {loading ? (
+                  <div className="h-full flex items-center justify-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+                  </div>
+                ) : filteredMessages.length === 0 ? (
+                  <div className="h-full flex items-center justify-center text-white/40">
+                      No messages match this view.
+                  </div>
+                ) : filteredMessages.map(msg => (
                 <div 
                     key={msg.id}
                     className={`flex flex-col md:flex-row md:items-center gap-2 md:gap-4 p-4 border-b border-white/5 hover:shadow-md cursor-pointer transition-all rounded-xl ${msg.read === false ? 'bg-white/10 font-semibold border-l-4 border-l-blue-500' : 'hover:bg-white/5 border-l-4 border-l-transparent'}`}
@@ -100,11 +143,6 @@ const TeacherNoticeBoard = () => {
                     <div className="md:w-24 md:text-right text-xs md:text-sm text-white/60 shrink-0">{msg.time}</div>
                 </div>
                 ))}
-                {filteredMessages.length === 0 && (
-                <div className="h-full flex items-center justify-center text-white/40">
-                    No messages match this view.
-                </div>
-                )}
             </div>
         </div>
 
@@ -155,9 +193,9 @@ const TeacherNoticeBoard = () => {
                                         placeholder={selectedTo.length === 0 ? "Search recipients..." : ""}
                                         className="bg-transparent w-full outline-none text-white text-sm py-1"
                                     />
-                                    {showToDropdown && availableRecipients.length > 0 && (
+                                    {showToDropdown && filteredRecipients.length > 0 && (
                                         <div className="absolute top-full left-0 mt-1 w-full bg-slate-800 border border-slate-600 rounded-lg shadow-xl max-h-48 overflow-y-auto z-50">
-                                            {availableRecipients.map(r => (
+                                            {filteredRecipients.map(r => (
                                                 <button
                                                     key={r}
                                                     onClick={() => handleSelectTo(r)}

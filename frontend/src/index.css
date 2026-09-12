@@ -24,17 +24,31 @@ html.light body {
 html.light .fixed.inset-0.bg-slate-900\/80,
 html.light .fixed.inset-0.bg-slate-900\/85,
 html.light .absolute.inset-0.bg-slate-900\/80 {
-  background-color: rgba(241, 245, 249, 0.70) !important; /* slate-100/70 */
+  background-color: rgba(241, 245, 249, 0.70) !important;
+  /* slate-100/70 */
   backdrop-filter: blur(16px);
 }
 
 /* Glass card surfaces */
-html.light .bg-white\/5  { background-color: rgba(255, 255, 255, 0.50) !important; }
-html.light .bg-white\/10 { background-color: rgba(255, 255, 255, 0.65) !important; }
-html.light .bg-white\/20 { background-color: rgba(255, 255, 255, 0.75) !important; }
+html.light .bg-white\/5 {
+  background-color: rgba(255, 255, 255, 0.50) !important;
+}
+
+html.light .bg-white\/10 {
+  background-color: rgba(255, 255, 255, 0.65) !important;
+}
+
+html.light .bg-white\/15 {
+  background-color: rgba(255, 255, 255, 0.70) !important;
+}
+
+html.light .bg-white\/20 {
+  background-color: rgba(255, 255, 255, 0.75) !important;
+}
 
 /* Dark panel override — nav bars, sidebars, modals */
 html.light .bg-slate-900,
+html.light .bg-slate-900\/40,
 html.light .bg-slate-900\/50,
 html.light .bg-slate-900\/60,
 html.light .bg-slate-900\/80,
@@ -42,24 +56,311 @@ html.light .bg-slate-900\/95 {
   background-color: rgba(255, 255, 255, 0.75) !important;
   backdrop-filter: blur(20px);
 }
+
 html.light .bg-slate-800,
-html.light .bg-slate-800\/70 {
+html.light .bg-slate-800\/70,
+html.light .bg-slate-800\/80,
+html.light .bg-slate-800\/90 {
   background-color: rgba(255, 255, 255, 0.65) !important;
 }
 
+html.light .bg-slate-800\/60 {
+  background-color: rgba(241, 245, 249, 0.60) !important;
+}
+
+/* Black overlays (modals, backdrops) */
+html.light .bg-black\/20 {
+  background-color: rgba(15, 23, 42, 0.10) !important;
+}
+
+html.light .bg-black\/60 {
+  background-color: rgba(15, 23, 42, 0.30) !important;
+}
+
 /* Border colors */
-html.light .border-white\/10 { border-color: rgba(100, 116, 139, 0.20) !important; }
-html.light .border-white\/20 { border-color: rgba(100, 116, 139, 0.30) !important; }
+html.light .border-white\/5 {
+  border-color: rgba(100, 116, 139, 0.12) !important;
+}
+
+html.light .border-white\/10 {
+  border-color: rgba(100, 116, 139, 0.20) !important;
+}
+
+html.light .border-white\/20 {
+  border-color: rgba(100, 116, 139, 0.30) !important;
+}
+
+html.light .border-white\/30 {
+  border-color: rgba(100, 116, 139, 0.35) !important;
+}
 
 /* Text — ensure dark text on light background */
-html.light .text-white        { color: #0f172a !important; }
-html.light .text-white\/90    { color: #1e293b !important; }
-html.light .text-white\/80    { color: #334155 !important; }
-html.light .text-white\/70    { color: #475569 !important; }
-html.light .text-white\/60    { color: #64748b !important; }
-html.light .text-white\/50    { color: #94a3b8 !important; }
-html.light .text-white\/40    { color: #94a3b8 !important; }
-html.light .text-white\/30    { color: #cbd5e1 !important; }
+html.light .text-white {
+  color: #0f172a !important;
+}
+
+html.light .text-white\/90 {
+  color: #1e293b !important;
+}
+
+html.light .text-white\/80 {
+  color: #334155 !important;
+}
+
+html.light .text-white\/70 {
+  color: #475569 !important;
+}
+
+html.light .text-white\/60 {
+  color: #64748b !important;
+}
+
+html.light .text-white\/50 {
+  color: #94a3b8 !important;
+}
+
+html.light .text-white\/40 {
+  color: #94a3b8 !important;
+}
+
+html.light .text-white\/30 {
+  color: #cbd5e1 !important;
+}
+
+html.light .text-white\/20 {
+  color: #e2e8f0 !important;
+}
+
+/* Preserve colored text for status indicators — these should stay vibrant */
+html.light .text-blue-400 {
+  color: #2563eb !important;
+}
+
+html.light .text-blue-300 {
+  color: #3b82f6 !important;
+}
+
+html.light .text-blue-100 {
+  color: #1e40af !important;
+}
+
+html.light .text-green-400 {
+  color: #16a34a !important;
+}
+
+html.light .text-green-300 {
+  color: #22c55e !important;
+}
+
+html.light .text-red-400 {
+  color: #dc2626 !important;
+}
+
+html.light .text-red-300 {
+  color: #ef4444 !important;
+}
+
+html.light .text-red-200 {
+  color: #b91c1c !important;
+}
+
+html.light .text-red-100 {
+  color: #991b1b !important;
+}
+
+html.light .text-yellow-400 {
+  color: #ca8a04 !important;
+}
+
+html.light .text-purple-400 {
+  color: #9333ea !important;
+}
+
+html.light .text-purple-300 {
+  color: #a855f7 !important;
+}
+
+html.light .text-emerald-400 {
+  color: #059669 !important;
+}
+
+html.light .text-emerald-300 {
+  color: #10b981 !important;
+}
+
+html.light .text-amber-400 {
+  color: #d97706 !important;
+}
+
+html.light .text-amber-300 {
+  color: #f59e0b !important;
+}
+
+html.light .text-indigo-200 {
+  color: #4338ca !important;
+}
+
+html.light .text-indigo-100 {
+  color: #3730a3 !important;
+}
+
+/* Preserve colored backgrounds for badges & status pills */
+html.light .bg-green-500\/20 {
+  background-color: rgba(34, 197, 94, 0.15) !important;
+}
+
+html.light .bg-red-500\/20 {
+  background-color: rgba(239, 68, 68, 0.15) !important;
+}
+
+html.light .bg-blue-500\/20 {
+  background-color: rgba(59, 130, 246, 0.15) !important;
+}
+
+html.light .bg-yellow-500\/20 {
+  background-color: rgba(234, 179, 8, 0.15) !important;
+}
+
+html.light .bg-purple-500\/20 {
+  background-color: rgba(168, 85, 247, 0.15) !important;
+}
+
+html.light .bg-emerald-500\/20 {
+  background-color: rgba(16, 185, 129, 0.15) !important;
+}
+
+html.light .bg-amber-500\/20 {
+  background-color: rgba(245, 158, 11, 0.15) !important;
+}
+
+html.light .bg-green-500\/10 {
+  background-color: rgba(34, 197, 94, 0.10) !important;
+}
+
+html.light .bg-red-500\/10 {
+  background-color: rgba(239, 68, 68, 0.10) !important;
+}
+
+html.light .bg-blue-500\/10 {
+  background-color: rgba(59, 130, 246, 0.10) !important;
+}
+
+html.light .bg-purple-500\/10 {
+  background-color: rgba(168, 85, 247, 0.10) !important;
+}
+
+html.light .bg-emerald-500\/10 {
+  background-color: rgba(16, 185, 129, 0.10) !important;
+}
+
+html.light .bg-amber-500\/10 {
+  background-color: rgba(245, 158, 11, 0.10) !important;
+}
+
+/* Preserve colored border accents */
+html.light .border-green-500\/30 {
+  border-color: rgba(34, 197, 94, 0.30) !important;
+}
+
+html.light .border-red-500\/30 {
+  border-color: rgba(239, 68, 68, 0.30) !important;
+}
+
+html.light .border-blue-500\/30 {
+  border-color: rgba(59, 130, 246, 0.30) !important;
+}
+
+html.light .border-blue-500\/60 {
+  border-color: rgba(59, 130, 246, 0.60) !important;
+}
+
+html.light .border-yellow-500\/30 {
+  border-color: rgba(234, 179, 8, 0.30) !important;
+}
+
+html.light .border-purple-500\/30 {
+  border-color: rgba(168, 85, 247, 0.30) !important;
+}
+
+html.light .border-purple-500\/20 {
+  border-color: rgba(168, 85, 247, 0.20) !important;
+}
+
+html.light .border-emerald-500\/30 {
+  border-color: rgba(16, 185, 129, 0.30) !important;
+}
+
+html.light .border-emerald-500\/20 {
+  border-color: rgba(16, 185, 129, 0.20) !important;
+}
+
+html.light .border-amber-500\/30 {
+  border-color: rgba(245, 158, 11, 0.30) !important;
+}
+
+html.light .border-amber-500\/20 {
+  border-color: rgba(245, 158, 11, 0.20) !important;
+}
+
+/* Indigo subject cards — keep vibrant in light mode */
+html.light .bg-indigo-600\/80 {
+  background-color: rgba(79, 70, 229, 0.85) !important;
+}
+
+html.light .bg-indigo-500\/80 {
+  background-color: rgba(99, 102, 241, 0.85) !important;
+}
+
+html.light .border-indigo-400\/30 {
+  border-color: rgba(129, 140, 248, 0.30) !important;
+}
+
+/* Panel tinted backgrounds for HOD/Mentor/Report sections */
+html.light .bg-purple-900\/10 {
+  background-color: rgba(168, 85, 247, 0.08) !important;
+}
+
+html.light .bg-emerald-900\/10 {
+  background-color: rgba(16, 185, 129, 0.08) !important;
+}
+
+html.light .bg-amber-900\/10 {
+  background-color: rgba(245, 158, 11, 0.08) !important;
+}
+
+html.light .bg-red-900\/10 {
+  background-color: rgba(239, 68, 68, 0.08) !important;
+}
+
+html.light .bg-blue-900\/20 {
+  background-color: rgba(59, 130, 246, 0.10) !important;
+}
+
+/* Blue gradient banners (smart alert) */
+html.light .bg-blue-600 {
+  background-color: #2563eb !important;
+}
+
+html.light .bg-indigo-600 {
+  background-color: #4f46e5 !important;
+}
+
+html.light .bg-purple-600 {
+  background-color: #9333ea !important;
+}
+
+html.light .bg-emerald-600 {
+  background-color: #059669 !important;
+}
+
+html.light .bg-amber-600 {
+  background-color: #d97706 !important;
+}
+
+/* Red logout/error button — keep vibrant */
+html.light .bg-red-500\/20 {
+  background-color: rgba(239, 68, 68, 0.12) !important;
+}
 
 /* Input fields */
 html.light input,
@@ -69,9 +370,15 @@ html.light textarea {
   color: #0f172a !important;
   border-color: rgba(100, 116, 139, 0.30) !important;
 }
+
 html.light input::placeholder,
 html.light textarea::placeholder {
   color: #94a3b8 !important;
+}
+
+/* Fix date inputs — override forced dark color scheme */
+html.light input[type="date"] {
+  color-scheme: light !important;
 }
 
 /* Preserve images and video — don't invert them */
@@ -91,13 +398,44 @@ html.light .bg-slate-900\/50.border-b {
 }
 
 /* Subtle shadow enhancement for glass cards in light mode */
-html.light .shadow-xl   { box-shadow: 0 10px 40px rgba(15, 23, 42, 0.10) !important; }
-html.light .shadow-2xl  { box-shadow: 0 20px 60px rgba(15, 23, 42, 0.12) !important; }
+html.light .shadow-xl {
+  box-shadow: 0 10px 40px rgba(15, 23, 42, 0.10) !important;
+}
+
+html.light .shadow-2xl {
+  box-shadow: 0 20px 60px rgba(15, 23, 42, 0.12) !important;
+}
+
+/* Scrollbar theming for light mode */
+html.light ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+html.light ::-webkit-scrollbar-track {
+  background: rgba(241, 245, 249, 0.5);
+}
+
+html.light ::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.4);
+  border-radius: 4px;
+}
+
+html.light ::-webkit-scrollbar-thumb:hover {
+  background: rgba(100, 116, 139, 0.5);
+}
 
 /* Animations */
 @keyframes fade-in-up {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .animate-fade-in-up {

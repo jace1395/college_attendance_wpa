@@ -11,7 +11,7 @@ const MonitoringTab = ({ duties }) => {
 
   if (!duties || duties.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64 bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-8 shadow-2xl animate-fade-in-up">
+      <div className="flex items-center justify-center h-64 bg-slate-900/80 backdrop-blur-2xl border border-white/20 rounded-3xl p-8 shadow-2xl animate-fade-in-up">
         <h3 className="text-xl text-white/60 font-medium">You have no monitoring duties assigned for today.</h3>
       </div>
     );
@@ -39,8 +39,8 @@ const MonitoringTab = ({ duties }) => {
             return (
                 <div 
                     key={idx}
-                    className={`group bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 text-left transition-all shadow-xl relative overflow-hidden ${
-                        isExpanded ? 'ring-2 ring-blue-500 bg-white/10' : 'hover:bg-white/10 hover:border-white/20 hover:shadow-2xl hover:-translate-y-1 cursor-pointer'
+                    className={`group bg-slate-900/80 backdrop-blur-2xl border border-white/20 rounded-3xl p-6 text-left transition-all shadow-xl relative overflow-hidden ${
+                        isExpanded ? 'ring-2 ring-blue-500 bg-slate-800/90' : 'hover:bg-slate-800/90 hover:border-white/30 hover:shadow-2xl hover:-translate-y-1 cursor-pointer'
                     }`}
                     onClick={() => !isExpanded && setExpandedDuty(idx)}
                 >

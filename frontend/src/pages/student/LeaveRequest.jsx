@@ -176,14 +176,6 @@ const LeaveRequest = () => {
               </div>
             </div>
 
-            {/* File Upload (mock) */}
-            <div className="sm:col-span-2">
-              <label className="text-xs text-white/50 font-semibold uppercase tracking-wider block mb-1.5">Attachment <span className="normal-case font-normal">(optional — medical certificate, etc.)</span></label>
-              <div className="border border-dashed border-white/20 rounded-xl p-5 text-center text-white/30 text-sm hover:border-white/40 transition-colors cursor-pointer">
-                <svg className="w-6 h-6 mx-auto mb-1 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
-                Click to attach file
-              </div>
-            </div>
           </div>
 
           <div className="flex justify-end mt-6">

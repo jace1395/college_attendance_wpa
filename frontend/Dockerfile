@@ -1,5 +1,5 @@
-# Stage 1: Build the React + Vite application
-FROM node:22-alpine AS builder
+# Stage 1: Build the Vite application
+FROM node:20-alpine AS builder
 
 # Set working directory
 WORKDIR /app
@@ -12,6 +12,10 @@ RUN npm ci
 
 # Copy the rest of the application code
 COPY . .
+
+# Pass the environment variable as a build argument for Vite
+ARG VITE_API_BASE_URL
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
 
 # Build the Vite application (outputs to dist/ by default)
 RUN npm run build

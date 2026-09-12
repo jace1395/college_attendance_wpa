@@ -180,13 +180,13 @@ const AttendanceGrid = () => {
   });
 
   const getStatusColor = (status, isSunday) => {
-    if (isSunday) return 'bg-slate-700/30 text-slate-500 border-slate-700/50 cursor-not-allowed';
+    if (isSunday) return 'bg-slate-700/30 text-slate-500 cursor-not-allowed';
     switch(status) {
-      case 'P': return 'bg-green-500/20 text-green-400 border-green-500/30 hover:bg-green-500/30 cursor-pointer';
-      case 'A': return 'bg-red-500/20 text-red-400 border-red-500/30 hover:bg-red-500/30 cursor-pointer';
-      case 'OD': return 'bg-blue-500/20 text-blue-400 border-blue-500/30 hover:bg-blue-500/30 cursor-pointer';
-      case 'NI': return 'bg-yellow-500/20 text-yellow-400 border-yellow-500/30 hover:bg-yellow-500/30 cursor-pointer';
-      default: return 'bg-amber-50/10 text-white/40 border-amber-100/20 hover:bg-amber-50/20 cursor-pointer'; // off-white unmarked
+      case 'P': return 'bg-green-500/20 text-green-400 cursor-pointer';
+      case 'A': return 'bg-red-500/20 text-red-400 cursor-pointer';
+      case 'OD': return 'bg-blue-500/20 text-blue-400 cursor-pointer';
+      case 'NI': return 'bg-yellow-500/20 text-yellow-400 cursor-pointer';
+      default: return 'bg-transparent text-white/20 hover:bg-white/5 cursor-pointer'; 
     }
   };
 
@@ -203,7 +203,7 @@ const AttendanceGrid = () => {
       className="min-h-screen bg-cover bg-fixed text-white pb-10"
       style={{ backgroundImage: 'url("/imgs/login-signup.jpg")' }}
     >
-      <div className="absolute inset-0 bg-slate-900/90 backdrop-blur-md pointer-events-none"></div>
+      <div className="fixed inset-0 bg-slate-900/90 backdrop-blur-md pointer-events-none"></div>
 
       <div className="relative z-10 p-4 md:p-8 w-full max-w-[100vw] overflow-x-hidden mx-auto min-h-screen flex flex-col">
         
@@ -343,14 +343,14 @@ const AttendanceGrid = () => {
                                     return (
                                         <td 
                                             key={`${s_idx}_${d_idx}`} 
-                                            className={`p-2 border-r border-white/5 text-center ${d.isSunday ? 'bg-slate-800/30' : d.dateStr === todayStr ? 'bg-blue-900/10' : ''}`}
+                                            className={`p-0 border-r border-white/5 text-center relative ${d.isSunday ? 'bg-slate-800/30' : d.dateStr === todayStr ? 'bg-blue-900/10' : ''}`}
                                             onClick={() => handleStatusClick(student.student_id, d.dateStr, d.isSunday)}
                                         >
-                                            <div className="flex justify-center items-center h-full">
+                                            <div className="w-full h-full min-h-[40px] flex justify-center items-center">
                                                 {d.isSunday ? (
-                                                    <span className="text-slate-600 text-[9px] md:text-xs uppercase font-bold tracking-widest -rotate-90">Holiday</span>
+                                                    <span className="text-slate-600 text-[10px] uppercase font-bold tracking-widest absolute -rotate-90 origin-center whitespace-nowrap">Holiday</span>
                                                 ) : (
-                                                    <div className={`w-7 h-7 md:w-10 md:h-10 text-xs md:text-sm flex items-center justify-center rounded-lg border font-bold shadow-inner select-none transition-all ${getStatusColor(status, d.isSunday)} ${lockedDates[d.dateStr] ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                                                    <div className={`w-full h-full min-h-[40px] text-xs md:text-sm flex items-center justify-center font-bold select-none transition-all hover:brightness-125 ${getStatusColor(status, d.isSunday).replace('rounded-lg border shadow-inner', '')} ${lockedDates[d.dateStr] ? 'opacity-50 cursor-not-allowed' : ''}`}>
                                                         {status || '·'}
                                                     </div>
                                                 )}

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import apiClient from '../../services/apiClient';
 
 // TimetablePanel renders as an EMBEDDED TAB inside TeacherDashboard.
 // It is shown ONLY if the teacher is assigned as Timetable Incharge.
@@ -14,31 +15,29 @@ const TimetablePanel = ({ onBack }) => {
     uploaded_timetables: 0,
     pending_assignments: 0,
   });
-  const [classes,  setClasses]  = useState([]); // available classes
+  const [classes, setClasses] = useState([]); // available classes
   const [teachers, setTeachers] = useState([]); // available teachers
   const [recentActivity, setRecentActivity] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const [assignClass,   setAssignClass]   = useState('');
+  const [assignClass, setAssignClass] = useState('');
   const [assignTeacher, setAssignTeacher] = useState('');
   const [assignLoading, setAssignLoading] = useState(false);
-  const [assignMsg,     setAssignMsg]     = useState(null);
+  const [assignMsg, setAssignMsg] = useState(null);
 
   useEffect(() => {
     if (!user) return;
     const fetchData = async () => {
       setLoading(true);
       try {
-        const res = await fetch(`/api/timetable/dashboard/?email=${encodeURIComponent(user.email)}`);
-        if (!res.ok) throw new Error();
-        const data = await res.json();
+        const { data } = await apiClient.get('/api/timetable/dashboard/');
         setStats({
           total_classes_per_week: data.total_classes_per_week ?? 0,
-          active_teachers:        data.active_teachers        ?? 0,
-          uploaded_timetables:    data.uploaded_timetables    ?? 0,
-          pending_assignments:    data.pending_assignments    ?? 0,
+          active_teachers: data.active_teachers ?? 0,
+          uploaded_timetables: data.uploaded_timetables ?? 0,
+          pending_assignments: data.pending_assignments ?? 0,
         });
-        setClasses(data.classes   || []);
+        setClasses(data.classes || []);
         setTeachers(data.teachers || []);
         setRecentActivity(data.recent_activity || []);
       } catch {
@@ -60,12 +59,7 @@ const TimetablePanel = ({ onBack }) => {
     setAssignLoading(true);
     setAssignMsg(null);
     try {
-      const res = await fetch('/api/timetable/assign/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ class_id: assignClass, teacher_id: assignTeacher, email: user.email }),
-      });
-      if (!res.ok) throw new Error();
+      await apiClient.post('/api/timetable/assign/', { class_id: assignClass, teacher_id: assignTeacher });
       setAssignMsg({ ok: true, text: 'Teacher assigned successfully!' });
       setAssignClass('');
       setAssignTeacher('');
@@ -77,10 +71,10 @@ const TimetablePanel = ({ onBack }) => {
   };
 
   const STAT_CARDS = [
-    { label: 'Classes / Week',      key: 'total_classes_per_week', icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z', color: 'bg-blue-500/10 border-blue-500/30', text: 'text-blue-400' },
-    { label: 'Active Teachers',      key: 'active_teachers',        icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z', color: 'bg-emerald-500/10 border-emerald-500/30', text: 'text-emerald-400' },
-    { label: 'Uploaded Timetables',  key: 'uploaded_timetables',    icon: 'M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12', color: 'bg-amber-500/10 border-amber-500/30', text: 'text-amber-400' },
-    { label: 'Pending Assignments',  key: 'pending_assignments',     icon: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z', color: 'bg-red-500/10 border-red-500/30', text: 'text-red-400' },
+    { label: 'Classes / Week', key: 'total_classes_per_week', icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z', color: 'bg-blue-500/10 border-blue-500/30', text: 'text-blue-400' },
+    { label: 'Active Teachers', key: 'active_teachers', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z', color: 'bg-emerald-500/10 border-emerald-500/30', text: 'text-emerald-400' },
+    { label: 'Uploaded Timetables', key: 'uploaded_timetables', icon: 'M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12', color: 'bg-amber-500/10 border-amber-500/30', text: 'text-amber-400' },
+    { label: 'Pending Assignments', key: 'pending_assignments', icon: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z', color: 'bg-red-500/10 border-red-500/30', text: 'text-red-400' },
   ];
 
   return (
@@ -129,7 +123,7 @@ const TimetablePanel = ({ onBack }) => {
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
         {/* Upload Card */}
-        <div className="bg-white/5 border border-white/10 rounded-3xl p-6 shadow-xl flex flex-col gap-4">
+        <div className="bg-slate-900/80 backdrop-blur-2xl border border-white/20 rounded-3xl p-6 shadow-2xl flex flex-col gap-4">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-blue-500/20 rounded-xl">
               <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -155,7 +149,7 @@ const TimetablePanel = ({ onBack }) => {
         </div>
 
         {/* Assign Card */}
-        <div className="bg-white/5 border border-white/10 rounded-3xl p-6 shadow-xl flex flex-col gap-4">
+        <div className="bg-slate-900/80 backdrop-blur-2xl border border-white/20 rounded-3xl p-6 shadow-2xl flex flex-col gap-4">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-emerald-500/20 rounded-xl">
               <svg className="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -212,7 +206,7 @@ const TimetablePanel = ({ onBack }) => {
       </div>
 
       {/* ── Recent Activity ─────────────────────────────────────────────────── */}
-      <div className="bg-white/5 border border-white/10 rounded-2xl p-5 shadow-xl">
+      <div className="bg-slate-900/80 backdrop-blur-2xl border border-white/20 rounded-2xl p-5 shadow-2xl">
         <h3 className="text-sm font-bold text-white/80 mb-4 flex items-center gap-2">
           <svg className="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
