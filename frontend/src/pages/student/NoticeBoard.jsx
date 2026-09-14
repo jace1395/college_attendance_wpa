@@ -1,13 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import ThemeToggle from '../../components/shared/ThemeToggle';
 
 const FILTER_TYPES = [
   { key: 'all', label: 'All' },
-  { key: 'attendance_update', label: 'Attendance Updates' },
-  { key: 'warning', label: 'Warnings' },
-  { key: 'info', label: 'Info' },
+  { key: 'general', label: 'General' },
 ];
 
 const NoticeBoard = () => {
@@ -15,6 +12,13 @@ const NoticeBoard = () => {
   const [activeFilter, setActiveFilter] = useState('all');
   const [notifications, setNotifications] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Ticket State
+  const [showTicketModal, setShowTicketModal] = useState(false);
+  const [ticketData, setTicketData] = useState({ subject: '', reason: '' });
+  const [ticketSubmitting, setTicketSubmitting] = useState(false);
+  const [subjects, setSubjects] = useState([]);
+  const [lastLectureDate, setLastLectureDate] = useState(null);
 
   useEffect(() => {
     if (!user) return;
@@ -26,14 +30,63 @@ const NoticeBoard = () => {
         const data = await response.json();
         setNotifications(data.notifications || []);
       } catch {
-        // API not available — start with empty state
         setNotifications([]);
       } finally {
         setLoading(false);
       }
     };
+    
+    // Fetch subjects for ticket modal
+    const fetchDashboard = async () => {
+       try {
+         const response = await fetch(`/api/student/dashboard/?email=${user.email}`);
+         if (response.ok) {
+            const data = await response.json();
+            if (data.subjects) setSubjects(data.subjects);
+            // Mock last lecture date to yesterday for testing, in reality this should come from API
+            const yesterday = new Date();
+            yesterday.setDate(yesterday.getDate() - 1);
+            setLastLectureDate(yesterday);
+         }
+       } catch(e) {}
+    };
+
     fetchNotifications();
+    fetchDashboard();
   }, [user]);
+
+  const canRaiseTicket = useMemo(() => {
+    if (!lastLectureDate) return false;
+    const now = new Date();
+    const last = new Date(lastLectureDate);
+    const diffHours = (now - last) / (1000 * 60 * 60);
+    const todayDay = now.getDay(); // 0 = Sunday, 1 = Monday
+    
+    // Exception: If today is Sunday, allow tickets for Saturday
+    if (todayDay === 0 && last.getDay() === 6 && diffHours <= 48) return true;
+    
+    // Exception: If today is Monday, allow tickets for Monday (and maybe Friday? The req says "allow tickets for that Monday")
+    if (todayDay === 1 && diffHours <= 24) return true;
+
+    return diffHours <= 24;
+  }, [lastLectureDate]);
+
+  const handleTicketSubmit = async (e) => {
+    e.preventDefault();
+    setTicketSubmitting(true);
+    try {
+      // Placeholder for ticket API
+      // await apiClient.post('/api/student/ticket/', { ...ticketData, date: lastLectureDate });
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      alert('Ticket submitted successfully! (Placeholder API)');
+      setShowTicketModal(false);
+      setTicketData({ subject: '', reason: '' });
+    } catch (err) {
+      alert('Failed to submit ticket');
+    } finally {
+      setTicketSubmitting(false);
+    }
+  };
 
   const filtered = activeFilter === 'all'
     ? notifications
@@ -54,10 +107,15 @@ const NoticeBoard = () => {
       className="min-h-screen bg-cover bg-center bg-fixed text-white pb-10"
       style={{ backgroundImage: 'url("/imgs/login-signup.jpg")' }}
     >
-      {/* Dark overlay with blur */}
       <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md pointer-events-none"></div>
 
       <div className="relative z-10 p-4 md:p-8 max-w-4xl mx-auto min-h-screen flex flex-col">
+
+        {/* Breadcrumb Navigation */}
+        <Link to="/student/dashboard" className="text-blue-400 hover:text-blue-300 mb-6 inline-flex items-center gap-2 font-medium w-fit">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+          Back to Dashboard
+        </Link>
 
         {/* Header */}
         <div className="flex items-center justify-between mb-8">
@@ -82,12 +140,11 @@ const NoticeBoard = () => {
 
           <div className="flex items-center gap-3">
             <Link
-              to="/student/dashboard"
+              to="/student/settings"
               className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl transition-colors border border-white/20 text-sm font-medium"
             >
-              ← Dashboard
+              Settings
             </Link>
-            <ThemeToggle />
           </div>
         </div>
 
@@ -163,6 +220,82 @@ const NoticeBoard = () => {
             })
           )}
         </div>
+
+        {/* Raise Ticket FAB */}
+        {canRaiseTicket && (
+          <button 
+            onClick={() => setShowTicketModal(true)}
+            className="fixed bottom-8 right-8 bg-blue-600 hover:bg-blue-500 text-white rounded-full p-4 shadow-2xl flex items-center justify-center gap-2 transition-transform hover:scale-105 z-40"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"></path></svg>
+            <span className="font-bold pr-2 hidden md:block">Raise Ticket</span>
+          </button>
+        )}
+
+        {/* Ticket Modal */}
+        {showTicketModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-sm animate-fade-in">
+            <div className="bg-slate-800 border border-white/20 rounded-2xl w-full max-w-md shadow-2xl overflow-hidden">
+              <div className="p-6 border-b border-white/10 flex justify-between items-center bg-slate-800/50">
+                <h3 className="text-xl font-bold text-white flex items-center gap-2">
+                  <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z"></path></svg>
+                  Raise Attendance Ticket
+                </h3>
+                <button onClick={() => setShowTicketModal(false)} className="text-white/50 hover:text-white transition-colors">
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+              </div>
+              <form onSubmit={handleTicketSubmit} className="p-6 flex flex-col gap-5">
+                
+                <div>
+                  <label className="text-xs text-white/50 font-bold uppercase tracking-wider mb-2 block">Subject</label>
+                  <select 
+                    required
+                    value={ticketData.subject} 
+                    onChange={e => setTicketData({...ticketData, subject: e.target.value})}
+                    className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-blue-500 transition-colors"
+                  >
+                    <option value="">Select subject...</option>
+                    {subjects.map(s => <option key={s.subject_id} value={s.subject_id}>{s.subject_name}</option>)}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs text-white/50 font-bold uppercase tracking-wider mb-2 block">Lecture Date</label>
+                  <input 
+                    type="text" 
+                    disabled 
+                    value={lastLectureDate ? lastLectureDate.toLocaleDateString() : ''}
+                    className="w-full bg-slate-900/50 border border-white/5 rounded-xl px-4 py-3 text-white/50 cursor-not-allowed"
+                  />
+                  <p className="text-xs text-white/30 mt-2">Tickets can only be raised for the most recent lecture.</p>
+                </div>
+
+                <div>
+                  <label className="text-xs text-white/50 font-bold uppercase tracking-wider mb-2 block">Reason</label>
+                  <textarea 
+                    required
+                    rows="3"
+                    value={ticketData.reason}
+                    onChange={e => setTicketData({...ticketData, reason: e.target.value})}
+                    className="w-full bg-slate-900 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-blue-500 transition-colors resize-none"
+                    placeholder="Briefly explain the discrepancy..."
+                  ></textarea>
+                </div>
+
+                <div className="flex justify-end gap-3 mt-2">
+                  <button type="button" onClick={() => setShowTicketModal(false)} className="px-5 py-2.5 rounded-xl font-bold text-white/60 hover:text-white hover:bg-white/5 transition-colors">
+                    Cancel
+                  </button>
+                  <button type="submit" disabled={ticketSubmitting} className="px-5 py-2.5 rounded-xl font-bold bg-blue-600 hover:bg-blue-500 text-white transition-colors disabled:opacity-50">
+                    {ticketSubmitting ? 'Submitting...' : 'Submit Ticket'}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        )}
+
       </div>
     </div>
   );

@@ -53,10 +53,8 @@ export const getMySubjectsOverview = async () => {
 };
 
 export const getSubjectAttendanceGrid = async (subjectId) => {
-  const { data } = await apiClient.get('/api/teacher/dashboard/', {
-    params: { subject_id: subjectId },
-  });
-  return data.attendance_grid ?? data;
+  const { data } = await apiClient.get(`/api/teacher/classes/${subjectId}/grid/`);
+  return data;
 };
 
 export const getMonitoringReport = async (subjectId) => {

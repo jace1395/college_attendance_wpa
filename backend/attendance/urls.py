@@ -38,7 +38,10 @@ from .views import (
     
     # File Uploads & Reports
     ReportAPIView,
-    FileUploadAPIView
+    FileUploadAPIView,
+    AttendanceTicketCreateView,
+    StudentReportAPIView,
+    TeacherReportAPIView
 )
 
 urlpatterns = [
@@ -95,4 +98,7 @@ urlpatterns = [
     # 7. General Reports
     # --------------------------------------------------------------------------
     path('api/reports/', ReportAPIView.as_view(), name='reports'),
+    path('api/attendance/tickets/', AttendanceTicketCreateView.as_view(), name='attendance-tickets'),
+    path('api/reports/student/me/', StudentReportAPIView.as_view(), name='student-report'),
+    path('api/reports/teacher/classes/', TeacherReportAPIView.as_view(), name='teacher-report'),
 ]

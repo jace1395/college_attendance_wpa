@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import SubjectReports from './SubjectReports';
-import ThemeToggle from '../../components/shared/ThemeToggle';
 import Pagination from '../../components/shared/Pagination';
+import ThemeToggle from '../../components/shared/ThemeToggle';
 import apiClient from '../../services/apiClient';
 
 const SubjectDetail = () => {
@@ -12,6 +12,47 @@ const SubjectDetail = () => {
   const [activeTab, setActiveTab] = useState('grid'); // 'grid' | 'reports'
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+
+  // Ticket Modal State
+  const [showTicketModal, setShowTicketModal] = useState(false);
+  const [ticketDate, setTicketDate] = useState('');
+  const [ticketReason, setTicketReason] = useState('');
+  const [ticketSubmitting, setTicketSubmitting] = useState(false);
+
+  const getMinMaxDates = () => {
+    const today = new Date();
+    const day = today.getDay();
+    const todayStr = today.toISOString().split('T')[0];
+    
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const yesterdayStr = yesterday.toISOString().split('T')[0];
+    
+    if (day === 0) return { min: yesterdayStr, max: yesterdayStr }; // Sunday -> Saturday only
+    if (day === 1) return { min: todayStr, max: todayStr };         // Monday -> Monday only
+    return { min: yesterdayStr, max: todayStr };                    // Otherwise Yesterday & Today
+  };
+
+  const handleTicketSubmit = async (e) => {
+    e.preventDefault();
+    if (!ticketDate || !ticketReason) return;
+    setTicketSubmitting(true);
+    try {
+      await apiClient.post('/api/attendance/tickets/', {
+        subject_id: subject_id,
+        date: ticketDate,
+        reason: ticketReason
+      });
+      alert('Ticket raised successfully!');
+      setShowTicketModal(false);
+      setTicketDate('');
+      setTicketReason('');
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to raise ticket.');
+    } finally {
+      setTicketSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     const fetchSubjectData = async () => {
@@ -79,8 +120,8 @@ const SubjectDetail = () => {
             <p className="text-white/60">Taught by: {subject.teacher_name || "-"}</p>
           </div>
           <div className="flex items-center gap-4">
-            <Link to="/student/dashboard" className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl transition-colors border border-white/20 text-sm font-medium">Dashboard</Link>
             <ThemeToggle />
+            <Link to="/student/settings" className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl transition-colors border border-white/20 text-sm font-medium">Settings</Link>
           </div>
         </div>
 
@@ -97,6 +138,12 @@ const SubjectDetail = () => {
                 className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'reports' ? 'bg-indigo-600 text-white shadow-lg' : 'text-white/60 hover:text-white hover:bg-white/5'}`}
             >
                 Reports
+            </button>
+            <button 
+                onClick={() => setShowTicketModal(true)}
+                className="px-6 py-2.5 rounded-xl text-sm font-bold text-white/60 hover:text-white hover:bg-white/5 transition-all"
+            >
+                Raise Ticket
             </button>
         </div>
 
@@ -119,9 +166,7 @@ const SubjectDetail = () => {
                                 <tr className="bg-slate-800/80 border-b border-white/10">
                                     <th className="p-4 font-semibold text-white/90 border-r border-white/5">Date</th>
                                     <th className="p-4 font-semibold text-white/90 border-r border-white/5">Day</th>
-                                    <th className="p-4 font-semibold text-white/90 border-r border-white/5">Type</th>
-                                    <th className="p-4 font-semibold text-white/90 border-r border-white/5">Status</th>
-                                    <th className="p-4 font-semibold text-white/90">Remarks</th>
+                                    <th className="p-4 font-semibold text-white/90">Status</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -133,19 +178,17 @@ const SubjectDetail = () => {
                                         <tr key={idx} className="border-b border-white/5 hover:bg-white/5 transition-colors">
                                             <td className="p-4 border-r border-white/5 text-white/80">{record.date}</td>
                                             <td className="p-4 border-r border-white/5 text-white/80">{dayName}</td>
-                                            <td className="p-4 border-r border-white/5 text-white/60">{record.type}</td>
-                                            <td className="p-4 border-r border-white/5 font-medium">
+                                            <td className="p-4 font-medium">
                                                 <span className={`px-3 py-1 rounded-md border ${getStatusColor(record.status)}`}>
                                                     {record.status}
                                                 </span>
                                             </td>
-                                            <td className="p-4 text-white/50">-</td>
                                         </tr>
                                     );
                                 })}
                                 {history.length === 0 && (
                                     <tr>
-                                        <td colSpan="5" className="p-8 text-center text-white/50">No attendance records found.</td>
+                                        <td colSpan="3" className="p-8 text-center text-white/50">No attendance records found.</td>
                                     </tr>
                                 )}
                             </tbody>
@@ -163,6 +206,53 @@ const SubjectDetail = () => {
             </div>
         ) : (
             <SubjectReports subject={subject} history={history} />
+        )}
+
+        {/* Ticket Modal */}
+        {showTicketModal && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setShowTicketModal(false)}></div>
+            <div className="bg-slate-800/90 backdrop-blur-xl border border-white/20 w-full max-w-md rounded-3xl shadow-2xl relative z-10 p-8 animate-fade-in-up">
+              <div className="flex justify-between items-center mb-6">
+                <h3 className="text-2xl font-bold">Raise Ticket</h3>
+                <button onClick={() => setShowTicketModal(false)} className="text-white/40 hover:text-white bg-white/5 p-2 rounded-full">
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+              </div>
+              <form onSubmit={handleTicketSubmit} className="flex flex-col gap-4">
+                <div>
+                  <label className="text-sm text-white/60 mb-2 block">Discrepancy Date</label>
+                  <input 
+                    type="date"
+                    required
+                    value={ticketDate}
+                    onChange={(e) => setTicketDate(e.target.value)}
+                    min={getMinMaxDates().min}
+                    max={getMinMaxDates().max}
+                    className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500"
+                  />
+                  <p className="text-xs text-white/40 mt-1">You can only raise tickets within 24 hours of the class.</p>
+                </div>
+                <div>
+                  <label className="text-sm text-white/60 mb-2 block">Reason</label>
+                  <textarea 
+                    required
+                    value={ticketReason}
+                    onChange={(e) => setTicketReason(e.target.value)}
+                    placeholder="E.g., I was present but marked absent."
+                    className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-white outline-none focus:border-indigo-500 min-h-[100px]"
+                  ></textarea>
+                </div>
+                <button 
+                  type="submit" 
+                  disabled={ticketSubmitting}
+                  className="w-full bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 rounded-xl mt-4 disabled:opacity-50"
+                >
+                  {ticketSubmitting ? 'Submitting...' : 'Submit Ticket'}
+                </button>
+              </form>
+            </div>
+          </div>
         )}
 
       </div>

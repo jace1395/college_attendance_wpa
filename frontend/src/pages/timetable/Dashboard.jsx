@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import ThemeToggle from "../../components/shared/ThemeToggle";
-
 // Overview-only tab — Edit, Reschedule, and Monitor have been removed per spec
 const STATS = [
   { label: "Total Classes/Week",    value: 0, icon: "M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z", color: "bg-blue-500/10 border-blue-500/30", text: "text-blue-400" },
@@ -129,6 +128,11 @@ const TimetableDashboard = ({ embedded = false, onBack }) => {
     >
       <div className="fixed inset-0 bg-slate-900/85 backdrop-blur-md pointer-events-none" />
       <div className="relative z-10 max-w-7xl mx-auto px-6 py-8 flex flex-col gap-6 min-h-screen">
+        <Link to="/teacher/dashboard" className="text-blue-400 hover:text-blue-300 mb-6 inline-flex items-center gap-2 font-medium w-fit">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+          Back to Dashboard
+        </Link>
+
 
         {/* Header */}
         <div className="flex flex-wrap items-center justify-between gap-4">

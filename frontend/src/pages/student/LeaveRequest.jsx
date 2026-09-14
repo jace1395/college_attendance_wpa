@@ -1,7 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import ThemeToggle from "../../components/shared/ThemeToggle";
 import apiClient from "../../services/apiClient";
 
 const RECIPIENTS = [
@@ -91,13 +90,17 @@ const LeaveRequest = () => {
   return (
     <div className="min-h-screen bg-slate-900 text-white">
       <div className="max-w-5xl mx-auto px-6 py-8 flex flex-col gap-6">
+        {/* Breadcrumb Navigation */}
+        <Link to="/student/dashboard" className="text-blue-400 hover:text-blue-300 mb-6 inline-flex items-center gap-2 font-medium w-fit">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
+          Back to Dashboard
+        </Link>
 
         {/* Header */}
         <div className="flex items-center justify-between mb-8 shrink-0">
           <h1 className="text-3xl font-bold">Leave Application</h1>
           <div className="flex items-center gap-4">
-            <Link to="/student/dashboard" className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl transition-colors border border-white/20 text-sm font-medium">Dashboard</Link>
-            <ThemeToggle />
+            <Link to="/student/settings" className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl transition-colors border border-white/20 text-sm font-medium">Settings</Link>
             <button onClick={logout} className="px-4 py-2 bg-red-500/20 text-red-300 hover:bg-red-500/30 rounded-xl border border-red-500/30 text-sm transition-colors">Logout</button>
           </div>
         </div>

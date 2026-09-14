@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import ThemeToggle from '../../components/shared/ThemeToggle';
 
 const Login = () => {
   const [username, setUsername] = useState('');
@@ -66,7 +65,6 @@ const Login = () => {
     >
       {/* Theme Toggle */}
       <div className="absolute top-4 right-4 z-50">
-        <ThemeToggle />
       </div>
 
       <div className="relative z-10 w-full max-w-md bg-white/60 dark:bg-white/10 backdrop-blur-2xl border border-white/50 dark:border-white/20 p-8 sm:p-10 rounded-3xl shadow-[0_8px_32px_0_rgba(0,0,0,0.2)] dark:shadow-[0_8px_32px_0_rgba(0,0,0,0.37)] overflow-hidden">

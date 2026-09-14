@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import apiClient from '../../services/apiClient';
-import ThemeToggle from '../../components/shared/ThemeToggle';
 
 const Settings = () => {
   const [profile, setProfile] = useState(null);
@@ -82,7 +81,6 @@ const Settings = () => {
             <p className="text-white/60">Manage your profile and security</p>
           </div>
           <div className="flex items-center gap-4">
-            <ThemeToggle />
           </div>
         </div>
 

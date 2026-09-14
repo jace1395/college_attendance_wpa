@@ -33,31 +33,16 @@ const TimeTable = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
+      <div className="flex items-center justify-center p-10">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
   }
 
   return (
-    <div 
-      className="min-h-screen bg-cover bg-center bg-fixed text-white pb-10"
-      style={{ backgroundImage: 'url("/imgs/login-signup.jpg")' }}
-    >
-      {/* Dark overlay with blur */}
-      <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-md pointer-events-none"></div>
-
-      <div className="relative z-10 p-6 md:p-10 max-w-5xl mx-auto min-h-screen flex flex-col">
-        {/* Breadcrumb Navigation */}
-        <Link to="/student/dashboard" className="text-blue-400 hover:text-blue-300 mb-6 inline-flex items-center gap-2 font-medium w-fit">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-          Back to Dashboard
-        </Link>
+    <div className="animate-fade-in-up">
         <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold">Daily Timetable</h1>
-          <div className="flex items-center gap-4">
-            <Link to="/student/settings" className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl transition-colors border border-white/20 text-sm font-medium">Settings</Link>
-          </div>
+          <h2 className="text-2xl font-bold">Daily Timetable</h2>
         </div>
         
         {isPastSixPM ? (
@@ -73,10 +58,14 @@ const TimeTable = () => {
         ) : (
           // Timetable List
           <div className="space-y-4 mt-6">
-            {timetable.map((slot, index) => (
+            {timetable.length === 0 ? (
+                <div className="text-center p-8 bg-white/5 rounded-2xl border border-white/10 text-white/50">
+                    No classes scheduled for today.
+                </div>
+            ) : timetable.map((slot, index) => (
               <div 
                 key={index}
-                className="bg-white/10 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex flex-col md:flex-row md:items-center justify-between shadow-lg hover:bg-white/15 transition-all"
+                className="bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex flex-col md:flex-row md:items-center justify-between shadow-lg hover:bg-slate-800 transition-all"
               >
                 <div className="flex items-center gap-6 mb-4 md:mb-0">
                   <div className="bg-blue-500/20 text-blue-300 font-bold px-4 py-2 rounded-xl whitespace-nowrap border border-blue-500/30">
@@ -95,8 +84,6 @@ const TimeTable = () => {
             ))}
           </div>
         )}
-
-      </div>
     </div>
   );
 };

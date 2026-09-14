@@ -1,7 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import ThemeToggle from "../../components/shared/ThemeToggle";
 
 const CONTACTS = [
   { id: "mentor",  name: "Prof. Anita Kamat",  role: "Class Mentor",  avatar: "AK", color: "from-violet-600 to-purple-600" },
@@ -57,8 +56,7 @@ const Messages = () => {
         </div>
         <div className="flex gap-3">
           <div className="flex items-center gap-4">
-            <Link to="/student/dashboard" className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl transition-colors border border-white/20 text-sm font-medium">Dashboard</Link>
-            <ThemeToggle />
+            <Link to="/student/settings" className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl transition-colors border border-white/20 text-sm font-medium">Settings</Link>
           </div>
           <Link to="/student/leave" className="px-3 py-1.5 bg-blue-600/20 hover:bg-blue-600/30 rounded-lg border border-blue-500/30 text-blue-300 text-xs font-medium transition-colors">Leave Request</Link>
           <button onClick={logout} className="px-3 py-1.5 bg-red-500/20 text-red-300 hover:bg-red-500/30 rounded-lg border border-red-500/30 text-xs transition-colors">Logout</button>

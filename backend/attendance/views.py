@@ -1152,3 +1152,109 @@ class FileUploadAPIView(APIView):
                 return Response({"error": "Invalid upload type."}, status=400)
         except Exception as e:
             return Response({"error": str(e)}, status=400)
+
+# ==============================================================================
+# Additional Features (Tickets and Reports)
+# ==============================================================================
+
+class AttendanceTicketCreateView(APIView):
+    permission_classes = [IsAuthenticated, IsStudent]
+
+    def post(self, request):
+        subject_id = request.data.get('subject_id')
+        ticket_date = request.data.get('date')
+        reason = request.data.get('reason')
+
+        if not subject_id or not ticket_date or not reason:
+            return Response({"error": "Missing required fields"}, status=400)
+
+        # Ensure attendance record exists
+        attendance = Attendance.objects.filter(
+            student=request.user,
+            class_batch_id=subject_id,
+            date=ticket_date
+        ).first()
+
+        if not attendance:
+            return Response({"error": "No attendance record found for this date."}, status=400)
+
+        ticket = AttendanceTicket.objects.create(
+            attendance=attendance,
+            student=request.user,
+            reason=reason
+        )
+        return Response({"message": "Ticket raised successfully", "ticket_id": ticket.id}, status=201)
+
+
+class StudentReportAPIView(APIView):
+    permission_classes = [IsAuthenticated, IsStudent]
+
+    def get(self, request):
+        subject_id = request.query_params.get('subject_id')
+        
+        # Base queryset for student
+        qs = Attendance.objects.filter(student=request.user).order_by('date')
+        if subject_id:
+            qs = qs.filter(class_batch_id=subject_id)
+            
+        chart_data_dict = {}
+        for att in qs:
+            d = att.date.strftime('%Y-%m-%d')
+            if d not in chart_data_dict:
+                chart_data_dict[d] = {"date": d, "present": 0, "absent": 0}
+            if att.status == 'Present':
+                chart_data_dict[d]['present'] += 1
+            else:
+                chart_data_dict[d]['absent'] += 1
+
+        chart_data = list(chart_data_dict.values())
+        return Response({"chart_data": chart_data})
+
+
+class TeacherReportAPIView(APIView):
+    permission_classes = [IsAuthenticated, IsTeacher]
+
+    def get(self, request):
+        class_id = request.query_params.get('class_id')
+        if not class_id:
+            return Response({"error": "class_id is required"}, status=400)
+
+        qs = Attendance.objects.filter(class_batch_id=class_id).order_by('date')
+        
+        chart_data_dict = {}
+        for att in qs:
+            d = att.date.strftime('%Y-%m-%d')
+            if d not in chart_data_dict:
+                chart_data_dict[d] = {"date": d, "present": 0, "absent": 0}
+            if att.status == 'Present':
+                chart_data_dict[d]['present'] += 1
+            else:
+                chart_data_dict[d]['absent'] += 1
+
+        chart_data = list(chart_data_dict.values())
+
+        # Calculate defaulters (< 75%)
+        enrollments = Enrollment.objects.filter(class_batch_id=class_id).select_related('student')
+        defaulters = []
+        total_conducted = qs.values('date', 'time_slot').distinct().count()
+        
+        total_attendance = 0
+        for en in enrollments:
+            student = en.student
+            present_count = Attendance.objects.filter(class_batch_id=class_id, student=student, status='Present').count()
+            percentage = (present_count / total_conducted * 100) if total_conducted > 0 else 0
+            total_attendance += percentage
+            if percentage < 75.0 and total_conducted > 0:
+                defaulters.append({
+                    "id": student.roll_no or str(student.id),
+                    "name": student.name,
+                    "percentage": round(percentage, 1)
+                })
+
+        avg_attendance = round(total_attendance / enrollments.count(), 1) if enrollments.exists() else 0
+
+        return Response({
+            "chart_data": chart_data,
+            "defaulters": defaulters,
+            "avg_attendance": avg_attendance
+        })

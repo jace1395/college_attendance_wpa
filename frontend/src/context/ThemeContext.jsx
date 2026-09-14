@@ -5,10 +5,13 @@ const ThemeContext = createContext();
 export const useTheme = () => useContext(ThemeContext);
 
 export const ThemeProvider = ({ children }) => {
-  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'system');
+  const [theme, setThemeState] = useState(() => {
+    return localStorage.getItem('theme') || 'system';
+  });
 
   useEffect(() => {
     const root = window.document.documentElement;
+    
     root.classList.remove('light', 'dark');
 
     if (theme === 'system') {
@@ -17,24 +20,12 @@ export const ThemeProvider = ({ children }) => {
     } else {
       root.classList.add(theme);
     }
-
-    localStorage.setItem('theme', theme);
   }, [theme]);
 
-  // Listen for system theme changes if set to system
-  useEffect(() => {
-    if (theme !== 'system') return;
-    
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = () => {
-      const root = window.document.documentElement;
-      root.classList.remove('light', 'dark');
-      root.classList.add(mediaQuery.matches ? 'dark' : 'light');
-    };
-
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, [theme]);
+  const setTheme = (newTheme) => {
+    localStorage.setItem('theme', newTheme);
+    setThemeState(newTheme);
+  };
 
   return (
     <ThemeContext.Provider value={{ theme, setTheme }}>

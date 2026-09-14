@@ -7,9 +7,9 @@ import TeacherReports from './TeacherReports';
 import HODDashboard from './HODDashboard';
 import MentorDashboard from './MentorDashboard';
 import TimetablePanel from './TimetablePanel';
-import ThemeToggle from '../../components/shared/ThemeToggle';
+import TimeTable from './TimeTable';
 import apiClient from '../../services/apiClient';
-
+import ThemeToggle from '../../components/shared/ThemeToggle';
 const TeacherDashboard = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -130,11 +130,11 @@ const TeacherDashboard = () => {
               {[
                 { key: 'dashboard', label: 'Dashboard', always: true },
                 { key: 'monitoring', label: 'Monitoring', always: true },
-                { key: 'notices', label: 'Notices', always: true },
                 { key: 'reports', label: 'Reports', always: true },
                 { key: 'mentor', label: '★ Mentor', show: Boolean(teacher?.isMentor || user?.is_mentor) },
                 { key: 'hod', label: '★ HOD', show: Boolean(teacher?.isHOD || user?.is_hod) },
-                { key: 'timetable', label: '★ Timetable', show: Boolean(teacher?.isTimetableIncharge || user?.is_timetable_incharge) },
+                { key: 'my_timetable', label: 'Timetable', always: true },
+                { key: 'timetable', label: 'Timetable-Incharge', show: Boolean(teacher?.isTimetableIncharge || user?.is_timetable_incharge) },
               ]
                 .filter(tab => tab.always || tab.show)
                 .map(tab => (
@@ -212,10 +212,10 @@ const TeacherDashboard = () => {
           )}
 
           {activeTab === 'monitoring' && <MonitoringTab duties={monitoring_duties} />}
-          {activeTab === 'notices' && <TeacherNoticeBoard />}
           {activeTab === 'reports' && <TeacherReports classes={assigned_classes} />}
           {activeTab === 'hod' && <HODDashboard onBack={() => setActiveTab('dashboard')} />}
           {activeTab === 'mentor' && <MentorDashboard onBack={() => setActiveTab('dashboard')} />}
+          {activeTab === 'my_timetable' && <TimeTable />}
           {activeTab === 'timetable' && <TimetablePanel onBack={() => setActiveTab('dashboard')} />}
         </div>
 

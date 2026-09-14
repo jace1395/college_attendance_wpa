@@ -23,9 +23,10 @@ html.light body {
 /* Background image overlay — tint to light slate instead of dark slate */
 html.light .fixed.inset-0.bg-slate-900\/80,
 html.light .fixed.inset-0.bg-slate-900\/85,
-html.light .absolute.inset-0.bg-slate-900\/80 {
-  background-color: rgba(241, 245, 249, 0.70) !important;
-  /* slate-100/70 */
+html.light .fixed.inset-0.bg-slate-900\/90,
+html.light .absolute.inset-0.bg-slate-900\/80,
+html.light .absolute.inset-0.bg-black\/60 {
+  background-color: rgba(241, 245, 249, 0.75) !important;
   backdrop-filter: blur(16px);
 }
 
@@ -52,6 +53,7 @@ html.light .bg-slate-900\/40,
 html.light .bg-slate-900\/50,
 html.light .bg-slate-900\/60,
 html.light .bg-slate-900\/80,
+html.light .bg-slate-900\/90,
 html.light .bg-slate-900\/95 {
   background-color: rgba(255, 255, 255, 0.75) !important;
   backdrop-filter: blur(20px);
@@ -95,6 +97,30 @@ html.light .border-white\/30 {
 }
 
 /* Text — ensure dark text on light background */
+/* EXCEPTION: inside solid colored buttons/pills, text MUST stay white */
+html.light .bg-blue-600 .text-white,
+html.light .bg-blue-600.text-white,
+html.light .bg-blue-500 .text-white,
+html.light .bg-blue-500.text-white,
+html.light .bg-indigo-600 .text-white,
+html.light .bg-indigo-600.text-white,
+html.light .bg-indigo-500 .text-white,
+html.light .bg-indigo-500.text-white,
+html.light .bg-purple-600 .text-white,
+html.light .bg-purple-600.text-white,
+html.light .bg-emerald-600 .text-white,
+html.light .bg-emerald-600.text-white,
+html.light .bg-green-600 .text-white,
+html.light .bg-green-600.text-white,
+html.light .bg-amber-600 .text-white,
+html.light .bg-amber-600.text-white,
+html.light .bg-red-600 .text-white,
+html.light .bg-red-600.text-white,
+html.light .bg-green-500 .text-white,
+html.light .bg-green-500.text-white {
+  color: #ffffff !important;
+}
+
 html.light .text-white {
   color: #0f172a !important;
 }
@@ -423,6 +449,150 @@ html.light ::-webkit-scrollbar-thumb {
 
 html.light ::-webkit-scrollbar-thumb:hover {
   background: rgba(100, 116, 139, 0.5);
+}
+
+/* ============================================================
+   LIGHT MODE EXTENDED — Additional selectors found across
+   Teacher, Principal, SubjectDetail & SubjectReports pages
+   ============================================================ */
+
+/* Teacher profile card uses bg-slate-900/80 explicitly */
+html.light .bg-slate-900\/80 {
+  background-color: rgba(255, 255, 255, 0.80) !important;
+  backdrop-filter: blur(20px);
+}
+
+/* Teacher class cards use bg-slate-900/80 as well — keep border visible */
+html.light .border-white\/30 {
+  border-color: rgba(100, 116, 139, 0.35) !important;
+}
+
+/* Heading text colors used on Principal page */
+html.light .text-purple-100 {
+  color: #4c1d95 !important;
+}
+
+html.light .text-purple-300 {
+  color: #7c3aed !important;
+}
+
+/* Select dropdowns inside dark panels (Teacher semester selector) */
+html.light select.bg-slate-900,
+html.light .bg-slate-900.text-white {
+  background-color: rgba(241, 245, 249, 0.9) !important;
+  color: #0f172a !important;
+  border-color: rgba(100, 116, 139, 0.35) !important;
+}
+
+/* Inline select options */
+html.light option {
+  background-color: #f1f5f9 !important;
+  color: #0f172a !important;
+}
+
+/* Hover states on tab buttons in light mode */
+html.light button.hover\:text-white:hover {
+  color: #0f172a !important;
+}
+html.light button.hover\:bg-white\/5:hover {
+  background-color: rgba(15, 23, 42, 0.06) !important;
+}
+
+/* Nav link hover states */
+html.light a.hover\:text-white:hover {
+  color: #0f172a !important;
+}
+html.light a.hover\:bg-white\/5:hover {
+  background-color: rgba(15, 23, 42, 0.06) !important;
+}
+
+/* Teacher class cards — bg-white/10 circle icon background */
+html.light .bg-white\/10 {
+  background-color: rgba(15, 23, 42, 0.07) !important;
+}
+
+/* Divider line in stat blocks */
+html.light .bg-white\/10.w-px {
+  background-color: rgba(15, 23, 42, 0.15) !important;
+}
+
+/* Blue gradient banner (Teacher smart alert) */
+html.light .bg-linear-to-r.from-blue-600\/90.to-indigo-600\/90,
+html.light [class*="from-blue-600"][class*="to-indigo-600"] {
+  background: linear-gradient(to right, rgba(37, 99, 235, 0.92), rgba(79, 70, 229, 0.92)) !important;
+}
+
+/* Keep white text on colored/gradient banners and buttons */
+html.light .bg-blue-600 .text-white,
+html.light .bg-indigo-600 .text-white,
+html.light .bg-purple-600 .text-white,
+html.light [class*="from-blue-600"] .text-white,
+html.light [class*="to-indigo-600"] .text-white {
+  color: #ffffff !important;
+}
+
+/* White text specifically on colored button backgrounds stays white */
+html.light .bg-blue-600,
+html.light .bg-blue-500,
+html.light a.bg-blue-600,
+html.light a.bg-white {
+  color: inherit;
+}
+
+/* The "Take Attendance Now" white CTA button on teacher banner */
+html.light .bg-white.text-blue-600 {
+  background-color: #ffffff !important;
+  color: #2563eb !important;
+}
+
+/* SubjectDetail — blue summary banner */
+html.light .bg-blue-900\/20 {
+  background-color: rgba(59, 130, 246, 0.08) !important;
+}
+html.light .border-blue-500\/20 {
+  border-color: rgba(59, 130, 246, 0.25) !important;
+}
+html.light .text-blue-100 {
+  color: #1e40af !important;
+}
+html.light .text-blue-300\/70 {
+  color: #2563eb !important;
+  opacity: 0.80;
+}
+
+/* SubjectDetail table header row */
+html.light .bg-slate-800\/80 {
+  background-color: rgba(241, 245, 249, 0.95) !important;
+}
+
+/* Status badge backgrounds in the attendance grid */
+html.light .bg-green-500\/20.text-green-400,
+html.light .bg-red-500\/20.text-red-400,
+html.light .bg-blue-500\/20.text-blue-400,
+html.light .bg-yellow-500\/20.text-yellow-400 {
+  color: inherit;
+}
+
+/* Raise ticket modal backdrop */
+html.light .bg-slate-800\/90 {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-color: rgba(100, 116, 139, 0.20) !important;
+}
+
+/* Teacher class card arrow circle hover */
+html.light .group:hover .group-hover\:bg-blue-600 {
+  background-color: #2563eb !important;
+}
+
+/* Fix text-xs uppercase tracker labels in cards */
+html.light .text-white\/50 {
+  color: #64748b !important;
+}
+
+/* Fix absolute positioned loader bg in dark mode */
+html.light .bg-slate-800\/90.text-white {
+  background-color: rgba(255,255,255,0.95) !important;
+  color: #0f172a !important;
 }
 
 /* Animations */

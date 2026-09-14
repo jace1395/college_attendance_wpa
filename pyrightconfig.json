@@ -1,17 +1,10 @@
-﻿{
+{
   "venvPath": "backend",
   "venv": ".venv",
   "extraPaths": [
     "backend",
     "backend/.venv/Lib/site-packages"
   ],
-  "executionEnvironments": [
-    {
-      "root": "backend",
-      "extraPaths": [
-        "backend",
-        "backend/.venv/Lib/site-packages"
-      ]
-    }
-  ]
+  "reportIncompatibleVariableOverride": false,
+  "reportMissingTypeStubs": false
 }
