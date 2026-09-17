@@ -123,7 +123,7 @@ const AdminDashboard = () => {
 
         {/* Navigation Tabs */}
         <div className="flex justify-start mb-8 overflow-x-auto pb-2">
-            <div className="border border-gray-200 dark:border-slate-700 rounded-xl p-2 mt-4 flex flex-wrap gap-2 items-center justify-center bg-gray-50/50 dark:bg-slate-800/50 shrink-0">
+            <div className="flex flex-wrap items-center gap-2 p-2 mt-6 bg-gray-100/80 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 rounded-xl w-fit">
                 {['overview', 'users', 'overrides', 'reports', 'data-entry', 'student-reports'].map(tab => (
                     <button
                         key={tab}

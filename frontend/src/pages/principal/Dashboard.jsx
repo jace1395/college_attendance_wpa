@@ -121,7 +121,7 @@ const PrincipalDashboard = () => {
                 <p className="text-purple-300 font-medium">Principal, Shree Damodar College</p>
             </div>
             
-            <div className="border border-gray-200 dark:border-slate-700 rounded-xl p-2 mt-4 flex flex-wrap gap-2 items-center justify-center bg-gray-50/50 dark:bg-slate-800/50 w-full md:w-auto">
+            <div className="flex flex-wrap items-center gap-2 p-2 mt-6 bg-gray-100/80 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 rounded-xl w-fit">
                 {['dashboard', 'view', 'reports', 'search'].map(tab => (
                     <button
                         key={tab}

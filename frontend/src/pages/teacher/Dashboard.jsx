@@ -68,13 +68,15 @@ const TeacherDashboard = () => {
   const { teacher, assigned_classes, monitoring_duties } = dashboardData || {};
 
   return (
-    <div
-      className="min-h-screen bg-cover bg-fixed text-white pb-10"
-      style={{ backgroundImage: 'url("/imgs/login-signup.jpg")' }}
-    >
-      <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md pointer-events-none"></div>
+    <>
+      {/* 1. Fixed Background Layer (Never cuts off) */}
+      <div className="fixed inset-0 -z-10 bg-[url('/imgs/login-signup.jpg')] bg-cover bg-center bg-no-repeat">
+        <div className="absolute inset-0 bg-white/90 dark:bg-slate-900/80 backdrop-blur-md"></div>
+      </div>
 
-      <div className="relative z-10 p-4 md:p-8 max-w-7xl mx-auto min-h-screen flex flex-col">
+      {/* 2. Scrollable Content Layer */}
+      <div className="relative z-0 min-h-screen w-full overflow-y-auto p-4 md:p-6 text-gray-900 dark:text-white">
+        <div className="max-w-7xl mx-auto flex flex-col min-h-full">
 
         {/* Header */}
         <div className="flex flex-wrap justify-between items-center mb-8 gap-4">
@@ -94,10 +96,13 @@ const TeacherDashboard = () => {
 
         {/* Profile Card & Navigation Tabs — mirrors Student Dashboard layout */}
         {teacher && (
-          <div className="bg-white dark:bg-slate-800 text-gray-900 dark:text-white backdrop-blur-2xl border border-gray-200 dark:border-slate-700 rounded-3xl p-6 md:p-8 mb-8 shadow-sm dark:shadow-none flex flex-col items-center gap-8">
-            {/* Top row: Profile info LEFT, stats badge RIGHT */}
-            <div className="flex flex-col md:flex-row w-full items-center justify-between gap-6">
-              <div className="text-center md:text-left">
+          <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm flex flex-col gap-6 mb-8">
+            
+            {/* Top Section: Profile (Left) & Stats Widget (Right) */}
+            <div className="flex flex-col md:flex-row justify-between items-center md:items-start gap-6">
+              
+              {/* Left Side: Profile Info */}
+              <div className="flex flex-col gap-2 text-center md:text-left w-full md:w-auto">
                 <h2 className="text-3xl font-bold mb-1">{teacher.name}</h2>
                 <p className="text-gray-600 dark:text-gray-400 text-lg mb-2">{teacher.department} Department</p>
                 <div className="flex items-center justify-center md:justify-start gap-2 text-gray-600 dark:text-gray-400">
@@ -114,8 +119,8 @@ const TeacherDashboard = () => {
                 </div>
               </div>
 
-              {/* Quick stats badge — mirrors the Student's circular progress area */}
-              <div className="flex items-center gap-4 bg-gray-50 dark:bg-slate-700/50 p-4 rounded-2xl border border-gray-200 dark:border-slate-600">
+              {/* Right Side: Stats Widget (Assigned Classes & Monitoring) */}
+              <div className="bg-gray-50 dark:bg-slate-700/50 border border-gray-200 dark:border-slate-600 rounded-xl p-4 flex items-center gap-6 w-full md:w-auto justify-center">
                 <div className="text-right">
                   <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Assigned Classes</p>
                   <p className="text-2xl font-bold">{assigned_classes?.length || 0}</p>
@@ -128,36 +133,37 @@ const TeacherDashboard = () => {
               </div>
             </div>
 
-            {/* Navigation pills — bottom-center, matching Student Dashboard */}
-            <div className="border border-gray-200 dark:border-slate-700 rounded-xl p-2 mt-4 flex flex-wrap gap-2 items-center justify-center bg-gray-50/50 dark:bg-slate-800/50 w-full md:w-auto">
-              {[
-                { key: 'dashboard', label: 'Dashboard', always: true },
-                { key: 'monitoring', label: 'Monitoring', always: true },
-                { key: 'notices', label: 'Notices', always: true },
-                { key: 'reports', label: 'Reports', always: true },
-                { key: 'my_timetable', label: 'Timetable', always: true },
-                { key: 'mentor', label: '★ Mentor', show: Boolean(teacher?.isMentor || user?.is_mentor) },
-                { key: 'hod', label: '★ HOD', show: Boolean(teacher?.isHOD || user?.is_hod) },
-
-                { key: 'timetable', label: '★ Timetable Incharge', show: Boolean(teacher?.isTimetableIncharge || user?.is_timetable_incharge) },
-              ]
-                .filter(tab => tab.always || tab.show)
-                .map(tab => (
-                  <button
-                    key={tab.key}
-                    onClick={() => setActiveTab(tab.key)}
-                    className={`px-5 py-2.5 rounded-xl text-sm font-bold capitalize transition-all ${activeTab === tab.key
-                        ? tab.key === 'hod' ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20'
-                          : tab.key === 'mentor' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20'
-                            : tab.key === 'timetable' ? 'bg-amber-600 text-white shadow-lg shadow-amber-500/20'
-                              : 'bg-blue-600 text-white shadow-lg'
-                        : 'bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-slate-600'
+            {/* Bottom Section: Centered Navbar */}
+            <div className="flex justify-center w-full">
+              <div className="flex flex-wrap items-center justify-center gap-1 p-1 bg-gray-100 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl">
+                {[
+                  { key: 'dashboard', label: 'Dashboard', always: true },
+                  { key: 'monitoring', label: 'Monitoring', always: true },
+                  { key: 'notices', label: 'Notices', always: true },
+                  { key: 'reports', label: 'Reports', always: true },
+                  { key: 'my_timetable', label: 'Timetable', always: true },
+                  { key: 'mentor', label: '★ Mentor', show: Boolean(teacher?.isMentor || user?.is_mentor) },
+                  { key: 'hod', label: '★ HOD', show: Boolean(teacher?.isHOD || user?.is_hod) },
+                  { key: 'timetable', label: '★ Timetable Incharge', show: Boolean(teacher?.isTimetableIncharge || user?.is_timetable_incharge) },
+                ]
+                  .filter(tab => tab.always || tab.show)
+                  .map(tab => (
+                    <button
+                      key={tab.key}
+                      onClick={() => setActiveTab(tab.key)}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        activeTab === tab.key
+                          ? tab.key === 'hod' ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20'
+                            : tab.key === 'mentor' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20'
+                              : tab.key === 'timetable' ? 'bg-amber-600 text-white shadow-lg shadow-amber-500/20'
+                                : 'bg-blue-600 text-white shadow-lg'
+                          : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700/50'
                       }`}
-                  >
-                    {tab.label}
-                  </button>
-                ))
-              }
+                    >
+                      {tab.label}
+                    </button>
+                  ))}
+              </div>
             </div>
           </div>
         )}
@@ -277,8 +283,9 @@ const TeacherDashboard = () => {
           </div>
         )}
 
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 

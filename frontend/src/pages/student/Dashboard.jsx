@@ -75,14 +75,15 @@ const StudentDashboard = () => {
   const strokeDashoffset = student ? circumference - (student.overall_attendance / 100) * circumference : circumference;
 
   return (
-    <div 
-      className="min-h-screen bg-cover bg-center bg-fixed text-white"
-      style={{ backgroundImage: 'url("/imgs/login-signup.jpg")' }}
-    >
-      {/* Dark overlay with blur */}
-      <div className="fixed inset-0 bg-slate-900/80 backdrop-blur-md pointer-events-none"></div>
+    <>
+      {/* 1. Fixed Background Layer (Never cuts off) */}
+      <div className="fixed inset-0 -z-10 bg-[url('/imgs/login-signup.jpg')] bg-cover bg-center bg-no-repeat">
+        <div className="absolute inset-0 bg-white/90 dark:bg-slate-900/80 backdrop-blur-md"></div>
+      </div>
 
-      <div className="relative z-10 p-6 md:p-10 max-w-7xl mx-auto min-h-screen flex flex-col">
+      {/* 2. Scrollable Content Layer */}
+      <div className="relative z-0 min-h-screen w-full overflow-y-auto p-4 md:p-6 text-gray-900 dark:text-white">
+        <div className="max-w-7xl mx-auto flex flex-col min-h-full">
         
         {/* Header */}
         <div className="flex flex-wrap justify-between items-center mb-8 gap-4">
@@ -111,67 +112,75 @@ const StudentDashboard = () => {
 
         {/* Profile Card & Navigation Tabs */}
         {student && (
-        <div className="bg-white dark:bg-slate-800 text-gray-900 dark:text-white backdrop-blur-md border border-gray-200 dark:border-slate-700 rounded-3xl p-6 md:p-8 mb-8 shadow-sm dark:shadow-none flex flex-col items-center gap-8">
-          <div className="flex flex-col md:flex-row w-full items-center justify-between gap-6">
-            <div className="text-center md:text-left">
-              <h2 className="text-3xl font-bold mb-1">{student.name}</h2>
-              <p className="text-gray-600 dark:text-gray-400 text-lg mb-2">{student.program || departmentName} | Roll No: <span className="text-gray-900 dark:text-white font-medium">{student.student_id}</span></p>
-              <div className="flex items-center justify-center md:justify-start gap-2 text-gray-600 dark:text-gray-400">
-                  <span>Semester</span>
-                  <select 
-                      value={selectedSemester}
-                      onChange={handleSemesterChange}
-                      className="bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-white text-sm rounded-lg px-2 py-1 outline-none border border-gray-200 dark:border-slate-600 focus:ring-1 focus:ring-blue-500 cursor-pointer"
-                  >
-                      {student.available_semesters.map(sem => (
-                          <option key={sem} value={sem}>{sem}</option>
-                      ))}
-                  </select>
-              </div>
-            </div>
+          <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm flex flex-col gap-6 mb-8">
             
-            <div className="flex items-center gap-4 bg-gray-50 dark:bg-slate-700/50 p-4 rounded-2xl border border-gray-200 dark:border-slate-600">
-              <div className="text-right">
-                <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Overall Attendance</p>
-                <p className="text-2xl font-bold">{student.overall_attendance}%</p>
+            {/* Top Section: Profile (Left) & Stats Widget (Right) */}
+            <div className="flex flex-col md:flex-row justify-between items-center md:items-start gap-6">
+              
+              {/* Left Side: Profile Info */}
+              <div className="flex flex-col gap-2 text-center md:text-left w-full md:w-auto">
+                <h2 className="text-3xl font-bold mb-1">{student.name}</h2>
+                <p className="text-gray-600 dark:text-gray-400 text-lg mb-2">{student.program || departmentName} | Roll No: <span className="text-gray-900 dark:text-white font-medium">{student.student_id}</span></p>
+                <div className="flex items-center justify-center md:justify-start gap-2 text-gray-600 dark:text-gray-400">
+                    <span>Semester</span>
+                    <select 
+                        value={selectedSemester}
+                        onChange={handleSemesterChange}
+                        className="bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-white text-sm rounded-lg px-2 py-1 outline-none border border-gray-200 dark:border-slate-600 focus:ring-1 focus:ring-blue-500 cursor-pointer"
+                    >
+                        {student.available_semesters.map(sem => (
+                            <option key={sem} value={sem}>{sem}</option>
+                        ))}
+                    </select>
+                </div>
               </div>
-              {/* Circular Progress */}
-              <div className="relative w-20 h-20 md:w-24 md:h-24">
-                <svg className="w-20 h-20 md:w-24 md:h-24 transform -rotate-90">
-                  <circle
-                    className="text-gray-200 dark:text-white/10"
-                    strokeWidth="8"
-                    stroke="currentColor"
-                    fill="transparent"
-                    r={radius}
-                    cx="50%"
-                    cy="50%"
-                  />
-                  <circle
-                    className="transition-all duration-1000 ease-in-out"
-                    strokeWidth="8"
-                    strokeDasharray={circumference}
-                    strokeDashoffset={strokeDashoffset}
-                    strokeLinecap="round"
-                    stroke={getProgressStrokeColor(student.overall_attendance)}
-                    fill="transparent"
-                    r={radius}
-                    cx="50%"
-                    cy="50%"
-                  />
-                </svg>
-                <div className="absolute inset-0 flex items-center justify-center text-sm font-bold">
-                  {student.overall_attendance}%
+              
+              {/* Right Side: Circular Progress Widget */}
+              <div className="bg-gray-50 dark:bg-slate-700/50 border border-gray-200 dark:border-slate-600 rounded-xl p-4 flex items-center gap-6 w-full md:w-auto justify-center">
+                <div className="text-right">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Overall Attendance</p>
+                  <p className="text-2xl font-bold">{student.overall_attendance}%</p>
+                </div>
+                {/* Circular Progress */}
+                <div className="relative w-20 h-20 md:w-24 md:h-24">
+                  <svg className="w-20 h-20 md:w-24 md:h-24 transform -rotate-90">
+                    <circle
+                      className="text-gray-200 dark:text-white/10"
+                      strokeWidth="8"
+                      stroke="currentColor"
+                      fill="transparent"
+                      r={radius}
+                      cx="50%"
+                      cy="50%"
+                    />
+                    <circle
+                      className="transition-all duration-1000 ease-in-out"
+                      strokeWidth="8"
+                      strokeDasharray={circumference}
+                      strokeDashoffset={strokeDashoffset}
+                      strokeLinecap="round"
+                      stroke={getProgressStrokeColor(student.overall_attendance)}
+                      fill="transparent"
+                      r={radius}
+                      cx="50%"
+                      cy="50%"
+                    />
+                  </svg>
+                  <div className="absolute inset-0 flex items-center justify-center text-sm font-bold">
+                    {student.overall_attendance}%
+                  </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          <div className="border border-gray-200 dark:border-slate-700 rounded-xl p-2 mt-4 flex flex-wrap gap-2 items-center justify-center bg-gray-50/50 dark:bg-slate-800/50 w-full md:w-auto">
-            <Link to="/student/timetable" className="px-5 py-2.5 rounded-xl text-sm font-bold capitalize transition-all bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-slate-600">Timetable</Link>
-            <Link to="/student/settings" className="px-5 py-2.5 rounded-xl text-sm font-bold capitalize transition-all bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-slate-600">Settings</Link>
+            {/* Bottom Section: Centered Navbar */}
+            <div className="flex justify-center w-full">
+              <div className="flex flex-wrap items-center justify-center gap-1 p-1 bg-gray-100 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl">
+                <Link to="/student/timetable" className="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700/50">Timetable</Link>
+                <Link to="/student/settings" className="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700/50">Settings</Link>
+              </div>
+            </div>
           </div>
-        </div>
         )}
 
         {/* Subjects Grid */}
@@ -210,8 +219,9 @@ const StudentDashboard = () => {
             </Link>
           ))}
         </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 
