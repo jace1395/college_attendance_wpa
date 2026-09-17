@@ -16,7 +16,10 @@ const TeacherDashboard = () => {
   const [activeTab, setActiveTab] = useState('dashboard');
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [selectedSemester, setSelectedSemester] = useState('');
+  const [selectedSemester, setSelectedSemester] = useState(() => {
+    const month = new Date().getMonth();
+    return (month >= 7 && month <= 11) ? 'Odd' : 'Even';
+  });
 
   // Modals / Alerts
   const [selectedClass, setSelectedClass] = useState(null); // Quick Stats Modal
@@ -91,18 +94,18 @@ const TeacherDashboard = () => {
 
         {/* Profile Card & Navigation Tabs — mirrors Student Dashboard layout */}
         {teacher && (
-          <div className="bg-slate-900/80 backdrop-blur-2xl border border-white/20 rounded-3xl p-6 md:p-8 mb-8 shadow-2xl flex flex-col items-center gap-8">
+          <div className="bg-white dark:bg-slate-800 text-gray-900 dark:text-white backdrop-blur-2xl border border-gray-200 dark:border-slate-700 rounded-3xl p-6 md:p-8 mb-8 shadow-sm dark:shadow-none flex flex-col items-center gap-8">
             {/* Top row: Profile info LEFT, stats badge RIGHT */}
             <div className="flex flex-col md:flex-row w-full items-center justify-between gap-6">
               <div className="text-center md:text-left">
                 <h2 className="text-3xl font-bold mb-1">{teacher.name}</h2>
-                <p className="text-white/70 text-lg mb-2">{teacher.department} Department</p>
-                <div className="flex items-center justify-center md:justify-start gap-2 text-white/70">
+                <p className="text-gray-600 dark:text-gray-400 text-lg mb-2">{teacher.department} Department</p>
+                <div className="flex items-center justify-center md:justify-start gap-2 text-gray-600 dark:text-gray-400">
                   <span>Semester</span>
                   <select
                     value={selectedSemester}
                     onChange={(e) => setSelectedSemester(e.target.value)}
-                    className="bg-slate-900 text-white font-bold text-sm rounded-lg px-3 py-1.5 outline-none border-2 border-white/20 focus:border-blue-500 cursor-pointer shadow-xl"
+                    className="bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-white font-bold text-sm rounded-lg px-3 py-1.5 outline-none border-2 border-gray-200 dark:border-slate-600 focus:border-blue-500 cursor-pointer shadow-sm dark:shadow-xl"
                   >
                     {(teacher.available_semesters || []).map(sem => (
                       <option key={sem} value={sem}>{sem}</option>
@@ -112,29 +115,31 @@ const TeacherDashboard = () => {
               </div>
 
               {/* Quick stats badge — mirrors the Student's circular progress area */}
-              <div className="flex items-center gap-4 bg-slate-900/40 p-4 rounded-2xl border border-white/10">
+              <div className="flex items-center gap-4 bg-gray-50 dark:bg-slate-700/50 p-4 rounded-2xl border border-gray-200 dark:border-slate-600">
                 <div className="text-right">
-                  <p className="text-sm text-white/70 mb-1">Assigned Classes</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Assigned Classes</p>
                   <p className="text-2xl font-bold">{assigned_classes?.length || 0}</p>
                 </div>
-                <div className="w-px h-10 bg-white/10"></div>
+                <div className="w-px h-10 bg-gray-300 dark:bg-white/10"></div>
                 <div className="text-right">
-                  <p className="text-sm text-white/70 mb-1">Monitoring</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Monitoring</p>
                   <p className="text-2xl font-bold">{monitoring_duties?.length || 0}</p>
                 </div>
               </div>
             </div>
 
             {/* Navigation pills — bottom-center, matching Student Dashboard */}
-            <div className="flex flex-wrap justify-center gap-2 bg-slate-900/50 p-1.5 rounded-2xl border border-white/10 shadow-sm w-full md:w-auto">
+            <div className="border border-gray-200 dark:border-slate-700 rounded-xl p-2 mt-4 flex flex-wrap gap-2 items-center justify-center bg-gray-50/50 dark:bg-slate-800/50 w-full md:w-auto">
               {[
                 { key: 'dashboard', label: 'Dashboard', always: true },
                 { key: 'monitoring', label: 'Monitoring', always: true },
+                { key: 'notices', label: 'Notices', always: true },
                 { key: 'reports', label: 'Reports', always: true },
+                { key: 'my_timetable', label: 'Timetable', always: true },
                 { key: 'mentor', label: '★ Mentor', show: Boolean(teacher?.isMentor || user?.is_mentor) },
                 { key: 'hod', label: '★ HOD', show: Boolean(teacher?.isHOD || user?.is_hod) },
-                { key: 'my_timetable', label: 'Timetable', always: true },
-                { key: 'timetable', label: 'Timetable-Incharge', show: Boolean(teacher?.isTimetableIncharge || user?.is_timetable_incharge) },
+
+                { key: 'timetable', label: '★ Timetable Incharge', show: Boolean(teacher?.isTimetableIncharge || user?.is_timetable_incharge) },
               ]
                 .filter(tab => tab.always || tab.show)
                 .map(tab => (
@@ -146,7 +151,7 @@ const TeacherDashboard = () => {
                           : tab.key === 'mentor' ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/20'
                             : tab.key === 'timetable' ? 'bg-amber-600 text-white shadow-lg shadow-amber-500/20'
                               : 'bg-blue-600 text-white shadow-lg'
-                        : 'text-white/60 hover:text-white hover:bg-white/5'
+                        : 'bg-gray-100 dark:bg-slate-700 text-gray-800 dark:text-gray-200 hover:bg-gray-200 dark:hover:bg-slate-600'
                       }`}
                   >
                     {tab.label}
@@ -182,26 +187,26 @@ const TeacherDashboard = () => {
         <div className="flex-1">
           {activeTab === 'dashboard' && (
             <div className="animate-fade-in-up">
-              <h3 className="text-2xl font-semibold mb-6">Assigned Classes</h3>
+              <h3 className="text-2xl font-semibold mb-6 text-gray-900 dark:text-white">Assigned Classes</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {assigned_classes?.map(cls => (
                   <button
                     key={cls.class_id}
                     onClick={() => setSelectedClass(cls)}
-                    className="group bg-slate-900/80 backdrop-blur-2xl border border-white/20 rounded-3xl p-6 text-left hover:bg-slate-800/90 hover:border-white/30 transition-all shadow-xl hover:shadow-2xl hover:-translate-y-1 relative overflow-hidden"
+                    className="group bg-white dark:bg-slate-800 backdrop-blur-2xl border border-gray-200 dark:border-slate-700 rounded-3xl p-6 text-left hover:bg-gray-50 dark:hover:bg-slate-700 transition-all shadow-sm hover:shadow-md hover:-translate-y-1 relative overflow-hidden"
                   >
                     <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl group-hover:bg-blue-500/20 transition-colors"></div>
-                    <h4 className="text-2xl font-bold mb-1 relative z-10">{cls.class_name}</h4>
-                    <p className="text-white/60 mb-8 relative z-10">{cls.subject_name}</p>
+                    <h4 className="text-2xl font-bold mb-1 relative z-10 text-gray-900 dark:text-white">{cls.class_name}</h4>
+                    <p className="text-blue-600 dark:text-blue-400 mb-8 relative z-10">{cls.subject_name}</p>
 
-                    <div className="flex justify-between items-end relative z-10 border-t border-white/10 pt-4">
+                    <div className="flex justify-between items-end relative z-10 border-t border-gray-200 dark:border-slate-700 pt-4">
                       <div>
-                        <p className="text-xs text-white/50 uppercase tracking-wider mb-1">Avg Attendance</p>
-                        <p className={`text-xl font-bold ${cls.avg_attendance >= 75 ? 'text-green-400' : 'text-red-400'}`}>
+                        <p className="text-xs text-gray-600 dark:text-gray-400 uppercase tracking-wider mb-1">Avg Attendance</p>
+                        <p className={`text-xl font-bold ${cls.avg_attendance >= 75 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
                           {cls.avg_attendance}%
                         </p>
                       </div>
-                      <div className="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center group-hover:bg-blue-600 transition-colors">
+                      <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-slate-700 flex items-center justify-center group-hover:bg-blue-600 transition-colors text-gray-600 dark:text-gray-400 group-hover:text-white">
                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"></path></svg>
                       </div>
                     </div>
@@ -212,6 +217,7 @@ const TeacherDashboard = () => {
           )}
 
           {activeTab === 'monitoring' && <MonitoringTab duties={monitoring_duties} />}
+          {activeTab === 'notices' && <TeacherNoticeBoard />}
           {activeTab === 'reports' && <TeacherReports classes={assigned_classes} />}
           {activeTab === 'hod' && <HODDashboard onBack={() => setActiveTab('dashboard')} />}
           {activeTab === 'mentor' && <MentorDashboard onBack={() => setActiveTab('dashboard')} />}

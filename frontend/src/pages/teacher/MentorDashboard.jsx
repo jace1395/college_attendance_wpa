@@ -81,7 +81,7 @@ const MentorDashboard = ({ onBack }) => {
       </div>
 
       {/* Summary Cards */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {[
           { label: 'Total Mentees',    value: mentees.length,   color: 'bg-emerald-500/10 border-emerald-500/30', text: 'text-emerald-400' },
           { label: 'Below 75%',        value: shortCount,        color: 'bg-red-500/10 border-red-500/30',          text: 'text-red-400' },

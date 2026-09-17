@@ -65,8 +65,18 @@ const SubjectReports = ({ subject, history }) => {
       else setEndDate('');
       return;
     }
-    if (type === 'start') setStartDate(val);
-    else setEndDate(val);
+    if (type === 'start') {
+      setStartDate(val);
+      if (endDate && new Date(endDate) < new Date(val)) {
+        setEndDate(val);
+      }
+    } else {
+      if (startDate && new Date(val) < new Date(startDate)) {
+        setEndDate(startDate);
+      } else {
+        setEndDate(val);
+      }
+    }
   };
 
   const handleWeeklyClick = (data) => {
@@ -222,7 +232,7 @@ const SubjectReports = ({ subject, history }) => {
   return (
     <div className="animate-fade-in-up">
       {/* Filter Bar */}
-      <div className="bg-white/5 backdrop-blur-md border border-white/10 rounded-2xl p-4 mb-6 flex flex-col md:flex-row gap-4 items-start md:items-center">
+      <div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white backdrop-blur-md border border-white/10 rounded-2xl p-4 mb-6 flex flex-col md:flex-row gap-4 items-start md:items-center">
         <span className="text-sm font-medium text-white/70 uppercase tracking-wider whitespace-nowrap">Filter By:</span>
         <div className="flex overflow-x-auto whitespace-nowrap gap-2 bg-slate-900/50 p-1 rounded-xl border border-white/5 w-full md:w-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
           {['daily', 'weekly', 'monthly'].map(f => (
@@ -275,7 +285,7 @@ const SubjectReports = ({ subject, history }) => {
             <span className="text-white/40 hidden md:inline">to</span>
             <div className="flex items-center gap-2 w-full md:w-auto">
               <span className="text-white/40 text-xs">To</span>
-              <input type="date" value={endDate} min={semesterStartDate} max={semesterEndDate}
+              <input type="date" value={endDate} min={semesterStartDate} max={new Date().toISOString().split('T')[0]}
                 onChange={(e) => handleDateChange('end', e.target.value)}
                 className="bg-transparent text-sm text-white outline-none border-b border-white/20 focus:border-blue-400 px-1 w-full md:w-auto [color-scheme:dark]"
               />
@@ -293,7 +303,7 @@ const SubjectReports = ({ subject, history }) => {
       </div>
 
       {/* Chart Panel */}
-      <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-4 md:p-8 shadow-2xl">
+      <div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white backdrop-blur-xl border border-white/10 rounded-3xl p-4 md:p-8 shadow-2xl">
         <div className="flex items-center justify-between mb-6">
           <h3 className="text-lg font-semibold">Attendance Trend</h3>
           {/* Scroll arrows — only for daily/custom bar charts */}
@@ -324,9 +334,9 @@ const SubjectReports = ({ subject, history }) => {
 
         {/* Monthly Pie Chart */}
         {chartData.type === 'pie' ? (
-          <div className="flex flex-col items-center justify-center h-[300px]">
+          <div className="flex flex-col items-center justify-center h-[300px] text-gray-900 dark:text-white">
             <h4 className="text-xl font-bold mb-1">{chartData.monthName}</h4>
-            <p className="text-sm text-white/60 mb-4">{chartData.percentage}% Attendance</p>
+            <p className="text-sm text-gray-500 dark:text-white/60 mb-4">{chartData.percentage}% Attendance</p>
             <div className="w-full h-[240px]">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -343,11 +353,11 @@ const SubjectReports = ({ subject, history }) => {
           </div>
         ) : isWeekly ? (
           /* Weekly Bar Chart — fixed width, no scroll needed */
-          <div className="h-[300px]">
+          <div className="h-[300px] text-gray-900 dark:text-white">
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#ffffff15" vertical={false} />
-                <XAxis dataKey="range" stroke="currentColor" tick={{ fontSize: 10 }} angle={-20} textAnchor="end" tickLine={false} axisLine={false} dy={10} />
+                <XAxis dataKey="range" tick={{ fontSize: 12, fill: 'currentColor' }} interval={0} angle={-45} textAnchor="end" height={60} />
                 <YAxis fontSize={12} tickLine={false} axisLine={false} tickFormatter={(v) => `${v}%`} domain={[0, 100]} />
                 <Tooltip
                   contentStyle={{ backgroundColor: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff' }}
@@ -359,7 +369,7 @@ const SubjectReports = ({ subject, history }) => {
           </div>
         ) : (
           /* Daily / Custom — SCROLLABLE horizontal chart */
-          <div className="relative">
+          <div className="relative text-gray-900 dark:text-white">
             {/* Fade edges to indicate scrollability */}
             {chartData.length > 10 && (
               <>
@@ -379,16 +389,7 @@ const SubjectReports = ({ subject, history }) => {
                   margin={{ top: 10, right: 10, left: -20, bottom: 40 }}
                 >
                   <CartesianGrid strokeDasharray="3 3" stroke="#ffffff15" vertical={false} />
-                  <XAxis
-                    dataKey="date"
-                    tick={{ fontSize: 9, fill: '#94a3b8' }}
-                    angle={-45}
-                    textAnchor="end"
-                    tickLine={false}
-                    axisLine={false}
-                    dy={10}
-                    interval={0}
-                  />
+                  <XAxis dataKey="date" tick={{ fontSize: 12, fill: 'currentColor' }} interval={0} angle={-45} textAnchor="end" height={60} />
                   <YAxis tick={false} tickLine={false} axisLine={false} domain={[0, 1]} width={20} />
                   <Tooltip
                     contentStyle={{ backgroundColor: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff' }}

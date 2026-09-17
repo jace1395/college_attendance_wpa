@@ -58,6 +58,9 @@ class User(AbstractBaseUser, PermissionsMixin):
     )
 
     is_active = models.BooleanField(default=True)
+    
+    department = models.ForeignKey('Department', on_delete=models.SET_NULL, null=True, blank=True)
+    stream = models.ForeignKey('Stream', on_delete=models.SET_NULL, null=True, blank=True)
     is_staff = models.BooleanField(default=False)
 
     objects = CustomUserManager()
@@ -67,5 +70,19 @@ class User(AbstractBaseUser, PermissionsMixin):
 
     def __str__(self):
         if self.name:
-            return f"{self.name} ({self.roll_no if self.role == RoleChoices.STUDENT else self.role})"
-        return self.roll_no if self.role == RoleChoices.STUDENT else str(self.email)
+            return f"{self.name} ({self.role})"
+        return f"{self.email or self.roll_no} ({self.role})"
+
+
+class Department(models.Model):
+    name = models.CharField(max_length=255)
+    code = models.CharField(max_length=50)
+
+    def __str__(self):
+        return self.name
+
+class Stream(models.Model):
+    name = models.CharField(max_length=255)
+
+    def __str__(self):
+        return self.name

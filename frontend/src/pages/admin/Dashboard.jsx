@@ -72,13 +72,15 @@ const AdminDashboard = () => {
   const { admin, system_stats, recent_audit_logs } = dashboardData || {};
 
   return (
-    <div 
-      className="min-h-screen bg-cover bg-fixed text-white pb-10"
-      style={{ backgroundImage: 'url("/imgs/login-signup.jpg")' }}
-    >
-      <div className="absolute inset-0 bg-slate-900/90 backdrop-blur-md pointer-events-none"></div>
+    <>
+      {/* Fixed Background Layer */}
+      <div className="fixed inset-0 -z-10 bg-[url('/imgs/login-signup.jpg')] bg-cover bg-center bg-no-repeat">
+        <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md dark:bg-slate-900/90"></div>
+      </div>
 
-      <div className="relative z-10 p-4 md:p-8 max-w-7xl mx-auto min-h-screen flex flex-col">
+      {/* Scrollable Content Layer */}
+      <div className="relative z-0 min-h-screen w-full overflow-y-auto p-4 md:p-6 text-white">
+        <div className="max-w-7xl mx-auto flex flex-col min-h-full">
         
         {/* Header Block */}
         <div className="flex flex-wrap justify-between items-center mb-8 gap-4 bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-4 md:p-6 shadow-2xl">
@@ -121,13 +123,13 @@ const AdminDashboard = () => {
 
         {/* Navigation Tabs */}
         <div className="flex justify-start mb-8 overflow-x-auto pb-2">
-            <div className="flex gap-2 bg-slate-900/50 p-1.5 rounded-2xl border border-white/10 shrink-0">
+            <div className="border border-gray-200 dark:border-slate-700 rounded-xl p-2 mt-4 flex flex-wrap gap-2 items-center justify-center bg-gray-50/50 dark:bg-slate-800/50 shrink-0">
                 {['overview', 'users', 'overrides', 'reports', 'data-entry', 'student-reports'].map(tab => (
                     <button
                         key={tab}
                         onClick={() => setActiveTab(tab)}
                         className={`px-6 py-2.5 rounded-xl text-sm font-bold capitalize transition-all whitespace-nowrap ${
-                            activeTab === tab ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'text-white/60 hover:text-white hover:bg-white/5'
+                            activeTab === tab ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20' : 'text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5'
                         }`}
                     >
                          {tab === 'data-entry' ? 'Manage Data' : tab === 'student-reports' ? 'Student Reports' : tab}
@@ -143,19 +145,19 @@ const AdminDashboard = () => {
                     
                     {/* System Metrics */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-xl relative overflow-hidden group">
+                        <div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-xl relative overflow-hidden group">
                             <div className="absolute -right-6 -top-6 w-24 h-24 bg-blue-500/10 rounded-full blur-xl group-hover:bg-blue-500/20 transition-colors"></div>
                             <p className="text-white/60 text-sm font-semibold uppercase tracking-wider mb-2">Total Students</p>
                             <p className="text-4xl font-bold text-white">{system_stats?.total_students}</p>
                         </div>
 
-                        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-xl relative overflow-hidden group">
+                        <div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-xl relative overflow-hidden group">
                             <div className="absolute -right-6 -top-6 w-24 h-24 bg-purple-500/10 rounded-full blur-xl group-hover:bg-purple-500/20 transition-colors"></div>
                             <p className="text-white/60 text-sm font-semibold uppercase tracking-wider mb-2">Total Teachers</p>
                             <p className="text-4xl font-bold text-white">{system_stats?.total_teachers}</p>
                         </div>
 
-                        <div className="bg-white/5 backdrop-blur-xl border border-green-500/30 rounded-3xl p-6 shadow-[0_0_15px_rgba(34,197,94,0.15)] relative overflow-hidden group">
+                        <div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white backdrop-blur-xl border border-green-500/30 rounded-3xl p-6 shadow-[0_0_15px_rgba(34,197,94,0.15)] relative overflow-hidden group">
                             <div className="absolute -right-6 -top-6 w-24 h-24 bg-green-500/20 rounded-full blur-xl group-hover:bg-green-500/30 transition-colors"></div>
                             <p className="text-white/60 text-sm font-semibold uppercase tracking-wider mb-2">Active Sessions</p>
                             <div className="flex items-center gap-3">
@@ -167,7 +169,7 @@ const AdminDashboard = () => {
                             </div>
                         </div>
 
-                        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-xl relative overflow-hidden group">
+                        <div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-xl relative overflow-hidden group">
                             <div className="absolute -right-6 -top-6 w-24 h-24 bg-yellow-500/10 rounded-full blur-xl group-hover:bg-yellow-500/20 transition-colors"></div>
                             <p className="text-white/60 text-sm font-semibold uppercase tracking-wider mb-2">Last Backup</p>
                             <p className="text-xl font-bold text-white/90 mt-2">Today, 02:00 AM</p>
@@ -175,7 +177,7 @@ const AdminDashboard = () => {
                     </div>
 
                     {/* Audit Trail */}
-                    <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl flex flex-col">
+                    <div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl flex flex-col">
                         <div className="flex items-center gap-3 mb-6 pb-4 border-b border-white/10">
                             <div className="p-2 bg-slate-800 rounded-lg text-white/60">
                                 <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -216,9 +218,9 @@ const AdminDashboard = () => {
             {activeTab === 'data-entry' && <StudentDataEntry />}
             {activeTab === 'student-reports' && <AdminStudentReports />}
         </div>
-
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 

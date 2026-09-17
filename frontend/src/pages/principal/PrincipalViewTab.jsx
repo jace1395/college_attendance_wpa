@@ -95,11 +95,11 @@ const PrincipalViewTab = ({ streams }) => {
           <p>No class data available. Will populate from API.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {streamData.map((item, idx) => {
             const percent = item.total > 0 ? ((item.present / item.total) * 100).toFixed(1) : 0;
             return (
-              <div key={item.class_id || idx} className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-xl relative overflow-hidden group hover:border-white/20 transition-all">
+              <div key={item.class_id || idx} className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-xl relative overflow-hidden group hover:border-white/20 transition-all">
                 <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-2xl group-hover:bg-purple-500/20 transition-colors"></div>
                 <h4 className="text-2xl font-bold mb-4 relative z-10">{item.year} {selectedStream}</h4>
 
@@ -140,7 +140,7 @@ const PrincipalViewTab = ({ streams }) => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={closeModal}></div>
 
-          <div className="bg-slate-900/95 backdrop-blur-xl border border-white/20 w-full max-w-3xl rounded-3xl shadow-2xl relative z-10 flex flex-col overflow-hidden animate-fade-in-up max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white backdrop-blur-xl border border-white/20 w-full max-w-3xl rounded-3xl shadow-2xl relative z-10 flex flex-col overflow-hidden animate-fade-in-up max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-6 border-b border-white/10 sticky top-0 bg-slate-900/95 backdrop-blur-xl z-10">
               <div>
@@ -162,7 +162,7 @@ const PrincipalViewTab = ({ streams }) => {
               <div className="p-6 flex flex-col gap-8">
 
                 {/* Summary Row */}
-                <div className="grid grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {[
                     { label: 'Total Students', value: detailData.total,   color: 'text-white' },
                     { label: 'Present',         value: detailData.present, color: 'text-green-400' },
@@ -205,7 +205,7 @@ const PrincipalViewTab = ({ streams }) => {
                       <ResponsiveContainer width="100%" height={180}>
                         <BarChart data={detailData.subjects} margin={{ top: 4, right: 4, bottom: 4, left: -20 }}>
                           <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                          <XAxis dataKey="subject" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11 }} />
+                          <XAxis dataKey="subject" tick={{ fontSize: 12, fill: 'currentColor' }} interval={0} angle={-45} textAnchor="end" height={60} />
                           <YAxis domain={[0, 100]} tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11 }} />
                           <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: '#fff' }} />
                           <Bar dataKey="pct" name="Attendance %" fill={COLORS_PRESENT} radius={[4, 4, 0, 0]} />
@@ -222,7 +222,7 @@ const PrincipalViewTab = ({ streams }) => {
                     <ResponsiveContainer width="100%" height={180}>
                       <BarChart data={detailData.weekly_trend} margin={{ top: 4, right: 4, bottom: 4, left: -20 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
-                        <XAxis dataKey="week" tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11 }} />
+                        <XAxis dataKey="week" tick={{ fontSize: 12, fill: 'currentColor' }} interval={0} angle={-45} textAnchor="end" height={60} />
                         <YAxis domain={[0, 100]} tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11 }} />
                         <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: '#fff' }} />
                         <Bar dataKey="pct" name="Avg %" fill="#0ea5e9" radius={[4, 4, 0, 0]} />

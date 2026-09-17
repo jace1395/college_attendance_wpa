@@ -12,7 +12,9 @@ import {
   Cell,
   AreaChart,
   Area,
-  Legend
+  Legend,
+  LineChart,
+  Line
 } from 'recharts';
 import apiClient from '../../services/apiClient';
 
@@ -24,6 +26,9 @@ const TeacherReports = ({ classes }) => {
   const [rawHistory, setRawHistory] = useState([]);
   const [defaulters, setDefaulters] = useState([]);
   const [avgAttendance, setAvgAttendance] = useState(null);
+  const [selectedMonth, setSelectedMonth] = useState('');
+  const [pieChartData, setPieChartData] = useState([]);
+  const [pieChartPercentage, setPieChartPercentage] = useState(0);
   const [loading, setLoading] = useState(false);
 
   // Fallback to dummy dates if backend doesn't provide them
@@ -37,8 +42,12 @@ const TeacherReports = ({ classes }) => {
       setLoading(true);
       try {
         // Always fetch the full available history for the class, then aggregate on the frontend
-        const { data } = await apiClient.get('/api/reports/teacher/classes/', { params: { class_id: selectedClass } });
+        const params = { class_id: selectedClass };
+        if (selectedMonth) params.month = selectedMonth;
+        const { data } = await apiClient.get('/api/reports/teacher/classes/', { params });
         setRawHistory(data.chart_data || []);
+        setPieChartData(data.pieChartData || []);
+        setPieChartPercentage(data.pieChartPercentage || 0);
         setDefaulters(data.defaulters || []);
         setAvgAttendance(data.avg_attendance ?? null);
       } catch {
@@ -50,7 +59,7 @@ const TeacherReports = ({ classes }) => {
       }
     };
     fetchReportData();
-  }, [selectedClass]);
+  }, [selectedClass, selectedMonth]);
 
   const handleDateChange = (type, val) => {
     if (val && (val < semesterStartDate || val > semesterEndDate)) {
@@ -59,8 +68,18 @@ const TeacherReports = ({ classes }) => {
       else setEndDate('');
       return;
     }
-    if (type === 'start') setStartDate(val);
-    else setEndDate(val);
+    if (type === 'start') {
+      setStartDate(val);
+      if (endDate && new Date(endDate) < new Date(val)) {
+        setEndDate(val);
+      }
+    } else {
+      if (startDate && new Date(val) < new Date(startDate)) {
+        setEndDate(startDate);
+      } else {
+        setEndDate(val);
+      }
+    }
   };
 
   const handleWeeklyClick = (data) => {
@@ -142,21 +161,8 @@ const TeacherReports = ({ classes }) => {
          if (endDate) filtered = filtered.filter(r => r.date <= endDate);
        }
        
-       const present = filtered.reduce((sum, r) => sum + r.present, 0);
-       const absent = filtered.reduce((sum, r) => sum + r.absent, 0);
-       const total = present + absent;
-       const monthName = filtered.length > 0 ? new Date(filtered[0].date).toLocaleDateString('en-US', { month: 'long' }) : 'Month';
-       
        return {
-         type: 'pie',
-         monthName: filter === 'custom' ? 'Custom Range' : monthName,
-         total,
-         present,
-         percentage: total > 0 ? ((present / total) * 100).toFixed(1) : 0,
-         data: [
-           { name: 'Present', value: present, fill: '#22c55e' },
-           { name: 'Absent', value: absent, fill: '#ef4444' }
-         ]
+         type: 'pie'
        };
     }
 
@@ -180,7 +186,7 @@ const TeacherReports = ({ classes }) => {
   return (
     <div className="animate-fade-in-up flex flex-col gap-8">
       {/* Filters */}
-      <div className="bg-slate-900/80 backdrop-blur-2xl border border-white/20 rounded-3xl p-6 flex flex-col lg:flex-row gap-6 justify-between items-center shadow-2xl">
+      <div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white backdrop-blur-2xl border border-white/20 rounded-3xl p-6 flex flex-col lg:flex-row gap-6 justify-between items-center shadow-2xl">
         <div className="flex items-center gap-4 w-full lg:w-auto">
             <span className="text-white/70 font-medium">Class:</span>
             <select 
@@ -229,7 +235,7 @@ const TeacherReports = ({ classes }) => {
                 type="date" 
                 value={endDate}
                 min={semesterStartDate}
-                max={semesterEndDate}
+                max={new Date().toISOString().split('T')[0]}
                 onChange={(e) => handleDateChange('end', e.target.value)}
                 className="bg-transparent text-sm text-white outline-none border-b border-white/20 focus:border-blue-400 px-1 [color-scheme:dark]"
                 />
@@ -238,14 +244,30 @@ const TeacherReports = ({ classes }) => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
           {/* Chart */}
-          <div className="lg:col-span-2 bg-slate-900/80 backdrop-blur-2xl border border-white/20 rounded-3xl p-6 shadow-2xl flex flex-col">
+          <div className="lg:col-span-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white backdrop-blur-2xl border border-white/20 rounded-3xl p-6 flex flex-col">
             <h3 className="text-lg font-semibold mb-6 flex justify-between items-center">
                 Attendance Trends
-                {avgAttendance !== null && (
-                  <span className="text-xs font-normal text-white/50 bg-white/5 px-3 py-1 rounded-full border border-white/10">Avg: {avgAttendance}%</span>
-                )}
+                <select
+                  value={selectedMonth}
+                  onChange={(e) => setSelectedMonth(e.target.value)}
+                  className="text-sm font-normal text-white/80 bg-slate-800 px-3 py-1 rounded-lg border border-white/10 outline-none focus:border-blue-500 [color-scheme:dark]"
+                >
+                  <option value="">All Months</option>
+                  <option value="1">January</option>
+                  <option value="2">February</option>
+                  <option value="3">March</option>
+                  <option value="4">April</option>
+                  <option value="5">May</option>
+                  <option value="6">June</option>
+                  <option value="7">July</option>
+                  <option value="8">August</option>
+                  <option value="9">September</option>
+                  <option value="10">October</option>
+                  <option value="11">November</option>
+                  <option value="12">December</option>
+                </select>
             </h3>
             <div className="h-[300px] w-full flex-1">
               {loading ? (
@@ -261,16 +283,16 @@ const TeacherReports = ({ classes }) => {
                   // Pie Chart
                   if (chartData.type === 'pie') {
                     return (
-                      <div className="flex flex-col items-center justify-center h-full">
-                        <h4 className="text-xl font-bold mb-2">{chartData.monthName}</h4>
-                        <p className="text-sm text-white/60 mb-4">{chartData.percentage}% Average Attendance</p>
+                      <div className="w-full h-[300px] min-h-[300px] flex flex-col items-center justify-center mt-4">
+                        <h4 className="text-xl font-bold mb-2">{selectedMonth ? new Date(0, selectedMonth - 1).toLocaleString('en-US', { month: 'long' }) : 'All Months'}</h4>
+                        <p className="text-sm text-white/60 mb-4">{pieChartPercentage}% Average Attendance</p>
                         <ResponsiveContainer width="100%" height="100%">
                           <PieChart>
-                            <Pie data={chartData.data} cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={5} dataKey="value">
-                              {chartData.data.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
+                            <Pie data={pieChartData} cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={5} dataKey="value">
+                              {pieChartData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
                             </Pie>
                             <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff' }} />
-                            <Legend />
+                            <Legend verticalAlign="bottom" height={36} iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
                           </PieChart>
                         </ResponsiveContainer>
                       </div>
@@ -278,17 +300,17 @@ const TeacherReports = ({ classes }) => {
                   }
 
 
-                  // Weekly Bar Chart
+                  // Weekly Line Chart
                   if (filter === 'weekly') {
                     return (
                       <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
+                        <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 20 }} onClick={handleWeeklyClick} className="cursor-pointer">
                           <CartesianGrid strokeDasharray="3 3" stroke="#ffffff15" vertical={false} />
-                          <XAxis dataKey="range" stroke="currentColor" className="text-slate-500 dark:text-white/50" tick={{ fontSize: 10 }} angle={-20} textAnchor="end" tickLine={false} axisLine={false} dy={10} />
+                          <XAxis dataKey="range" tick={{ fontSize: 12, fill: 'currentColor' }} interval={0} angle={-45} textAnchor="end" height={60} />
                           <YAxis stroke="currentColor" className="text-slate-500 dark:text-white/50" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `${val}%`} domain={[0, 100]} />
                           <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff' }} cursor={{fill: 'rgba(255,255,255,0.05)'}} formatter={(value, name, props) => [`${value.toFixed(1)}% (${props.payload.present}/${props.payload.total})`, 'Attendance']} />
-                          <Bar dataKey="percentage" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={40} onClick={handleWeeklyClick} className="cursor-pointer hover:opacity-80 transition-opacity" />
-                        </BarChart>
+                          <Line type="monotone" dataKey="percentage" stroke="#3b82f6" strokeWidth={3} activeDot={{ r: 8 }} />
+                        </LineChart>
                       </ResponsiveContainer>
                     );
                   }
@@ -298,7 +320,7 @@ const TeacherReports = ({ classes }) => {
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#ffffff15" vertical={false} />
-                        <XAxis dataKey="date" stroke="currentColor" className="text-slate-500 dark:text-white/50" tick={{ fontSize: 10 }} angle={-45} textAnchor="end" tickLine={false} axisLine={false} dy={10} />
+                        <XAxis dataKey="date" tick={{ fontSize: 12, fill: 'currentColor' }} interval={0} angle={-45} textAnchor="end" height={60} />
                         <YAxis stroke="currentColor" className="text-slate-500 dark:text-white/50" fontSize={12} tickLine={false} axisLine={false} />
                         <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff' }} itemStyle={{ color: '#e2e8f0' }} />
                         <Bar dataKey="present" name="Present" fill="#22c55e" radius={[4, 4, 0, 0]} stackId="a" isAnimationActive={false} />
@@ -312,7 +334,7 @@ const TeacherReports = ({ classes }) => {
           </div>
 
           {/* Defaulters Table */}
-          <div className="bg-slate-900/90 backdrop-blur-2xl border border-red-500/30 rounded-3xl p-6 shadow-2xl flex flex-col h-[400px] lg:h-auto">
+          <div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white backdrop-blur-2xl border border-red-500/30 rounded-3xl p-6 flex flex-col h-[400px] lg:h-auto">
             <div className="flex items-center gap-3 mb-6">
                 <div className="p-2 bg-red-500/20 rounded-lg text-red-400">
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>

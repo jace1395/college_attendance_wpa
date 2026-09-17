@@ -146,12 +146,20 @@ const AdminStudentReports = () => {
           <div className="flex items-center gap-3 flex-wrap">
             <div className="flex items-center gap-2">
               <label className="text-xs text-white/50">From:</label>
-              <input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)}
+              <input type="date" value={customStart} onChange={e => {
+                const val = e.target.value;
+                setCustomStart(val);
+                if (customEnd && new Date(customEnd) < new Date(val)) setCustomEnd(val);
+              }}
                 className="bg-slate-900/60 text-white text-sm rounded-lg px-3 py-1.5 border border-white/10 focus:border-blue-500 outline-none" />
             </div>
             <div className="flex items-center gap-2">
               <label className="text-xs text-white/50">To:</label>
-              <input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)}
+              <input type="date" value={customEnd} max={new Date().toISOString().split('T')[0]} onChange={e => {
+                const val = e.target.value;
+                if (customStart && new Date(val) < new Date(customStart)) setCustomEnd(customStart);
+                else setCustomEnd(val);
+              }}
                 className="bg-slate-900/60 text-white text-sm rounded-lg px-3 py-1.5 border border-white/10 focus:border-blue-500 outline-none" />
             </div>
           </div>

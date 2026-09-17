@@ -1216,11 +1216,25 @@ class TeacherReportAPIView(APIView):
 
     def get(self, request):
         class_id = request.query_params.get('class_id')
+        month = request.query_params.get('month')
         if not class_id:
             return Response({"error": "class_id is required"}, status=400)
 
         qs = Attendance.objects.filter(class_batch_id=class_id).order_by('date')
+        if month:
+            qs = qs.filter(date__month=int(month))
         
+        # Pie Chart aggregation
+        total_records = qs.count()
+        present_records = qs.filter(status='Present').count()
+        absent_records = total_records - present_records
+        
+        pieChartData = [
+            {"name": "Present", "value": present_records, "fill": "#22c55e"},
+            {"name": "Absent", "value": absent_records, "fill": "#ef4444"}
+        ]
+        percentage = (present_records / total_records * 100) if total_records > 0 else 0
+
         chart_data_dict = {}
         for att in qs:
             d = att.date.strftime('%Y-%m-%d')
@@ -1242,19 +1256,21 @@ class TeacherReportAPIView(APIView):
         for en in enrollments:
             student = en.student
             present_count = Attendance.objects.filter(class_batch_id=class_id, student=student, status='Present').count()
-            percentage = (present_count / total_conducted * 100) if total_conducted > 0 else 0
-            total_attendance += percentage
-            if percentage < 75.0 and total_conducted > 0:
+            student_percentage = (present_count / total_conducted * 100) if total_conducted > 0 else 0
+            total_attendance += student_percentage
+            if student_percentage < 75.0 and total_conducted > 0:
                 defaulters.append({
                     "id": student.roll_no or str(student.id),
                     "name": student.name,
-                    "percentage": round(percentage, 1)
+                    "percentage": round(student_percentage, 1)
                 })
 
         avg_attendance = round(total_attendance / enrollments.count(), 1) if enrollments.exists() else 0
 
         return Response({
             "chart_data": chart_data,
+            "pieChartData": pieChartData,
+            "pieChartPercentage": round(percentage, 1),
             "defaulters": defaulters,
             "avg_attendance": avg_attendance
         })

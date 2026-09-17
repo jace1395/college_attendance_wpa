@@ -21,7 +21,7 @@ const AdminReports = () => {
                 Global System Reports
             </h2>
             
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 <div className="flex flex-col gap-2">
                     <label className="text-sm text-white/60 font-medium ml-1">Target Role</label>
                     <select 

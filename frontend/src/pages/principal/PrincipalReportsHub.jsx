@@ -179,7 +179,7 @@ const PrincipalReportsHub = ({ streams, onNavigateToView }) => {
           <h2 className="text-sm font-bold text-white/90">Filters</h2>
           <span className={"ml-1 text-xs font-bold px-2.5 py-0.5 rounded-full border " + progColor.pill}>{activeProg}</span>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div className="flex flex-col gap-1.5">
             <label className="text-xs text-white/50 font-semibold uppercase tracking-wider">Year / Class</label>
             <div className="relative">
@@ -231,10 +231,18 @@ const PrincipalReportsHub = ({ streams, onNavigateToView }) => {
             </div>
             {dateRange === 'custom' && (
               <div className="flex gap-2 mt-1">
-                <input type="date" value={customStart} onChange={e => setCustomStart(e.target.value)}
+                <input type="date" value={customStart} onChange={e => {
+                  const val = e.target.value;
+                  setCustomStart(val);
+                  if (customEnd && new Date(customEnd) < new Date(val)) setCustomEnd(val);
+                }}
                   className="flex-1 bg-slate-900/80 text-white/80 text-xs rounded-lg px-3 py-2 border border-white/10 focus:border-blue-500 outline-none" />
                 <span className="text-white/30 self-center text-xs">→</span>
-                <input type="date" value={customEnd} onChange={e => setCustomEnd(e.target.value)}
+                <input type="date" value={customEnd} max={new Date().toISOString().split('T')[0]} onChange={e => {
+                  const val = e.target.value;
+                  if (customStart && new Date(val) < new Date(customStart)) setCustomEnd(customStart);
+                  else setCustomEnd(val);
+                }}
                   className="flex-1 bg-slate-900/80 text-white/80 text-xs rounded-lg px-3 py-2 border border-white/10 focus:border-blue-500 outline-none" />
               </div>
             )}

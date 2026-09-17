@@ -3,10 +3,10 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 
 const SubjectBarChart = ({ data = [], threshold = 75, onBarClick }) => {
   return (
-    <div className="w-full h-64">
-      <ResponsiveContainer width="100%" height="100%">
+    <div className="w-full">
+      <ResponsiveContainer width="100%" height={300}>
         <BarChart data={data} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-          <XAxis dataKey="label" stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
+          <XAxis dataKey="label" tick={{ fontSize: 12, fill: 'currentColor' }} interval={0} angle={-45} textAnchor="end" height={60} />
           <YAxis stroke="#94a3b8" fontSize={12} tickLine={false} axisLine={false} />
           <Tooltip 
             cursor={{ fill: 'rgba(255,255,255,0.05)' }}

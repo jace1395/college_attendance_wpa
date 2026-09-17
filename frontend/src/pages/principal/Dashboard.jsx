@@ -75,13 +75,15 @@ const PrincipalDashboard = () => {
   const { principal, college_stats_today, streams_available } = dashboardData || {};
 
   return (
-    <div 
-      className="min-h-screen bg-cover bg-fixed text-white pb-10"
-      style={{ backgroundImage: 'url("/imgs/login-signup.jpg")' }}
-    >
-      <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md pointer-events-none"></div>
+    <>
+      {/* Fixed Background Layer */}
+      <div className="fixed inset-0 -z-10 bg-[url('/imgs/login-signup.jpg')] bg-cover bg-center bg-no-repeat">
+        <div className="absolute inset-0 bg-slate-900/80 backdrop-blur-md dark:bg-slate-900/90"></div>
+      </div>
 
-      <div className="relative z-10 p-4 md:p-8 max-w-7xl mx-auto min-h-screen flex flex-col">
+      {/* Scrollable Content Layer */}
+      <div className="relative z-0 min-h-screen w-full overflow-y-auto p-4 md:p-6 text-white">
+        <div className="max-w-7xl mx-auto flex flex-col min-h-full">
         
         {/* Header Block with Global Date Picker and Live Clock */}
         <div className="flex flex-wrap justify-between items-center mb-8 gap-4 bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-4 md:p-6 shadow-2xl">
@@ -119,13 +121,13 @@ const PrincipalDashboard = () => {
                 <p className="text-purple-300 font-medium">Principal, Shree Damodar College</p>
             </div>
             
-            <div className="flex flex-wrap justify-center gap-2 bg-slate-900/50 p-1.5 rounded-2xl border border-white/10">
+            <div className="border border-gray-200 dark:border-slate-700 rounded-xl p-2 mt-4 flex flex-wrap gap-2 items-center justify-center bg-gray-50/50 dark:bg-slate-800/50 w-full md:w-auto">
                 {['dashboard', 'view', 'reports', 'search'].map(tab => (
                     <button
                         key={tab}
                         onClick={() => setActiveTab(tab)}
-                        className={`px-6 py-2.5 rounded-xl text-sm font-bold capitalize transition-all ${
-                            activeTab === tab ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20' : 'text-white/60 hover:text-white hover:bg-white/5'
+                        className={`px-6 py-2.5 rounded-xl text-sm font-bold capitalize transition-all whitespace-nowrap ${
+                            activeTab === tab ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20' : 'text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5'
                         }`}
                     >
                         {tab}
@@ -141,25 +143,25 @@ const PrincipalDashboard = () => {
                     
                     {/* 4 Glowing Metric Cards */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 cursor-pointer" onClick={() => setActiveTab('view')}>
-                        <div className="bg-white/5 backdrop-blur-xl border border-purple-500/30 rounded-3xl p-6 shadow-[0_0_15px_rgba(168,85,247,0.15)] relative overflow-hidden group hover:border-purple-500/60 transition-colors">
+                        <div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white backdrop-blur-xl border border-purple-500/30 rounded-3xl p-6 shadow-[0_0_15px_rgba(168,85,247,0.15)] relative overflow-hidden group hover:border-purple-500/60 transition-colors">
                             <div className="absolute -right-6 -top-6 w-24 h-24 bg-purple-500/20 rounded-full blur-xl group-hover:bg-purple-500/30 transition-colors"></div>
                             <p className="text-white/60 text-sm font-semibold uppercase tracking-wider mb-2">Total Present</p>
                             <p className="text-4xl font-bold text-white">{college_stats_today?.total_students_present}</p>
                         </div>
 
-                        <div className="bg-white/5 backdrop-blur-xl border border-red-500/30 rounded-3xl p-6 shadow-[0_0_15px_rgba(239,68,68,0.1)] relative overflow-hidden group hover:border-red-500/60 transition-colors">
+                        <div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white backdrop-blur-xl border border-red-500/30 rounded-3xl p-6 shadow-[0_0_15px_rgba(239,68,68,0.1)] relative overflow-hidden group hover:border-red-500/60 transition-colors">
                             <div className="absolute -right-6 -top-6 w-24 h-24 bg-red-500/20 rounded-full blur-xl group-hover:bg-red-500/30 transition-colors"></div>
                             <p className="text-white/60 text-sm font-semibold uppercase tracking-wider mb-2">Total Absent</p>
                             <p className="text-4xl font-bold text-white">{college_stats_today?.total_students_absent}</p>
                         </div>
 
-                        <div className="bg-white/5 backdrop-blur-xl border border-green-500/30 rounded-3xl p-6 shadow-[0_0_15px_rgba(34,197,94,0.15)] relative overflow-hidden group hover:border-green-500/60 transition-colors">
+                        <div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white backdrop-blur-xl border border-green-500/30 rounded-3xl p-6 shadow-[0_0_15px_rgba(34,197,94,0.15)] relative overflow-hidden group hover:border-green-500/60 transition-colors">
                             <div className="absolute -right-6 -top-6 w-24 h-24 bg-green-500/20 rounded-full blur-xl group-hover:bg-green-500/30 transition-colors"></div>
                             <p className="text-white/60 text-sm font-semibold uppercase tracking-wider mb-2">Overall %</p>
                             <p className="text-4xl font-bold text-green-400">{college_stats_today?.overall_attendance_percentage}%</p>
                         </div>
 
-                        <div className="bg-white/5 backdrop-blur-xl border border-blue-500/30 rounded-3xl p-6 shadow-[0_0_15px_rgba(59,130,246,0.15)] relative overflow-hidden group hover:border-blue-500/60 transition-colors">
+                        <div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white backdrop-blur-xl border border-blue-500/30 rounded-3xl p-6 shadow-[0_0_15px_rgba(59,130,246,0.15)] relative overflow-hidden group hover:border-blue-500/60 transition-colors">
                             <div className="absolute -right-6 -top-6 w-24 h-24 bg-blue-500/20 rounded-full blur-xl group-hover:bg-blue-500/30 transition-colors"></div>
                             <p className="text-white/60 text-sm font-semibold uppercase tracking-wider mb-2">Classes Conducted</p>
                             <p className="text-4xl font-bold text-blue-400">{college_stats_today?.classes_conducted_today}</p>
@@ -167,7 +169,7 @@ const PrincipalDashboard = () => {
                     </div>
 
                     {/* Info Banner */}
-                    <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl flex items-center gap-4">
+                    <div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-2xl flex items-center gap-4">
                         <div className="p-3 bg-blue-500/20 rounded-xl text-blue-400 shrink-0">
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
                         </div>
@@ -184,9 +186,9 @@ const PrincipalDashboard = () => {
             {activeTab === 'view' && <PrincipalViewTab streams={streams_available} />}
             {activeTab === 'search' && <PrincipalSearch />}
         </div>
-
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 
