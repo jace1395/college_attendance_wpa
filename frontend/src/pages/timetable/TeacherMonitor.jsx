@@ -24,7 +24,7 @@ const TeacherMonitor = () => {
   const dayPeriods = (t, d) => t.schedule[d] || [];
 
   return (
-    <div className="flex flex-col gap-5 animate-fade-in-up">
+    <div className="flex flex-col gap-5 ">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h3 className="text-sm font-bold text-white/90">Teacher Monir</h3>
@@ -52,7 +52,7 @@ const TeacherMonitor = () => {
           const busyPct = Math.round((total / (DAYS.length * PERIODS.length)) * 100);
           return (
             <button key={t.id} onClick={() => setSelected(selected?.id === t.id ? null : t)}
-              className={"rounded-2xl p-4 border text-left transition-all " + (selected?.id === t.id ? "bg-blue-600/20 border-blue-500/40" : "bg-white/5 border-white/10 hover:bg-white/8 hover:border-white/20")}>
+              className={"rounded-2xl p-4 border text-left  " + (selected?.id === t.id ? "bg-blue-600/20 border-blue-500/40" : "bg-white/5 border-white/10 hover:bg-white/8 hover:border-white/20")}>
               <div className={"w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold mb-2 " + DOT_COLORS[i % DOT_COLORS.length] + "/20"}>
                 <span className={DOT_COLORS[i % DOT_COLORS.length].replace("bg-", "text-")}>{t.name.split(" ").map(w => w[0]).slice(1, 3).join("")}</span>
               </div>

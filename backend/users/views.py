@@ -9,15 +9,18 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     def validate(self, attrs):
         data = super().validate(attrs)
         
-        data['user'] = {
+        assert self.user is not None
+        
+        data['user'] = {  # type: ignore
             'id': self.user.id,
             'name': self.user.name,
-            'email': self.user.email,
+            'email': self.user.email.lower(),
             'role': self.user.role,
             'is_hod': self.user.is_hod,
             'is_mentor': self.user.is_mentor,
             'is_timetable_incharge': self.user.is_timetable_incharge,
-            'department': getattr(self.user, 'department', 'General') # Fallback if department doesn't exist
+            'department': self.user.department.name if getattr(self.user, 'department', None) else 'General',
+            'is_first_login': self.user.is_first_login
         }
         return data
 
@@ -42,9 +45,10 @@ class UserMeView(APIView):
         user = request.user
         return Response({
             'name': user.name,
-            'email': user.email,
+            'email': user.email.lower(),
             'role': user.role,
-            'department': getattr(user, 'department', 'General'),
+            'is_first_login': user.is_first_login,
+            'department': user.department.name if getattr(user, 'department', None) else 'General',
         })
 
 class ChangePasswordView(APIView):
@@ -64,5 +68,6 @@ class ChangePasswordView(APIView):
             return Response({'error': list(e.messages)}, status=status.HTTP_400_BAD_REQUEST)
             
         user.set_password(new_password)
+        user.is_first_login = False
         user.save()
         return Response({'success': 'Password updated successfully.'})

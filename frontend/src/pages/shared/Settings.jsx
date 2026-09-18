@@ -48,8 +48,15 @@ const Settings = () => {
         old_password: passwordData.old_password,
         new_password: passwordData.new_password,
       });
-      setPasswordStatus({ type: 'success', message: 'Password updated successfully.' });
+      setPasswordStatus({ type: 'success', message: 'Password updated successfully. Reloading...' });
       setPasswordData({ old_password: '', new_password: '', confirm_password: '' });
+      
+      const storedUser = JSON.parse(localStorage.getItem('user'));
+      if (storedUser) {
+        storedUser.is_first_login = false;
+        localStorage.setItem('user', JSON.stringify(storedUser));
+        setTimeout(() => window.location.reload(), 1000);
+      }
     } catch (err) {
       const errorMsg = err.response?.data?.error || 'Failed to update password.';
       setPasswordStatus({
@@ -79,6 +86,17 @@ const Settings = () => {
         <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">Account Settings</h2>
         <p className="text-gray-500 dark:text-white/50">Manage your profile and security</p>
       </div>
+
+      {profile?.is_first_login && (
+        <div className="mb-8 p-4 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-2xl text-amber-800 dark:text-amber-200">
+          <p className="font-medium flex items-center gap-2">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+            Welcome! Please change your default password to continue using the application.
+          </p>
+        </div>
+      )}
 
       {loading ? (
         /* Skeleton Loader */
@@ -133,6 +151,14 @@ const Settings = () => {
             <h3 className="text-lg font-bold mb-6 text-red-500 dark:text-red-300 border-b border-gray-200 dark:border-white/10 pb-3">
               Security
             </h3>
+            
+            <div className="mb-6 p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-500/30 rounded-2xl text-red-700 dark:text-red-300 text-sm">
+              <p className="font-semibold mb-1 flex items-center gap-2">
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                Warning
+              </p>
+              <p>If you forget your password, you will not be able to reset it yourself. You must contact your Department HOD or the System Administrator to request a manual password reset.</p>
+            </div>
 
             <form onSubmit={handlePasswordChange} className="space-y-5">
               {passwordStatus.message && (
@@ -160,7 +186,7 @@ const Settings = () => {
                     value={passwordData[id]}
                     onChange={(e) => setPasswordData({ ...passwordData, [id]: e.target.value })}
                     placeholder={placeholder}
-                    className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-red-400/40 transition-all"
+                    className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-white/30 focus:outline-none focus:ring-2 focus:ring-red-400/40 "
                   />
                 </div>
               ))}
@@ -172,7 +198,7 @@ const Settings = () => {
               <button
                 type="submit"
                 disabled={isChanging}
-                className="w-full py-3 px-4 bg-red-600 hover:bg-red-500 text-white font-semibold rounded-xl shadow-lg shadow-red-500/20 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                className="w-full py-3 px-4 bg-red-600 hover:bg-red-500 text-white font-semibold rounded-xl shadow-lg shadow-red-500/20  disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {isChanging ? 'Updating...' : 'Change Password'}
               </button>

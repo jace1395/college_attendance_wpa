@@ -140,7 +140,7 @@ const PrincipalViewTab = ({ streams }) => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={closeModal}></div>
 
-          <div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white backdrop-blur-xl border border-white/20 w-full max-w-3xl rounded-3xl shadow-2xl relative z-10 flex flex-col overflow-hidden animate-fade-in-up max-h-[90vh] overflow-y-auto">
+          <div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white backdrop-blur-xl border border-white/20 w-full max-w-3xl rounded-3xl shadow-2xl relative z-10 flex flex-col overflow-hidden max-h-[90vh] overflow-y-auto">
             {/* Modal Header */}
             <div className="flex items-center justify-between p-6 border-b border-white/10 sticky top-0 bg-slate-900/95 backdrop-blur-xl z-10">
               <div>
@@ -185,7 +185,7 @@ const PrincipalViewTab = ({ streams }) => {
                     ) : (
                       <ResponsiveContainer width="100%" height={180}>
                         <PieChart>
-                          <Pie data={pieData} cx="50%" cy="50%" outerRadius={65} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false}>
+                          <Pie data={pieData} cx="50%" cy="50%" outerRadius={65} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false} isAnimationActive={false}>
                             <Cell fill={COLORS_PRESENT} />
                             <Cell fill={COLORS_ABSENT} />
                           </Pie>
@@ -208,7 +208,7 @@ const PrincipalViewTab = ({ streams }) => {
                           <XAxis dataKey="subject" tick={{ fontSize: 12, fill: 'currentColor' }} interval={0} angle={-45} textAnchor="end" height={60} />
                           <YAxis domain={[0, 100]} tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11 }} />
                           <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: '#fff' }} />
-                          <Bar dataKey="pct" name="Attendance %" fill={COLORS_PRESENT} radius={[4, 4, 0, 0]} />
+                          <Bar dataKey="pct" name="Attendance %" fill={COLORS_PRESENT} radius={[4, 4, 0, 0]} isAnimationActive={false} />
                         </BarChart>
                       </ResponsiveContainer>
                     )}
@@ -225,7 +225,7 @@ const PrincipalViewTab = ({ streams }) => {
                         <XAxis dataKey="week" tick={{ fontSize: 12, fill: 'currentColor' }} interval={0} angle={-45} textAnchor="end" height={60} />
                         <YAxis domain={[0, 100]} tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11 }} />
                         <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: '#fff' }} />
-                        <Bar dataKey="pct" name="Avg %" fill="#0ea5e9" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="pct" name="Avg %" fill="#0ea5e9" radius={[4, 4, 0, 0]} isAnimationActive={false} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>

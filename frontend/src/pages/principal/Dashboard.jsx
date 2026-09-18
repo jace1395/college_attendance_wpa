@@ -85,7 +85,7 @@ const PrincipalDashboard = () => {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-6 py-2.5 rounded-xl text-sm font-bold capitalize transition-all whitespace-nowrap ${
+              className={`px-6 py-2.5 rounded-xl text-sm font-bold capitalize  whitespace-nowrap ${
                 activeTab === tab
                   ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20'
                   : 'text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5'
@@ -114,7 +114,7 @@ const PrincipalDashboard = () => {
               <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-white/10 rounded-3xl h-20"></div>
             </div>
           ) : (
-            <div className="animate-fade-in-up space-y-8">
+            <div className=" space-y-8">
               {/* 4 Metric Cards */}
               <div
                 className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 cursor-pointer"

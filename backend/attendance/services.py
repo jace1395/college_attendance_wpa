@@ -1,6 +1,9 @@
-import pandas as pd
+import csv
+import openpyxl
 import io
+from io import TextIOWrapper
 from django.http import FileResponse
+from collections import defaultdict
 from .models import Attendance, ClassBatch, Timetable, Notification
 
 
@@ -18,79 +21,125 @@ def generate_attendance_report(user, start_date, end_date, download_format=None)
     if not qs.exists():
         return {"error": "No attendance data available for this date range."}
 
-    # 2. Convert to Pandas DataFrame
-    df = pd.DataFrame(
-        list(qs.values('date', 'status', 'student__name', 'student__roll_no', 'class_batch__subject__name')))
+    # 2. Manual grouping and aggregation
+    report_data = defaultdict(lambda: {'total_classes': 0, 'classes_attended': 0})
+    
+    for record in qs.select_related('student', 'class_batch__subject'):
+        roll_no = record.student.roll_no if record.student else 'N/A'
+        name = record.student.name if record.student else 'Unknown'
+        subject = record.class_batch.subject.name if (record.class_batch and record.class_batch.subject) else 'Unknown'
+        
+        key = (roll_no, name, subject)
+        report_data[key]['total_classes'] += 1
+        if record.status == 'Present':
+            report_data[key]['classes_attended'] += 1
 
-    # 3. Albin's Calculation Logic
-    df['is_present'] = df['status'].apply(lambda x: 1 if x == 'Present' else 0)
-    report_df = df.groupby(['student__roll_no', 'student__name', 'class_batch__subject__name']).agg(
-        total_classes=('status', 'count'),
-        present_classes=('is_present', 'sum')
-    ).reset_index()
-
-    report_df['attendance_percentage'] = (report_df['present_classes'] / report_df['total_classes']) * 100
-    report_df['attendance_percentage'] = report_df['attendance_percentage'].round(2)
-
-    # 4a. Rename to consistent snake_case keys for ALL return paths.
-    #     Recharts components must use these exact dataKey strings.
-    report_df.rename(columns={
-        'student__roll_no':               'roll_number',
-        'student__name':                  'name',
-        'class_batch__subject__name':     'subject',
-        'total_classes':                  'total_classes',
-        'present_classes':                'classes_attended',
-        'attendance_percentage':          'attendance_percentage',
-    }, inplace=True)
-
-    # 4b. Return JSON for Frontend Charts (Recharts)
+    # 3. Compile report
+    report_list = []
+    for (roll_no, name, subject), stats in report_data.items():
+        total = stats['total_classes']
+        attended = stats['classes_attended']
+        percentage = round((attended / total) * 100, 2) if total > 0 else 0.0
+        
+        report_list.append({
+            'roll_number': roll_no,
+            'name': name,
+            'subject': subject,
+            'total_classes': total,
+            'classes_attended': attended,
+            'attendance_percentage': percentage,
+        })
+        
+    # 4. Return JSON for Frontend Charts (Recharts)
     if not download_format:
-        return report_df.to_dict(orient='records')
+        return report_list
 
-    # 5. Return FileResponse for Downloads — apply human-readable display names
-    report_df.rename(columns={
-        'roll_number':           'Roll Number',
-        'name':                  'Name',
-        'subject':               'Subject',
-        'total_classes':         'Total Classes',
-        'classes_attended':      'Classes Attended',
-        'attendance_percentage': 'Attendance (%)',
-    }, inplace=True)
-
+    # 5. Export FileResponse for Downloads
     if download_format == 'excel':
         buffer = io.BytesIO()
-        with pd.ExcelWriter(buffer, engine='xlsxwriter') as writer:
-            report_df.to_excel(writer, index=False, sheet_name='Attendance Report')
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        if ws is None:
+            ws = wb.create_sheet()
+        ws.title = 'Attendance Report'
+        
+        headers = ['Roll Number', 'Name', 'Subject', 'Total Classes', 'Classes Attended', 'Attendance (%)']
+        ws.append(headers)
+        
+        for item in report_list:
+            ws.append([
+                item['roll_number'], item['name'], item['subject'], 
+                item['total_classes'], item['classes_attended'], item['attendance_percentage']
+            ])
+            
+        wb.save(buffer)
         buffer.seek(0)
         return FileResponse(buffer, as_attachment=True, filename='Attendance_Report.xlsx',
                             content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
 
     elif download_format == 'csv':
         buffer = io.BytesIO()
-        report_df.to_csv(buffer, index=False)
+        text_buffer = io.StringIO()
+        writer = csv.writer(text_buffer)
+        
+        headers = ['Roll Number', 'Name', 'Subject', 'Total Classes', 'Classes Attended', 'Attendance (%)']
+        writer.writerow(headers)
+        
+        for item in report_list:
+            writer.writerow([
+                item['roll_number'], item['name'], item['subject'], 
+                item['total_classes'], item['classes_attended'], item['attendance_percentage']
+            ])
+            
+        buffer.write(text_buffer.getvalue().encode('utf-8'))
         buffer.seek(0)
         return FileResponse(buffer, as_attachment=True, filename='Attendance_Report.csv', content_type='text/csv')
 
 
-
 def process_timetable_upload(file_obj):
+    rows = []
+    headers = []
+    
     if file_obj.name.endswith('.csv'):
-        df = pd.read_csv(file_obj)
+        csv_file = TextIOWrapper(file_obj.file, encoding='utf-8')
+        reader = csv.DictReader(csv_file)
+        headers = [h.strip() for h in reader.fieldnames] if reader.fieldnames else []
+        for row in reader:
+            rows.append({k.strip(): v for k, v in row.items() if k})
     elif file_obj.name.endswith(('.xls', '.xlsx')):
-        df = pd.read_excel(file_obj)
+        wb = openpyxl.load_workbook(file_obj, data_only=True)
+        sheet = wb.active
+        if sheet is None:
+            raise ValueError("No active sheet in Excel file.")
+        for i, row in enumerate(sheet.iter_rows(values_only=True)):
+            if i == 0:
+                headers = [str(col).strip() for col in row if col is not None]
+            else:
+                row_data = {}
+                for j, col in enumerate(row):
+                    if j < len(headers):
+                        row_data[headers[j]] = col
+                rows.append(row_data)
     else:
         raise ValueError("Invalid file format.")
 
-    df = df.dropna(subset=['Subject_ID', 'Day', 'Start_Time', 'End_Time'])
     count = 0
-    for index, row in df.iterrows():
+    for row in rows:
+        subject_id = row.get('Subject_ID')
+        day = row.get('Day')
+        start_time = row.get('Start_Time')
+        end_time = row.get('End_Time')
+        
+        if not all([subject_id, day, start_time, end_time]):
+            continue
+            
         try:
-            batch = ClassBatch.objects.get(id=row['Subject_ID'])
+            batch = ClassBatch.objects.get(id=subject_id)
             timetable, created = Timetable.objects.update_or_create(
                 class_batch=batch,
-                day_of_week=row['Day'],
-                start_time=row['Start_Time'],
-                defaults={'end_time': row['End_Time']}
+                day_of_week=day,
+                start_time=start_time,
+                defaults={'end_time': end_time}
             )
             count += 1
 

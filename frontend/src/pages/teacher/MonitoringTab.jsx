@@ -11,7 +11,7 @@ const MonitoringTab = ({ duties }) => {
 
   if (!duties || duties.length === 0) {
     return (
-      <div className="flex items-center justify-center h-64 bg-slate-900/80 backdrop-blur-2xl border border-white/20 rounded-3xl p-8 shadow-2xl animate-fade-in-up">
+      <div className="flex items-center justify-center h-64 bg-slate-900/80 backdrop-blur-2xl border border-white/20 rounded-3xl p-8 shadow-2xl ">
         <h3 className="text-xl text-white/60 font-medium">You have no monitoring duties assigned for today.</h3>
       </div>
     );
@@ -24,7 +24,7 @@ const MonitoringTab = ({ duties }) => {
   };
 
   return (
-    <div className="animate-fade-in-up">
+    <div className="">
       <h3 className="text-2xl font-semibold mb-6">Monitoring Duties</h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {duties.map((duty, idx) => {
@@ -39,7 +39,7 @@ const MonitoringTab = ({ duties }) => {
             return (
                 <div 
                     key={idx}
-                    className={`group bg-slate-900/80 backdrop-blur-2xl border border-white/20 rounded-3xl p-6 text-left transition-all shadow-xl relative overflow-hidden ${
+                    className={`group bg-slate-900/80 backdrop-blur-2xl border border-white/20 rounded-3xl p-6 text-left  shadow-xl relative overflow-hidden ${
                         isExpanded ? 'ring-2 ring-blue-500 bg-slate-800/90' : 'hover:bg-slate-800/90 hover:border-white/30 hover:shadow-2xl hover:-translate-y-1 cursor-pointer'
                     }`}
                     onClick={() => !isExpanded && setExpandedDuty(idx)}
@@ -57,7 +57,7 @@ const MonitoringTab = ({ duties }) => {
                     </div>
 
                     {isExpanded && (
-                        <div className="mt-6 border-t border-white/10 pt-6 animate-fade-in-up relative z-10" onClick={e => e.stopPropagation()}>
+                        <div className="mt-6 border-t border-white/10 pt-6  relative z-10" onClick={e => e.stopPropagation()}>
                             <div className="bg-slate-900/50 p-4 rounded-2xl border border-white/5 mb-4">
                                 <label className="block text-sm text-white/70 mb-2">Total Students Present</label>
                                 {isLocked ? (
@@ -85,7 +85,7 @@ const MonitoringTab = ({ duties }) => {
                             <div className="flex flex-col gap-3">
                                 <button
                                     disabled={isLocked}
-                                    className={`w-full py-2.5 rounded-xl font-bold transition-all shadow-lg text-sm ${isLocked
+                                    className={`w-full py-2.5 rounded-xl font-bold  shadow-lg text-sm ${isLocked
                                         ? 'bg-slate-800 text-white/30 cursor-not-allowed border border-white/5'
                                         : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white'
                                     }`}
@@ -93,7 +93,7 @@ const MonitoringTab = ({ duties }) => {
                                     Submit Report
                                 </button>
                                 <button
-                                    className="w-full py-2.5 rounded-xl font-bold transition-all border border-white/20 text-white hover:bg-white/10 flex items-center justify-center gap-2 text-sm"
+                                    className="w-full py-2.5 rounded-xl font-bold  border border-white/20 text-white hover:bg-white/10 flex items-center justify-center gap-2 text-sm"
                                 >
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
                                     Download Report

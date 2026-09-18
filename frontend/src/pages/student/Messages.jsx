@@ -71,7 +71,7 @@ const Messages = () => {
             const isActive = activeContact === c.id;
             return (
               <button key={c.id} onClick={() => setActiveContact(c.id)}
-                className={"w-full flex items-center gap-3 p-3 rounded-xl border transition-all text-left " + (isActive ? "bg-white/10 border-white/20" : "bg-white/5 border-transparent hover:bg-white/8 hover:border-white/10")}
+                className={"w-full flex items-center gap-3 p-3 rounded-xl border  text-left " + (isActive ? "bg-white/10 border-white/20" : "bg-white/5 border-transparent hover:bg-white/8 hover:border-white/10")}
               >
                 <div className={"w-10 h-10 rounded-full bg-gradient-to-br " + c.color + " flex items-center justify-center text-xs font-bold flex-shrink-0"}>
                   {c.avatar}

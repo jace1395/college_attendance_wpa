@@ -26,7 +26,7 @@ const PrincipalSearch = () => {
   });
 
   return (
-    <div className="flex flex-col items-center animate-fade-in-up mt-10">
+    <div className="flex flex-col items-center  mt-10">
       
       {/* Centered Search Bar */}
       <div className="w-full max-w-3xl relative z-20">
@@ -36,7 +36,7 @@ const PrincipalSearch = () => {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   placeholder="Search by Student Name, ID, or Class Name..."
-                  className="w-full bg-white/10 backdrop-blur-md text-white text-lg rounded-full pl-14 pr-6 py-5 outline-none border border-white/20 focus:border-blue-500 shadow-2xl transition-all"
+                  className="w-full bg-white/10 backdrop-blur-md text-white text-lg rounded-full pl-14 pr-6 py-5 outline-none border border-white/20 focus:border-blue-500 shadow-2xl "
               />
               <svg className="w-6 h-6 absolute left-5 top-5 text-white/50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
           </div>
@@ -90,7 +90,7 @@ const PrincipalSearch = () => {
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
               <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedResult(null)}></div>
               
-              <div className="bg-slate-800/95 backdrop-blur-xl border border-white/20 w-full max-w-md rounded-3xl shadow-2xl relative z-10 flex flex-col overflow-hidden animate-fade-in-up">
+              <div className="bg-slate-800/95 backdrop-blur-xl border border-white/20 w-full max-w-md rounded-3xl shadow-2xl relative z-10 flex flex-col overflow-hidden ">
                   <div className="p-8">
                       <div className="flex justify-between items-start mb-6">
                           <div>

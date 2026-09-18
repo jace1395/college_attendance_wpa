@@ -20,7 +20,7 @@ const OfflineBanner = () => {
     <div
       role="alert"
       aria-live="assertive"
-      className={`fixed top-0 left-0 right-0 z-[9999] flex items-center justify-center gap-3 px-4 py-3 text-sm font-semibold shadow-lg transition-all
+      className={`fixed top-0 left-0 right-0 z-[9999] flex items-center justify-center gap-3 px-4 py-3 text-sm font-semibold shadow-lg 
         ${isOnline
           ? 'bg-blue-600 text-white'        // Syncing — blue
           : 'bg-amber-500 text-slate-900'   // Offline — amber

@@ -19,7 +19,7 @@ const PctBadge = ({ pct }) => (
 
 const MiniBar = ({ pct, good }) => (
   <div className="w-full bg-slate-800/60 rounded-full h-2 overflow-hidden">
-    <div className={"h-full rounded-full transition-all duration-500 " + (good ? "bg-gradient-to-r from-green-500 to-emerald-400" : "bg-gradient-to-r from-red-500 to-orange-400")}
+    <div className={"h-full rounded-full   " + (good ? "bg-gradient-to-r from-green-500 to-emerald-400" : "bg-gradient-to-r from-red-500 to-orange-400")}
       style={{ width: pct + "%" }} />
   </div>
 );
@@ -118,7 +118,7 @@ const AdminStudentReports = () => {
   };
 
   return (
-    <div className="flex flex-col gap-6 animate-fade-in-up">
+    <div className="flex flex-col gap-6 ">
 
       {/* Header */}
       <div className="flex items-center gap-3">
@@ -137,7 +137,7 @@ const AdminStudentReports = () => {
         <div className="flex bg-slate-900/60 p-1 rounded-xl border border-white/10 gap-1">
           {['semester', 'custom'].map(mode => (
             <button key={mode} onClick={() => setReportMode(mode)}
-              className={`px-4 py-1.5 rounded-lg text-xs font-bold capitalize transition-all ${reportMode === mode ? 'bg-blue-600 text-white' : 'text-white/50 hover:text-white'}`}>
+              className={`px-4 py-1.5 rounded-lg text-xs font-bold capitalize  ${reportMode === mode ? 'bg-blue-600 text-white' : 'text-white/50 hover:text-white'}`}>
               {mode === 'semester' ? 'Current Semester' : 'Custom Range'}
             </button>
           ))}
@@ -253,7 +253,7 @@ const AdminStudentReports = () => {
 
             {/* Export CSV */}
             <button onClick={handleExport}
-              className={"flex items-center gap-1.5 px-4 py-2 rounded-xl font-semibold text-xs transition-all border " + (exported ? "bg-green-500/20 text-green-400 border-green-500/30" : "bg-emerald-500/15 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/25")}>
+              className={"flex items-center gap-1.5 px-4 py-2 rounded-xl font-semibold text-xs  border " + (exported ? "bg-green-500/20 text-green-400 border-green-500/30" : "bg-emerald-500/15 text-emerald-300 border-emerald-500/30 hover:bg-emerald-500/25")}>
               {exported ? "Exported!" : "Export CSV"}
             </button>
           </div>

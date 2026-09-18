@@ -93,7 +93,7 @@ const StudentForm = () => {
         </div>
         <div className="flex justify-end mt-5">
           <button type="button" onClick={() => { setForm(empty); setErrors({}); }} className="px-5 py-2 text-white/50 hover:text-white text-sm mr-3 transition-colors">Clear</button>
-          <button type="submit" className="px-7 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl shadow-lg text-sm transition-all">Add Student</button>
+          <button type="submit" className="px-7 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl shadow-lg text-sm ">Add Student</button>
         </div>
       </form>
 
@@ -196,7 +196,7 @@ const StaffForm = () => {
         </div>
         <div className="flex justify-end mt-5">
           <button type="button" onClick={() => { setForm(empty); setErrors({}); }} className="px-5 py-2 text-white/50 hover:text-white text-sm mr-3 transition-colors">Clear</button>
-          <button type="submit" className="px-7 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl shadow-lg text-sm transition-all">Add Staff</button>
+          <button type="submit" className="px-7 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl shadow-lg text-sm ">Add Staff</button>
         </div>
       </form>
 
@@ -234,7 +234,7 @@ const StaffForm = () => {
 const StudentDataEntry = () => {
   const [tab, setTab] = useState("student");
   return (
-    <div className="flex flex-col gap-5 animate-fade-in-up">
+    <div className="flex flex-col gap-5 ">
       <div className="flex items-center gap-3">
         <div className="p-2 bg-blue-500/20 rounded-xl">
           <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v3m0 0v3m0-3h3m-3 0H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
@@ -249,7 +249,7 @@ const StudentDataEntry = () => {
       <div className="flex gap-2 bg-slate-900/50 p-1.5 rounded-xl border border-white/10 w-fit">
         {["student", "staff"].map(t => (
           <button key={t} onClick={() => setTab(t)}
-            className={"px-5 py-2 rounded-lg text-sm font-bold capitalize transition-all " + (tab === t ? "bg-blue-600 text-white shadow" : "text-white/50 hover:text-white hover:bg-white/5")}>
+            className={"px-5 py-2 rounded-lg text-sm font-bold capitalize  " + (tab === t ? "bg-blue-600 text-white shadow" : "text-white/50 hover:text-white hover:bg-white/5")}>
             {t === "student" ? "Student" : "Staff / Teacher"}
           </button>
         ))}

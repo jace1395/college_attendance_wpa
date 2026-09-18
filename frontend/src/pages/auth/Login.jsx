@@ -96,7 +96,7 @@ const Login = () => {
                   <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 text-slate-500 hover:text-slate-800 dark:text-white/70 dark:hover:text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                   </svg>
-                  <div className="absolute bottom-full right-0 mb-2 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
+                  <div className="absolute bottom-full right-0 mb-2 w-48 opacity-0 invisible group-hover:opacity-100 group-hover:visible   z-50">
                     <div className="bg-slate-800 text-white text-xs rounded-lg py-2 px-3 shadow-xl border border-slate-700">
                       <p className="font-semibold mb-1">Format Guide:</p>
                       <ul className="space-y-1 text-slate-300">
@@ -116,7 +116,7 @@ const Login = () => {
                   required
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
-                  className="w-full px-4 py-3 rounded-l-xl bg-white/70 text-slate-900 placeholder-slate-500 border border-slate-300 dark:border-transparent dark:bg-slate-700/50 dark:text-white dark:placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:bg-slate-700/70 transition-all"
+                  className="w-full px-4 py-3 rounded-l-xl bg-white/70 text-slate-900 placeholder-slate-500 border border-slate-300 dark:border-transparent dark:bg-slate-700/50 dark:text-white dark:placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:bg-slate-700/70 "
                   placeholder="e.g. name/number.name"
                 />
                 <div className="flex items-center px-4 bg-slate-100 text-slate-700 border-y border-r border-slate-300 dark:bg-slate-800/60 dark:border-none dark:border-l dark:border-white/10 dark:text-white/70 text-sm whitespace-nowrap rounded-r-xl">
@@ -133,7 +133,7 @@ const Login = () => {
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full px-4 py-3 rounded-xl bg-white/70 text-slate-900 placeholder-slate-500 border border-slate-300 dark:border-transparent dark:bg-slate-700/50 dark:text-white dark:placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:bg-slate-700/70 transition-all pr-12"
+                  className="w-full px-4 py-3 rounded-xl bg-white/70 text-slate-900 placeholder-slate-500 border border-slate-300 dark:border-transparent dark:bg-slate-700/50 dark:text-white dark:placeholder-white/60 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:bg-slate-700/70  pr-12"
                   placeholder="enter the pasword"
                 />
                 <button
@@ -168,7 +168,7 @@ const Login = () => {
             <button
               type="submit"
               disabled={isLoading}
-              className="w-full py-3.5 px-4 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-xl shadow-lg transition-all transform hover:-translate-y-0.5 disabled:opacity-70 disabled:hover:translate-y-0"
+              className="w-full py-3.5 px-4 bg-blue-500 hover:bg-blue-600 text-white font-semibold rounded-xl shadow-lg  transform  disabled:opacity-70 disabled:hover:translate-y-0"
             >
               {isLoading ? 'Processing...' : 'Sign In'}
             </button>
@@ -181,7 +181,7 @@ const Login = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsForgotModalOpen(false)}></div>
 
-          <div className="bg-slate-800 border border-slate-600 w-full max-w-sm rounded-2xl shadow-2xl relative z-10 flex flex-col overflow-hidden animate-fade-in-up">
+          <div className="bg-slate-800 border border-slate-600 w-full max-w-sm rounded-2xl shadow-2xl relative z-10 flex flex-col overflow-hidden ">
             <div className="bg-slate-900 px-6 py-4 flex justify-between items-center border-b border-slate-700">
               <h3 className="font-bold text-lg text-white">Reset Password</h3>
               <button onClick={() => setIsForgotModalOpen(false)} className="text-slate-400 hover:text-white">
@@ -198,7 +198,7 @@ const Login = () => {
             <div className="bg-slate-900 px-6 py-4 flex justify-end border-t border-slate-700">
               <button
                 onClick={() => setIsForgotModalOpen(false)}
-                className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-xl font-bold shadow-lg transition-transform transform hover:-translate-y-0.5"
+                className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-xl font-bold shadow-lg transition-transform transform "
               >
                 Got it
               </button>

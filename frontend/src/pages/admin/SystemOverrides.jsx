@@ -127,7 +127,7 @@ const SystemOverrides = () => {
   };
 
   return (
-    <div className="animate-fade-in-up flex flex-col gap-8">
+    <div className=" flex flex-col gap-8">
 
       {/* ── Attendance Unlock Requests (from Teachers) ── */}
       <div className="bg-amber-900/10 backdrop-blur-xl border border-amber-500/30 rounded-3xl p-6 md:p-8 shadow-2xl">
@@ -181,7 +181,7 @@ const SystemOverrides = () => {
                 <div className="flex gap-3">
                   <button
                     onClick={() => handleApproveRequest(req.id)}
-                    className="flex-1 bg-green-600 hover:bg-green-500 text-white py-2 rounded-xl font-bold shadow-lg transition-transform transform hover:-translate-y-0.5"
+                    className="flex-1 bg-green-600 hover:bg-green-500 text-white py-2 rounded-xl font-bold shadow-lg transition-transform transform "
                   >
                     Approve
                   </button>
@@ -255,7 +255,7 @@ const SystemOverrides = () => {
           <button
             onClick={handleBulkUnlock}
             disabled={isBulkUnlocking}
-            className="bg-red-900/40 hover:bg-red-800 text-red-200 border border-red-500/30 px-6 py-2 rounded-xl font-bold text-sm transition-all shadow-[0_0_15px_rgba(239,68,68,0.2)] disabled:opacity-50"
+            className="bg-red-900/40 hover:bg-red-800 text-red-200 border border-red-500/30 px-6 py-2 rounded-xl font-bold text-sm  shadow-[0_0_15px_rgba(239,68,68,0.2)] disabled:opacity-50"
           >
             {isBulkUnlocking ? 'Unlocking All...' : 'EMERGENCY: Bulk Unlock All Grids'}
           </button>

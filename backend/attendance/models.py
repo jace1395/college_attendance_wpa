@@ -20,6 +20,7 @@ class SemesterChoices(models.TextChoices):
 
 
 class Subject(models.Model):
+    objects = models.Manager()
     name = models.CharField(max_length=255)
     stream = models.CharField(max_length=10, choices=StreamChoices.choices, db_index=True)
     semester = models.CharField(max_length=10, choices=SemesterChoices.choices, db_index=True)
@@ -30,6 +31,7 @@ class Subject(models.Model):
 
 
 class ClassBatch(models.Model):
+    objects = models.Manager()
     subject = models.ForeignKey(Subject, on_delete=models.CASCADE, related_name='classes')
 
     teacher = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True,
@@ -45,6 +47,7 @@ class ClassBatch(models.Model):
 
 
 class Enrollment(models.Model):
+    objects = models.Manager()
     student = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
                                 limit_choices_to={'role': 'Student'})
     class_batch = models.ForeignKey(ClassBatch, on_delete=models.CASCADE, related_name='enrollments')
@@ -54,6 +57,7 @@ class Enrollment(models.Model):
 
 
 class Attendance(models.Model):
+    objects = models.Manager()
     STATUS_CHOICES = [('Present', 'Present'), ('Absent', 'Absent')]
 
     class_batch = models.ForeignKey(ClassBatch, on_delete=models.CASCADE)
@@ -69,6 +73,7 @@ class Attendance(models.Model):
 
 
 class AttendanceTicket(models.Model):
+    objects = models.Manager()
     STATUS_CHOICES = [('Pending', 'Pending'), ('Approved', 'Approved'), ('Rejected', 'Rejected')]
 
     attendance = models.ForeignKey(Attendance, on_delete=models.CASCADE, related_name='tickets')
@@ -82,6 +87,7 @@ class AttendanceTicket(models.Model):
 
 
 class Notification(models.Model):
+    objects = models.Manager()
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notifications')
     message = models.TextField()
     is_read = models.BooleanField(default=False)
@@ -90,6 +96,7 @@ class Notification(models.Model):
 
 
 class MonitoringDuty(models.Model):
+    objects = models.Manager()
     STATUS_CHOICES = [('Pending', 'Pending'), ('Ongoing', 'Ongoing'), ('Empty', 'Empty')]
 
     teacher = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='monitoring_duties')
@@ -109,6 +116,7 @@ class MonitoringDuty(models.Model):
 
 
 class Timetable(models.Model):
+    objects = models.Manager()
     DAYS_OF_WEEK = [
         ('Monday', 'Monday'), ('Tuesday', 'Tuesday'), ('Wednesday', 'Wednesday'),
         ('Thursday', 'Thursday'), ('Friday', 'Friday'), ('Saturday', 'Saturday')

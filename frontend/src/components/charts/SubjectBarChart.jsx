@@ -41,7 +41,7 @@ const SubjectBarChart = ({ data = [], threshold = 75, onBarClick }) => {
             }}
             labelStyle={{ color: axisColor, fontSize: 12 }}
           />
-          <Bar dataKey="value" radius={[4, 4, 0, 0]} onClick={(data) => onBarClick && onBarClick(data.label)}>
+          <Bar dataKey="value" radius={[4, 4, 0, 0]} onClick={(data) => onBarClick && onBarClick(data.label)} isAnimationActive={false}>
             {data.map((entry, index) => (
               <Cell key={`cell-${index}`} fill={entry.value >= threshold ? '#22c55e' : '#ef4444'} />
             ))}

@@ -82,6 +82,7 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 
 class Department(models.Model):
+    objects = models.Manager()
     name = models.CharField(max_length=255)
     code = models.CharField(max_length=50)
 
@@ -89,7 +90,9 @@ class Department(models.Model):
         return self.name
 
 class Stream(models.Model):
+    objects = models.Manager()
     name = models.CharField(max_length=255)
+    department = models.ForeignKey('Department', on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
         return self.name

@@ -192,13 +192,13 @@ const AttendanceGrid = () => {
                 <button
                   onClick={handleSaveAttendance}
                   disabled={isSaving || roster.length === 0}
-                  className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded-xl transition-all text-sm font-bold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                  className="px-4 py-2 bg-green-600 hover:bg-green-500 text-white rounded-xl  text-sm font-bold shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   {isSaving ? 'Saving...' : 'Save Attendance'}
                 </button>
               </div>
               {saveMessage && (
-                <div className={`mb-3 px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2 animate-fade-in-up ${
+                <div className={`mb-3 px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center gap-2  ${
                   saveMessage.type === 'success' ? 'bg-green-500/20 border border-green-500/40 text-green-300' :
                   saveMessage.type === 'offline' ? 'bg-amber-500/20 border border-amber-500/40 text-amber-300' :
                   'bg-red-500/20 border border-red-500/40 text-red-300'
@@ -232,8 +232,8 @@ const AttendanceGrid = () => {
                   <button
                     key={item.key}
                     onClick={() => handleLegendClick(item.key)}
-                    className={`flex items-center gap-2 text-xs font-medium p-2 px-3 rounded-xl transition-all ${
-                      selectedMode === item.key ? `${item.activeBg} text-white font-bold scale-105` : 'hover:bg-white/10 text-white/60'
+                    className={`flex items-center gap-2 text-xs font-medium p-2 px-3 rounded-xl  ${
+                      selectedMode === item.key ? `${item.activeBg} text-white font-bold ` : 'hover:bg-white/10 text-white/60'
                     }`}
                   >
                     <div className={`w-3 h-3 rounded border ${item.dot}`}></div>
@@ -306,7 +306,7 @@ const AttendanceGrid = () => {
                                                 {d.isSunday ? (
                                                     <span className="text-slate-600 text-[10px] uppercase font-bold tracking-widest absolute -rotate-90 origin-center whitespace-nowrap">Holiday</span>
                                                 ) : (
-                                                    <div className={`w-full h-full min-h-[40px] text-xs md:text-sm flex items-center justify-center font-bold select-none transition-all hover:brightness-125 ${getStatusColor(status, d.isSunday)} ${lockedDates[d.dateStr] ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                                                    <div className={`w-full h-full min-h-[40px] text-xs md:text-sm flex items-center justify-center font-bold select-none  hover:brightness-125 ${getStatusColor(status, d.isSunday)} ${lockedDates[d.dateStr] ? 'opacity-50 cursor-not-allowed' : ''}`}>
                                                         {status || '·'}
                                                     </div>
                                                 )}

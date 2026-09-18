@@ -54,7 +54,7 @@ const RescheduleManager = () => {
   };
 
   return (
-    <div className="flex flex-col gap-5 animate-fade-in-up">
+    <div className="flex flex-col gap-5 ">
       <div>
         <h3 className="text-sm font-bold text-white/90">Rescheduling Manager</h3>
         <p className="text-xs text-white/40 mt-0.5">Move a class slot to a new date and period</p>
@@ -138,7 +138,7 @@ const RescheduleManager = () => {
         </div>
         <div className="flex justify-end mt-5">
           <button type="button" onClick={() => { setForm(empty); setErrors({}); }} className="px-5 py-2 text-white/50 hover:text-white text-sm mr-3 transition-colors">Clear</button>
-          <button type="submit" className="px-7 py-2.5 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold rounded-xl shadow-lg text-sm transition-all">Reschedule Class</button>
+          <button type="submit" className="px-7 py-2.5 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 hover:to-orange-500 text-white font-bold rounded-xl shadow-lg text-sm ">Reschedule Class</button>
         </div>
       </form>
 

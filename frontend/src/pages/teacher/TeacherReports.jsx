@@ -219,7 +219,7 @@ const TeacherReports = ({ classes }) => {
   }
 
   return (
-    <div className="animate-fade-in-up flex flex-col gap-8">
+    <div className=" flex flex-col gap-8">
       {/* Filters */}
       <div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white backdrop-blur-2xl border border-white/20 rounded-3xl p-6 flex flex-col lg:flex-row gap-6 justify-between items-center shadow-2xl">
         <div className="flex items-center gap-4 w-full lg:w-auto">
@@ -242,14 +242,14 @@ const TeacherReports = ({ classes }) => {
                 <button
                 key={f}
                 onClick={() => setFilter(f)}
-                className={`px-4 py-1.5 rounded-lg text-sm font-medium capitalize transition-all ${filter === f ? 'bg-blue-600 text-white shadow-md' : 'text-white/60 hover:text-white hover:bg-white/5'}`}
+                className={`px-4 py-1.5 rounded-lg text-sm font-medium capitalize  ${filter === f ? 'bg-blue-600 text-white shadow-md' : 'text-white/60 hover:text-white hover:bg-white/5'}`}
                 >
                 {f}
                 </button>
             ))}
             <button
                 onClick={() => setFilter('custom')}
-                className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${filter === 'custom' ? 'bg-blue-600 text-white shadow-md' : 'text-white/60 hover:text-white hover:bg-white/5'}`}
+                className={`px-4 py-1.5 rounded-lg text-sm font-medium  ${filter === 'custom' ? 'bg-blue-600 text-white shadow-md' : 'text-white/60 hover:text-white hover:bg-white/5'}`}
                 >
                 Custom
             </button>

@@ -142,7 +142,7 @@ const StudentDashboard = () => {
                   <div className="relative w-20 h-20 md:w-24 md:h-24">
                     <svg className="w-20 h-20 md:w-24 md:h-24 transform -rotate-90">
                       <circle className="text-gray-200 dark:text-white/10" strokeWidth="8" stroke="currentColor" fill="transparent" r={radius} cx="50%" cy="50%" />
-                      <circle className="transition-all duration-1000 ease-in-out" strokeWidth="8" strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} strokeLinecap="round" stroke={getProgressStrokeColor(student.overall_attendance)} fill="transparent" r={radius} cx="50%" cy="50%" />
+                      <circle className=" 0 ease-in-out" strokeWidth="8" strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} strokeLinecap="round" stroke={getProgressStrokeColor(student.overall_attendance)} fill="transparent" r={radius} cx="50%" cy="50%" />
                     </svg>
                     <div className="absolute inset-0 flex items-center justify-center text-sm font-bold text-gray-900 dark:text-white">
                       {student.overall_attendance}%
@@ -167,7 +167,7 @@ const StudentDashboard = () => {
               <Link
                 to={`/student/subject/${subject.subject_id}`}
                 key={subject.subject_id}
-                className="group bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden hover:bg-gray-50 dark:hover:bg-slate-700 transition-all shadow-sm hover:shadow-md hover:-translate-y-1 block"
+                className="group bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden hover:bg-gray-50 dark:hover:bg-slate-700  shadow-sm hover:shadow-md hover:-translate-y-1 block"
               >
                 <div className="p-6">
                   <h4 className="text-xl font-bold truncate mb-1 text-gray-900 dark:text-white">{subject.subject_name}</h4>

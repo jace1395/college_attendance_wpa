@@ -38,7 +38,7 @@ const TimeTable = () => {
   }
 
   return (
-    <div className="animate-fade-in-up">
+    <div className="">
         <div className="flex items-center justify-between mb-8">
           <h2 className="text-2xl font-bold">Daily Timetable</h2>
         </div>
@@ -63,7 +63,7 @@ const TimeTable = () => {
             ) : timetable.map((slot, index) => (
               <div 
                 key={index}
-                className="bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex flex-col md:flex-row md:items-center justify-between shadow-lg hover:bg-slate-800 transition-all"
+                className="bg-slate-900/80 backdrop-blur-xl border border-white/10 rounded-2xl p-6 flex flex-col md:flex-row md:items-center justify-between shadow-lg hover:bg-slate-800 "
               >
                 <div className="flex items-center gap-6 mb-4 md:mb-0">
                   <div className="bg-blue-500/20 text-blue-300 font-bold px-4 py-2 rounded-xl whitespace-nowrap border border-blue-500/30">

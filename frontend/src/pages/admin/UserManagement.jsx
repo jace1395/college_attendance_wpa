@@ -121,7 +121,7 @@ const UserManagement = () => {
   };
 
   return (
-    <div className="animate-fade-in-up flex flex-col gap-6">
+    <div className=" flex flex-col gap-6">
 
       {/* Top Action Bar */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-lg">
@@ -129,7 +129,6 @@ const UserManagement = () => {
           {[
             { key: 'students', label: 'Manage Students' },
             { key: 'teachers', label: 'Manage Teachers' },
-            { key: 'admins',   label: 'Manage Admins' },
             { key: 'hods',     label: 'Manage HODs' },
             { key: 'mentors',  label: 'Manage Mentors' },
           ].map(tab => (
@@ -146,7 +145,7 @@ const UserManagement = () => {
         <div className="flex gap-3 w-full lg:w-auto">
           <button
             onClick={() => setIsAddModalOpen(true)}
-            className="flex-1 lg:flex-none bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg transition-transform transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
+            className="flex-1 lg:flex-none bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg transition-transform transform  flex items-center justify-center gap-2"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
             Add User
@@ -176,7 +175,7 @@ const UserManagement = () => {
             <div className="flex bg-slate-900/60 p-0.5 rounded-lg border border-white/10">
               {['All', ...YEARS].map(y => (
                 <button key={y} onClick={() => setYearFilter(y)}
-                  className={`px-3 py-1 rounded-md text-xs font-bold transition-all ${yearFilter === y ? 'bg-blue-600 text-white' : 'text-white/50 hover:text-white'}`}>
+                  className={`px-3 py-1 rounded-md text-xs font-bold  ${yearFilter === y ? 'bg-blue-600 text-white' : 'text-white/50 hover:text-white'}`}>
                   {y}
                 </button>
               ))}
@@ -214,12 +213,12 @@ const UserManagement = () => {
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
-            className={`h-full min-h-[200px] border-2 border-dashed rounded-3xl flex flex-col items-center justify-center p-8 text-center transition-all ${
-              isDragOver ? 'border-blue-400 bg-blue-500/10 scale-105' : 'border-white/20 bg-white/5 hover:border-white/40'
+            className={`h-full min-h-50 border-2 border-dashed rounded-3xl flex flex-col items-center justify-center p-8 text-center  ${
+              isDragOver ? 'border-blue-400 bg-blue-500/10 ' : 'border-white/20 bg-white/5 hover:border-white/40'
             }`}
           >
             {uploadStatus ? (
-              <div className={`animate-fade-in-up flex flex-col items-center gap-3 ${uploadStatus.type === 'error' ? 'text-red-400' : uploadStatus.type === 'success' ? 'text-green-400' : 'text-blue-400'}`}>
+              <div className={` flex flex-col items-center gap-3 ${uploadStatus.type === 'error' ? 'text-red-400' : uploadStatus.type === 'success' ? 'text-green-400' : 'text-blue-400'}`}>
                 {uploadStatus.type === 'loading' && <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-400"></div>}
                 {uploadStatus.type === 'success' && <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>}
                 {uploadStatus.type === 'error'   && <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>}
@@ -313,7 +312,7 @@ const UserManagement = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsAddModalOpen(false)}></div>
 
-          <div className="bg-slate-800 border border-slate-600 w-full max-w-md rounded-2xl shadow-2xl relative z-10 flex flex-col overflow-hidden animate-fade-in-up">
+          <div className="bg-slate-800 border border-slate-600 w-full max-w-md rounded-2xl shadow-2xl relative z-10 flex flex-col overflow-hidden ">
             <div className="bg-slate-900 px-6 py-4 flex justify-between items-center border-b border-slate-700">
               <h3 className="font-bold text-lg text-white">Create New User</h3>
               <button onClick={() => setIsAddModalOpen(false)} className="text-slate-400 hover:text-white">
@@ -362,7 +361,7 @@ const UserManagement = () => {
               </button>
               <button
                 onClick={() => { alert('User added successfully!'); setIsAddModalOpen(false); }}
-                className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-xl font-bold shadow-lg transition-transform transform hover:-translate-y-0.5"
+                className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-xl font-bold shadow-lg transition-transform transform "
               >
                 Save User
               </button>
@@ -376,7 +375,7 @@ const UserManagement = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => !isResetting && setResetModalUser(null)}></div>
 
-          <div className="bg-slate-800 border border-slate-600 w-full max-w-md rounded-2xl shadow-2xl relative z-10 flex flex-col overflow-hidden animate-fade-in-up">
+          <div className="bg-slate-800 border border-slate-600 w-full max-w-md rounded-2xl shadow-2xl relative z-10 flex flex-col overflow-hidden ">
             <div className="bg-slate-900 px-6 py-4 flex justify-between items-center border-b border-slate-700">
               <h3 className="font-bold text-lg text-white">Reset Password</h3>
               <button onClick={() => !isResetting && setResetModalUser(null)} className="text-slate-400 hover:text-white" disabled={isResetting}>
@@ -414,7 +413,7 @@ const UserManagement = () => {
                 <button
                   type="submit"
                   disabled={isResetting || !adminPassword}
-                  className="bg-red-600 hover:bg-red-500 text-white px-6 py-2 rounded-xl font-bold shadow-lg transition-transform transform hover:-translate-y-0.5 disabled:opacity-50"
+                  className="bg-red-600 hover:bg-red-500 text-white px-6 py-2 rounded-xl font-bold shadow-lg transition-transform transform  disabled:opacity-50"
                 >
                   {isResetting ? 'Resetting...' : 'Confirm Reset'}
                 </button>

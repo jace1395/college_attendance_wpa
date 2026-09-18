@@ -15,7 +15,7 @@ from rest_framework import status
 from rest_framework.permissions import IsAuthenticated, BasePermission
 from rest_framework.parsers import MultiPartParser, FormParser
 
-import pandas as pd
+# import pandas as pd
 
 from .models import (
     Subject, ClassBatch, Enrollment, Attendance,
@@ -356,6 +356,8 @@ class TeacherDashboardView(APIView):
                 "class_id": batch.id,
                 "class_name": class_name,
                 "subject_name": subject.name if subject else "Subject",
+                "stream_name": subject.stream if subject else "",
+                "dept_name": user.department.name if getattr(user, 'department', None) else "Computer Science",
                 "classes_conducted": total_sessions,
                 "avg_attendance": avg_att,
                 "student_count": batch.enrollments.count()
@@ -737,7 +739,15 @@ class AdminDashboardView(APIView):
     def get(self, request):
         total_students = User.objects.filter(role='Student').count()
         total_teachers = User.objects.filter(role__in=['Teacher', 'HOD']).count()
-        active_sessions = Attendance.objects.filter(date=timezone.now().date()).values('class_batch').distinct().count()
+        
+        # Active sessions based on last_login being today
+        active_students = User.objects.filter(role='Student', last_login__date=timezone.now().date()).count()
+        active_teachers = User.objects.filter(role__in=['Teacher', 'HOD'], last_login__date=timezone.now().date()).count()
+        
+        # Classes going on today (distinct subject names from today's attendance)
+        today_attendance = Attendance.objects.filter(date=timezone.now().date()).select_related('class_batch__subject')
+        active_class_names = list(today_attendance.values_list('class_batch__subject__name', flat=True).distinct())
+        active_sessions = today_attendance.values('class_batch').distinct().count()
 
         return Response({
             "admin": {
@@ -749,6 +759,9 @@ class AdminDashboardView(APIView):
                 "total_students": total_students,
                 "total_teachers": total_teachers,
                 "active_sessions": active_sessions,
+                "active_students": active_students,
+                "active_teachers": active_teachers,
+                "active_class_names": active_class_names,
                 "last_database_backup": timezone.now().strftime('%b %d, %Y 02:00 AM')
             },
             "recent_audit_logs": [
@@ -957,17 +970,39 @@ class AdminBackupExportView(APIView):
             for a in qs
         ]
 
-        df = pd.DataFrame(data if data else [{"Message": "No attendance records"}])
-
+        if not data:
+            data = [{"Message": "No attendance records"}]
+            
+        import openpyxl
+        import csv
+        from io import StringIO
+        
         if export_type == 'excel':
             buffer = io.BytesIO()
-            with pd.ExcelWriter(buffer, engine='openpyxl') as writer:
-                df.to_excel(writer, index=False, sheet_name='Backup')
+            wb = openpyxl.Workbook()
+            ws = wb.active
+            if ws is None:
+                ws = wb.create_sheet()
+            ws.title = 'Backup'
+            
+            headers = list(data[0].keys())
+            ws.append(headers)
+            for row in data:
+                ws.append([row.get(h, '') for h in headers])
+                
+            wb.save(buffer)
             buffer.seek(0)
             return FileResponse(buffer, as_attachment=True, filename=f"Backup_{academic_year}.xlsx")
 
+        text_buffer = StringIO()
+        writer = csv.writer(text_buffer)
+        headers = list(data[0].keys())
+        writer.writerow(headers)
+        for row in data:
+            writer.writerow([row.get(h, '') for h in headers])
+            
         buffer = io.BytesIO()
-        df.to_csv(buffer, index=False)
+        buffer.write(text_buffer.getvalue().encode('utf-8'))
         buffer.seek(0)
         return FileResponse(buffer, as_attachment=True, filename=f"Backup_{academic_year}.csv", content_type='text/csv')
 
@@ -1252,10 +1287,17 @@ class TeacherReportAPIView(APIView):
         defaulters = []
         total_conducted = qs.values('date', 'time_slot').distinct().count()
         
+        from django.db.models import Count, Q
+        student_attendance = Attendance.objects.filter(
+            class_batch_id=class_id, status='Present'
+        ).values('student_id').annotate(present_count=Count('id'))
+        
+        present_counts = {item['student_id']: item['present_count'] for item in student_attendance}
+        
         total_attendance = 0
         for en in enrollments:
             student = en.student
-            present_count = Attendance.objects.filter(class_batch_id=class_id, student=student, status='Present').count()
+            present_count = present_counts.get(student.id, 0)
             student_percentage = (present_count / total_conducted * 100) if total_conducted > 0 else 0
             total_attendance += student_percentage
             if student_percentage < 75.0 and total_conducted > 0:

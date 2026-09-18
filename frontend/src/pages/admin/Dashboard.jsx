@@ -4,7 +4,6 @@ import UserManagement from './UserManagement';
 import SystemOverrides from './SystemOverrides';
 import AdminReports from './AdminReports';
 import StudentDataEntry from './StudentDataEntry';
-import AdminStudentReports from './AdminStudentReports';
 import apiClient from '../../services/apiClient';
 import Layout from '../../components/shared/Layout';
 
@@ -13,9 +12,6 @@ const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('overview');
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [academicYear, setAcademicYear] = useState('2026-2027');
-
-  const ACADEMIC_YEARS = ['2024-2025', '2025-2026', '2026-2027', '2027-2028'];
 
   useEffect(() => {
     if (!user) return;
@@ -65,39 +61,22 @@ const AdminDashboard = () => {
             )}
           </div>
         </div>
-
-        <div className="flex items-center gap-3 flex-wrap">
-          <select
-            value={academicYear}
-            onChange={(e) => setAcademicYear(e.target.value)}
-            className="bg-gray-50 dark:bg-slate-800/70 text-gray-800 dark:text-white/80 text-sm rounded-xl px-3 py-2 border border-gray-200 dark:border-white/10 focus:border-blue-500 outline-none cursor-pointer"
-          >
-            {ACADEMIC_YEARS.map(yr => <option key={yr} value={yr}>{yr}</option>)}
-          </select>
-          <button
-            onClick={handleManualBackup}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition-colors text-sm font-bold shadow-sm shadow-blue-500/20 flex items-center gap-2"
-          >
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg>
-            Sync / Backup
-          </button>
-        </div>
       </div>
 
       {/* Navigation Tabs */}
       <div className="flex justify-start mb-8 overflow-x-auto pb-2">
         <div className="flex flex-wrap items-center gap-2 p-2 bg-gray-100/80 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 rounded-xl w-fit">
-          {['overview', 'users', 'overrides', 'reports', 'data-entry', 'student-reports'].map(tab => (
+          {['overview', 'users', 'overrides', 'reports', 'data-entry'].map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-6 py-2.5 rounded-xl text-sm font-bold capitalize transition-all whitespace-nowrap ${
+              className={`px-6 py-2.5 rounded-xl text-sm font-bold capitalize  whitespace-nowrap ${
                 activeTab === tab
                   ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
                   : 'text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5'
               }`}
             >
-              {tab === 'data-entry' ? 'Manage Data' : tab === 'student-reports' ? 'Student Reports' : tab}
+              {tab === 'data-entry' ? 'Manage Data' : tab}
             </button>
           ))}
         </div>
@@ -123,14 +102,14 @@ const AdminDashboard = () => {
               </div>
             </div>
           ) : (
-            <div className="animate-fade-in-up space-y-8">
+            <div className=" space-y-8">
               {/* System Metrics */}
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
                 {[
                   { label: 'Total Students', value: system_stats?.total_students, color: 'blue' },
                   { label: 'Total Teachers', value: system_stats?.total_teachers, color: 'purple' },
-                  { label: 'Active Sessions', value: system_stats?.active_sessions, color: 'green', live: true },
-                  { label: 'Last Backup', value: system_stats?.last_backup || 'N/A', color: 'yellow', isText: true },
+                  { label: 'Active Sessions', value: system_stats?.active_sessions, color: 'green', live: true, breakdown: `Teachers: ${system_stats?.active_teachers || 0} | Students: ${system_stats?.active_students || 0}` },
+                  { label: 'Last Backup', value: system_stats?.last_database_backup || 'N/A', color: 'yellow', isText: true },
                 ].map(({ label, value, color, live, isText }) => (
                   <div key={label} className={`bg-white dark:bg-slate-800 border ${color === 'green' ? 'border-green-500/30' : 'border-gray-200 dark:border-white/10'} rounded-3xl p-6 shadow-sm relative overflow-hidden group`}>
                     <div className={`absolute -right-6 -top-6 w-24 h-24 bg-${color}-500/10 rounded-full blur-xl group-hover:bg-${color}-500/20 transition-colors`}></div>
@@ -148,8 +127,39 @@ const AdminDashboard = () => {
                         )}
                       </div>
                     )}
+                    {breakdown && (
+                      <p className="text-xs text-gray-500 dark:text-white/50 mt-2 font-medium">{breakdown}</p>
+                    )}
                   </div>
                 ))}
+              </div>
+
+              {/* Active Classes */}
+              {system_stats?.active_class_names && system_stats.active_class_names.length > 0 && (
+                <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-white/10 rounded-3xl p-6 shadow-sm">
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Classes Going On Today</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {system_stats.active_class_names.map((className, idx) => (
+                      <span key={idx} className="px-3 py-1.5 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-300 rounded-lg text-sm font-medium border border-blue-200 dark:border-blue-500/20">
+                        {className}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Academic Year Management */}
+              <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-white/10 rounded-3xl p-6 shadow-sm flex items-center justify-between flex-wrap gap-4">
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">Academic Year Management</h3>
+                  <p className="text-sm text-gray-500 dark:text-white/50 mt-1">Current Active Year: <span className="font-semibold text-blue-600 dark:text-blue-400">2026-2027</span></p>
+                </div>
+                <button
+                  onClick={() => alert("Hitting endpoint to create new academic year...")}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition-colors text-sm font-bold shadow-sm shadow-blue-500/20"
+                >
+                  Create New Academic Year
+                </button>
               </div>
 
               {/* Audit Trail */}
@@ -193,7 +203,6 @@ const AdminDashboard = () => {
         {activeTab === 'overrides' && <SystemOverrides />}
         {activeTab === 'reports' && <AdminReports />}
         {activeTab === 'data-entry' && <StudentDataEntry />}
-        {activeTab === 'student-reports' && <AdminStudentReports />}
       </div>
     </Layout>
   );

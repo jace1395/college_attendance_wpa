@@ -41,7 +41,7 @@ const TrendLineChart = ({ data = [] }) => {
             }}
             labelStyle={{ color: axisColor, fontSize: 12 }}
           />
-          <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4, fill: '#3b82f6' }} activeDot={{ r: 6 }} />
+          <Line type="monotone" dataKey="value" stroke="#3b82f6" strokeWidth={3} dot={{ r: 4, fill: '#3b82f6' }} activeDot={{ r: 6 }} isAnimationActive={false} />
         </LineChart>
       </ResponsiveContainer>
     </div>

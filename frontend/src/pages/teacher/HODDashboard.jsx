@@ -12,7 +12,7 @@ const MiniBar = ({ pct }) => {
   return (
     <div className="w-full bg-slate-800/60 rounded-full h-2.5 overflow-hidden">
       <div
-        className={`h-full rounded-full transition-all duration-500 ${
+        className={`h-full rounded-full   ${
           good ? 'bg-gradient-to-r from-green-500 to-emerald-400' : 'bg-gradient-to-r from-red-500 to-orange-400'
         }`}
         style={{ width: Math.min(pct, 100) + '%' }}
@@ -93,7 +93,7 @@ const HODDashboard = ({ onBack }) => {
   }, [classData]);
 
   return (
-    <div className="animate-fade-in-up flex flex-col gap-6">
+    <div className=" flex flex-col gap-6">
 
       {/* ── Header ─────────────────────────────────────────────────────────── */}
       <div className="bg-purple-900/10 border border-purple-500/20 rounded-3xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -115,7 +115,7 @@ const HODDashboard = ({ onBack }) => {
         {onBack && (
           <button
             onClick={onBack}
-            className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/15 border border-white/20 text-white/80 hover:text-white rounded-xl transition-all text-sm font-medium shrink-0"
+            className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/15 border border-white/20 text-white/80 hover:text-white rounded-xl  text-sm font-medium shrink-0"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
@@ -135,7 +135,7 @@ const HODDashboard = ({ onBack }) => {
           <button
             key={tab.key}
             onClick={() => setActiveTab(tab.key)}
-            className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${
+            className={`px-6 py-2.5 rounded-xl text-sm font-bold  ${
               activeTab === tab.key
                 ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20'
                 : 'text-white/60 hover:text-white hover:bg-white/5'
@@ -148,7 +148,7 @@ const HODDashboard = ({ onBack }) => {
 
       {/* ── OVERVIEW TAB ────────────────────────────────────────────────────── */}
       {activeTab === 'overview' && (
-        <div className="flex flex-col gap-6 animate-fade-in-up">
+        <div className="flex flex-col gap-6 ">
 
           {loadingDepts ? (
             <div className="flex justify-center py-12">
@@ -190,7 +190,7 @@ const HODDashboard = ({ onBack }) => {
                     <button
                       key={cls}
                       onClick={() => { setSelectedClass(cls); setActiveTab('class'); }}
-                      className="bg-white/5 hover:bg-purple-500/10 border border-white/10 hover:border-purple-500/30 rounded-2xl p-5 text-left transition-all group shadow-lg hover:shadow-purple-500/10 hover:-translate-y-0.5"
+                      className="bg-white/5 hover:bg-purple-500/10 border border-white/10 hover:border-purple-500/30 rounded-2xl p-5 text-left  group shadow-lg hover:shadow-purple-500/10 "
                     >
                       <p className="font-extrabold text-lg text-white mb-2 group-hover:text-purple-300 transition-colors">{cls}</p>
                       {data ? (
@@ -215,7 +215,7 @@ const HODDashboard = ({ onBack }) => {
 
       {/* ── CLASS VIEW TAB ──────────────────────────────────────────────────── */}
       {activeTab === 'class' && (
-        <div className="flex flex-col gap-6 animate-fade-in-up">
+        <div className="flex flex-col gap-6 ">
 
           {/* Class Selector Tabs — ONLY the HOD's classes */}
           {classList.length > 0 && (
@@ -224,7 +224,7 @@ const HODDashboard = ({ onBack }) => {
                 <button
                   key={cls}
                   onClick={() => setSelectedClass(cls)}
-                  className={`px-4 py-2 rounded-xl text-sm font-bold transition-all ${
+                  className={`px-4 py-2 rounded-xl text-sm font-bold  ${
                     selectedClass === cls
                       ? 'bg-purple-600 text-white shadow-lg'
                       : 'text-white/60 hover:text-white hover:bg-white/5'

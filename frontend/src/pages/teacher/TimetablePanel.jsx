@@ -78,7 +78,7 @@ const TimetablePanel = ({ onBack }) => {
   ];
 
   return (
-    <div className="animate-fade-in-up flex flex-col gap-6">
+    <div className=" flex flex-col gap-6">
 
       {/* ── Header ──────────────────────────────────────────────────────────── */}
       <div className="bg-amber-900/10 border border-amber-500/20 rounded-3xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -96,7 +96,7 @@ const TimetablePanel = ({ onBack }) => {
         {onBack && (
           <button
             onClick={onBack}
-            className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/15 border border-white/20 text-white/80 hover:text-white rounded-xl transition-all text-sm font-medium shrink-0"
+            className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/15 border border-white/20 text-white/80 hover:text-white rounded-xl  text-sm font-medium shrink-0"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
@@ -143,7 +143,7 @@ const TimetablePanel = ({ onBack }) => {
             <p className="text-white/20 text-xs mt-1">Supports .xlsx, .csv</p>
           </label>
 
-          <button className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold transition-transform transform hover:-translate-y-0.5 shadow-lg shadow-blue-500/20">
+          <button className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold transition-transform transform  shadow-lg shadow-blue-500/20">
             Upload File
           </button>
         </div>
@@ -198,7 +198,7 @@ const TimetablePanel = ({ onBack }) => {
           <button
             onClick={handleAssign}
             disabled={assignLoading}
-            className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white py-3 rounded-xl font-bold transition-transform transform hover:-translate-y-0.5 shadow-lg shadow-emerald-500/20 mt-auto"
+            className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white py-3 rounded-xl font-bold transition-transform transform  shadow-lg shadow-emerald-500/20 mt-auto"
           >
             {assignLoading ? 'Assigning...' : 'Assign'}
           </button>

@@ -50,7 +50,7 @@ const ChevronDown = () => (
 const StatCard = ({ label, value, icon, colorClass, accent, onClick }) => (
   <div
     onClick={onClick}
-    className={"flex flex-col gap-2 rounded-2xl p-5 border " + colorClass + " flex-1 min-w-[120px] relative overflow-hidden " + (onClick ? "cursor-pointer hover:brightness-110 transition-all" : "")}
+    className={"flex flex-col gap-2 rounded-2xl p-5 border " + colorClass + " flex-1 min-w-[120px] relative overflow-hidden " + (onClick ? "cursor-pointer hover:brightness-110 " : "")}
     style={{ boxShadow: accent ? "0 0 24px " + accent + "22" : undefined }}
   >
     <div className="absolute -right-4 -top-4 w-20 h-20 rounded-full opacity-10 blur-2xl"
@@ -138,7 +138,7 @@ const PrincipalReportsHub = ({ streams, onNavigateToView }) => {
   };
 
   return (
-    <div className="flex flex-col gap-5 animate-fade-in-up">
+    <div className="flex flex-col gap-5 ">
 
       {/* PROGRAMME TABS */}
       <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl px-5 pt-4 pb-5 shadow-xl">
@@ -152,9 +152,9 @@ const PrincipalReportsHub = ({ streams, onNavigateToView }) => {
               <button
                 key={prog}
                 onClick={() => handleProgChange(prog)}
-                className={"relative flex flex-col items-center gap-0.5 rounded-xl px-5 py-3 font-bold text-sm transition-all duration-200 border focus:outline-none focus:ring-2 focus:ring-white/20 " + (
+                className={"relative flex flex-col items-center gap-0.5 rounded-xl px-5 py-3 font-bold text-sm   border focus:outline-none focus:ring-2 focus:ring-white/20 " + (
                   isActive
-                    ? "bg-gradient-to-br " + col.tab + " text-white border-transparent shadow-lg scale-105"
+                    ? "bg-gradient-to-br " + col.tab + " text-white border-transparent shadow-lg "
                     : "bg-white/5 text-white/60 border-white/10 hover:bg-white/10 hover:text-white"
                 )}
               >
@@ -283,7 +283,7 @@ const PrincipalReportsHub = ({ streams, onNavigateToView }) => {
 
         <div className="w-full bg-slate-800/80 rounded-full h-2.5 overflow-hidden mb-1">
           <div
-            className={"h-full rounded-full transition-all duration-700 " + (pctGood ? "bg-gradient-to-r from-green-500 to-emerald-400" : "bg-gradient-to-r from-red-500 to-orange-400")}
+            className={"h-full rounded-full   " + (pctGood ? "bg-gradient-to-r from-green-500 to-emerald-400" : "bg-gradient-to-r from-red-500 to-orange-400")}
             style={{ width: pctBar + "%" }}
           />
         </div>
@@ -358,7 +358,7 @@ const PrincipalReportsHub = ({ streams, onNavigateToView }) => {
             <button
               onClick={() => handleExport("pdf")}
               disabled={isExporting}
-              className="flex items-center gap-1.5 bg-red-500/15 text-red-300 border border-red-500/30 hover:bg-red-500/25 px-3.5 py-2 rounded-xl font-semibold text-xs transition-all disabled:opacity-40 whitespace-nowrap"
+              className="flex items-center gap-1.5 bg-red-500/15 text-red-300 border border-red-500/30 hover:bg-red-500/25 px-3.5 py-2 rounded-xl font-semibold text-xs  disabled:opacity-40 whitespace-nowrap"
             >
               <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
@@ -368,7 +368,7 @@ const PrincipalReportsHub = ({ streams, onNavigateToView }) => {
             <button
               onClick={() => handleExport("xlsx")}
               disabled={isExporting}
-              className="flex items-center gap-1.5 bg-green-500/15 text-green-300 border border-green-500/30 hover:bg-green-500/25 px-3.5 py-2 rounded-xl font-semibold text-xs transition-all disabled:opacity-40 whitespace-nowrap"
+              className="flex items-center gap-1.5 bg-green-500/15 text-green-300 border border-green-500/30 hover:bg-green-500/25 px-3.5 py-2 rounded-xl font-semibold text-xs  disabled:opacity-40 whitespace-nowrap"
             >
               <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
                 <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M13,3.5L18.5,9H13V3.5M8,11H11V13H8V11M8,15H11V17H8V15M12,11H16V13H12V11M12,15H16V17H12V15Z"/>

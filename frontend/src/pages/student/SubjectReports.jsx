@@ -219,7 +219,7 @@ const SubjectReports = ({ subject, history }) => {
 
   if (loading) {
     return (
-      <div className="animate-fade-in-up flex items-center justify-center h-64">
+      <div className="flex items-center justify-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
@@ -230,7 +230,7 @@ const SubjectReports = ({ subject, history }) => {
   const barWidth = isDailyOrCustomBar ? Math.max(chartData.length * 36, 600) : '100%';
 
   return (
-    <div className="animate-fade-in-up">
+    <div>
       {/* Filter Bar */}
       <div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white backdrop-blur-md border border-white/10 rounded-2xl p-4 mb-6 flex flex-col md:flex-row gap-4 items-start md:items-center">
         <span className="text-sm font-medium text-white/70 uppercase tracking-wider whitespace-nowrap">Filter By:</span>
@@ -239,14 +239,14 @@ const SubjectReports = ({ subject, history }) => {
             <button
               key={f}
               onClick={() => setFilter(f)}
-              className={`px-4 py-1.5 rounded-lg text-sm font-medium capitalize transition-all ${filter === f ? 'bg-blue-600 text-white shadow-md' : 'text-white/60 hover:text-white hover:bg-white/5'}`}
+              className={`px-4 py-1.5 rounded-lg text-sm font-medium capitalize ${filter === f ? 'bg-blue-600 text-white shadow-md' : 'text-white/60 hover:text-white hover:bg-white/5'}`}
             >
               {f}
             </button>
           ))}
           <button
             onClick={() => setFilter('custom')}
-            className={`px-4 py-1.5 rounded-lg text-sm font-medium transition-all ${filter === 'custom' ? 'bg-blue-600 text-white shadow-md' : 'text-white/60 hover:text-white hover:bg-white/5'}`}
+            className={`px-4 py-1.5 rounded-lg text-sm font-medium ${filter === 'custom' ? 'bg-blue-600 text-white shadow-md' : 'text-white/60 hover:text-white hover:bg-white/5'}`}
           >
             Custom
           </button>
@@ -340,7 +340,7 @@ const SubjectReports = ({ subject, history }) => {
             <div className="w-full h-[240px]">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
-                  <Pie data={chartData.data} cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={5} dataKey="value">
+                  <Pie data={chartData.data} cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={5} dataKey="value" isAnimationActive={false}>
                     {chartData.data.map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={entry.fill} />
                     ))}
@@ -363,7 +363,7 @@ const SubjectReports = ({ subject, history }) => {
                   contentStyle={{ backgroundColor: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff' }}
                   formatter={(value, name, props) => [`${value.toFixed(1)}% (${props.payload.attended}/${props.payload.total})`, 'Attendance']}
                 />
-                <Bar dataKey="percentage" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={40} onClick={handleWeeklyClick} className="cursor-pointer hover:opacity-80" />
+                <Bar dataKey="percentage" fill="#3b82f6" radius={[4, 4, 0, 0]} barSize={40} onClick={handleWeeklyClick} className="cursor-pointer hover:opacity-80" isAnimationActive={false} />
               </BarChart>
             </ResponsiveContainer>
           </div>

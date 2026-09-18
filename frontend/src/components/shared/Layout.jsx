@@ -1,5 +1,5 @@
-import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import ThemeToggle from './ThemeToggle';
 
@@ -14,8 +14,15 @@ import ThemeToggle from './ThemeToggle';
  * Each dashboard renders only its inner content as {children}.
  */
 const Layout = ({ children }) => {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    if (user?.is_first_login && location.pathname !== '/settings') {
+      navigate('/settings');
+    }
+  }, [user, location, navigate]);
 
   const handleLogout = () => {
     logout();

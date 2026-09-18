@@ -49,7 +49,7 @@ const MentorDashboard = ({ onBack }) => {
   };
 
   return (
-    <div className="animate-fade-in-up flex flex-col gap-6">
+    <div className=" flex flex-col gap-6">
 
       {/* Panel Header with Back Button */}
       <div className="bg-emerald-900/10 border border-emerald-500/20 rounded-3xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -70,7 +70,7 @@ const MentorDashboard = ({ onBack }) => {
         {onBack && (
           <button
             onClick={onBack}
-            className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/15 border border-white/20 text-white/80 hover:text-white rounded-xl transition-all text-sm font-medium shrink-0"
+            className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/15 border border-white/20 text-white/80 hover:text-white rounded-xl  text-sm font-medium shrink-0"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
@@ -152,7 +152,7 @@ const MentorDashboard = ({ onBack }) => {
                     <td className="px-5 py-3">
                       <div className="w-full bg-slate-800/60 rounded-full h-2 overflow-hidden">
                         <div
-                          className={`h-full rounded-full bg-gradient-to-r ${getBarColor(m.attendance_pct)} transition-all duration-500`}
+                          className={`h-full rounded-full bg-gradient-to-r ${getBarColor(m.attendance_pct)}  `}
                           style={{ width: `${Math.min(m.attendance_pct, 100)}%` }}
                         />
                       </div>
@@ -160,7 +160,7 @@ const MentorDashboard = ({ onBack }) => {
                     <td className="px-5 py-3 text-center">
                       <button
                         onClick={() => setSelectedMentee(m)}
-                        className="px-3 py-1 bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-300 hover:text-white rounded-lg text-xs font-bold border border-emerald-500/20 transition-all"
+                        className="px-3 py-1 bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-300 hover:text-white rounded-lg text-xs font-bold border border-emerald-500/20 "
                       >
                         View
                       </button>
@@ -177,7 +177,7 @@ const MentorDashboard = ({ onBack }) => {
       {selectedMentee && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedMentee(null)}></div>
-          <div className="bg-slate-900/95 border border-white/20 w-full max-w-md rounded-3xl shadow-2xl relative z-10 animate-fade-in-up overflow-hidden">
+          <div className="bg-slate-900/95 border border-white/20 w-full max-w-md rounded-3xl shadow-2xl relative z-10  overflow-hidden">
             <div className="p-6 border-b border-white/10 flex justify-between items-start">
               <div>
                 <h3 className="text-xl font-bold text-white">{selectedMentee.name}</h3>
@@ -209,7 +209,7 @@ const MentorDashboard = ({ onBack }) => {
                   </p>
                   <div className="flex-1">
                     <div className="w-full bg-slate-800/60 rounded-full h-3 overflow-hidden">
-                      <div className={`h-full rounded-full bg-gradient-to-r ${getBarColor(selectedMentee.attendance_pct)} transition-all`}
+                      <div className={`h-full rounded-full bg-gradient-to-r ${getBarColor(selectedMentee.attendance_pct)} `}
                         style={{ width: `${Math.min(selectedMentee.attendance_pct ?? 0, 100)}%` }} />
                     </div>
                     <p className="text-xs text-white/30 mt-1">{selectedMentee.attendance_pct >= 75 ? 'Eligible' : '⚠ Below minimum (75%)'}</p>

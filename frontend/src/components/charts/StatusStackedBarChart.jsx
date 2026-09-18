@@ -42,10 +42,10 @@ const StatusStackedBarChart = ({ data = [] }) => {
             labelStyle={{ color: axisColor, fontSize: 12 }}
           />
           <Legend wrapperStyle={{ fontSize: '12px', paddingTop: '10px', color: axisColor }} />
-          <Bar dataKey="present" stackId="a" fill="#22c55e" name="Present" />
-          <Bar dataKey="od" stackId="a" fill="#3b82f6" name="On Duty" />
-          <Bar dataKey="late" stackId="a" fill="#f59e0b" name="Late" />
-          <Bar dataKey="absent" stackId="a" fill="#ef4444" name="Absent" radius={[4, 4, 0, 0]} />
+          <Bar dataKey="present" stackId="a" fill="#22c55e" name="Present" isAnimationActive={false} />
+          <Bar dataKey="od" stackId="a" fill="#3b82f6" name="On Duty" isAnimationActive={false} />
+          <Bar dataKey="late" stackId="a" fill="#f59e0b" name="Late" isAnimationActive={false} />
+          <Bar dataKey="absent" stackId="a" fill="#ef4444" name="Absent" radius={[4, 4, 0, 0]} isAnimationActive={false} />
         </BarChart>
       </ResponsiveContainer>
     </div>

@@ -75,7 +75,7 @@ const TimetableEditor = () => {
           <p className="text-xs text-white/40 mt-0.5">Click any slot to edit teacher, subject, or room</p>
         </div>
         <button onClick={handleSaveAll}
-          className={"px-6 py-2.5 rounded-xl font-bold text-sm transition-all shadow-lg " + (saved ? "bg-green-500/30 text-green-300 border border-green-500/40" : "bg-blue-600 hover:bg-blue-500 text-white border border-blue-500/30 shadow-blue-500/20")}>
+          className={"px-6 py-2.5 rounded-xl font-bold text-sm  shadow-lg " + (saved ? "bg-green-500/30 text-green-300 border border-green-500/40" : "bg-blue-600 hover:bg-blue-500 text-white border border-blue-500/30 shadow-blue-500/20")}>
           {saved ? "Saved!" : "Save Timetable"}
         </button>
       </div>
@@ -102,7 +102,7 @@ const TimetableEditor = () => {
                     <td key={period} className="px-2 py-2">
                       <button
                         onClick={() => openEdit(day, period)}
-                        className={"w-full rounded-xl border px-2 py-2 text-left transition-all group " + colorClass}
+                        className={"w-full rounded-xl border px-2 py-2 text-left  group " + colorClass}
                       >
                         <p className="font-bold text-white/90 truncate text-xs leading-tight">{slot?.subject}</p>
                         <p className="text-white/50 text-xs truncate mt-0.5">{slot?.teacher?.split(" ").slice(-1)[0]}</p>
@@ -122,7 +122,7 @@ const TimetableEditor = () => {
       {editing && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setEditing(null)} />
-          <div className="relative z-10 bg-slate-800 border border-slate-600 rounded-2xl w-full max-w-md shadow-2xl animate-fade-in-up overflow-hidden">
+          <div className="relative z-10 bg-slate-800 border border-slate-600 rounded-2xl w-full max-w-md shadow-2xl  overflow-hidden">
             <div className="bg-slate-900 px-6 py-4 flex justify-between items-center border-b border-slate-700">
               <div>
                 <h3 className="font-bold text-white">Edit Slot</h3>
@@ -154,7 +154,7 @@ const TimetableEditor = () => {
             </div>
             <div className="bg-slate-900 px-6 py-4 flex justify-end gap-3 border-t border-slate-700">
               <button onClick={() => setEditing(null)} className="px-4 py-2 text-white/60 hover:text-white text-sm transition-colors">Cancel</button>
-              <button onClick={saveEdit} className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-sm shadow-lg transition-all">Save Slot</button>
+              <button onClick={saveEdit} className="px-6 py-2 bg-blue-600 hover:bg-blue-500 text-white font-bold rounded-xl text-sm shadow-lg ">Save Slot</button>
             </div>
           </div>
         </div>

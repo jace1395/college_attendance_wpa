@@ -44,7 +44,7 @@ const PrincipalNoticeBoard = () => {
   };
 
   return (
-    <div className="h-[calc(100vh-140px)] flex flex-col md:flex-row gap-6 animate-fade-in-up relative">
+    <div className="h-[calc(100vh-140px)] flex flex-col md:flex-row gap-6  relative">
         {/* Sidebar */}
         <div className="w-full md:w-64 shrink-0 flex flex-col gap-4">
             <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-2 flex-1 shadow-xl">
@@ -91,7 +91,7 @@ const PrincipalNoticeBoard = () => {
                 {filteredMessages.map(msg => (
                 <div 
                     key={msg.id}
-                    className={`flex flex-col md:flex-row md:items-center gap-2 md:gap-4 p-4 border-b border-white/5 hover:shadow-md cursor-pointer transition-all rounded-xl ${msg.read === false ? 'bg-white/10 font-semibold border-l-4 border-l-blue-500' : 'hover:bg-white/5 border-l-4 border-l-transparent'}`}
+                    className={`flex flex-col md:flex-row md:items-center gap-2 md:gap-4 p-4 border-b border-white/5 hover:shadow-md cursor-pointer  rounded-xl ${msg.read === false ? 'bg-white/10 font-semibold border-l-4 border-l-blue-500' : 'hover:bg-white/5 border-l-4 border-l-transparent'}`}
                 >
                     <div className="w-full md:w-48 truncate shrink-0">{msg.sender}</div>
                     <div className="flex-1 truncate">
@@ -129,7 +129,7 @@ const PrincipalNoticeBoard = () => {
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                 <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsComposeOpen(false)}></div>
                 
-                <div className="bg-slate-800 border border-slate-600 w-full max-w-2xl rounded-2xl shadow-2xl relative z-10 flex flex-col overflow-visible animate-fade-in-up">
+                <div className="bg-slate-800 border border-slate-600 w-full max-w-2xl rounded-2xl shadow-2xl relative z-10 flex flex-col overflow-visible ">
                     <div className="bg-slate-900 px-6 py-4 flex justify-between items-center border-b border-slate-700 rounded-t-2xl">
                         <h3 className="font-bold text-lg text-red-400 flex items-center gap-2">
                             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"></path></svg>

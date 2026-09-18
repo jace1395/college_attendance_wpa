@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import MonitoringTab from './MonitoringTab';
 
 import TeacherReports from './TeacherReports';
@@ -13,6 +13,7 @@ import Layout from '../../components/shared/Layout';
 
 const TeacherDashboard = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -87,10 +88,30 @@ const TeacherDashboard = () => {
               {/* Top: Profile (Left) & Stats (Right) */}
               <div className="flex flex-col md:flex-row justify-between items-center md:items-start gap-6">
 
-                {/* Left: Profile Info — no semester dropdown */}
+                {/* Left: Profile Info */}
                 <div className="flex flex-col gap-1 text-center md:text-left w-full md:w-auto">
                   <h2 className="text-3xl font-bold text-gray-900 dark:text-white">{teacher.name}</h2>
-                  <p className="text-gray-600 dark:text-gray-400 text-lg">{teacher.department} Department</p>
+                  <p className="text-gray-600 dark:text-gray-400 text-lg mb-2">{teacher.department} Department</p>
+                  
+                  {/* Stream/Subject/Class Selector */}
+                  <div className="relative">
+                    <select 
+                      value=""
+                      onChange={(e) => {
+                        if (e.target.value) {
+                          navigate(`/teacher/class/${e.target.value}`);
+                        }
+                      }}
+                      className="appearance-none w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-300 dark:border-white/20 text-gray-900 dark:text-white rounded-xl px-4 py-2.5 pr-10 focus:outline-none focus:border-blue-500 hover:border-gray-400 dark:hover:border-white/40 transition-colors shadow-inner"
+                    >
+                      <option value="" disabled>Select Stream / Subject / Class</option>
+                      {assigned_classes?.map(cls => (
+                        <option key={cls.class_id} value={cls.class_id}>
+                          {cls.dept_name || 'Computer Science'} - {cls.subject_name} ({cls.class_name})
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                 </div>
 
                 {/* Right: Stats Widget */}
@@ -144,7 +165,7 @@ const TeacherDashboard = () => {
 
           {/* Smart Alert Banner */}
           {smartAlert && activeTab === 'dashboard' && (
-            <div className="bg-gradient-to-r from-blue-600/90 to-indigo-600/90 backdrop-blur-xl border border-blue-400/50 rounded-2xl p-6 mb-8 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-4 animate-fade-in-up">
+            <div className="bg-linear-to-r from-blue-600/90 to-indigo-600/90 backdrop-blur-xl border border-blue-400/50 rounded-2xl p-6 mb-8 shadow-2xl flex flex-col sm:flex-row items-center justify-between gap-4 ">
               <div className="flex items-center gap-4">
                 <div className="bg-white/20 p-3 rounded-full">
                   <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
@@ -166,14 +187,14 @@ const TeacherDashboard = () => {
           {/* Tab Content */}
           <div className="flex-1">
             {activeTab === 'dashboard' && (
-              <div className="animate-fade-in-up">
+              <div className="">
                 <h3 className="text-2xl font-semibold mb-6 text-gray-900 dark:text-white">Assigned Classes</h3>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                   {assigned_classes && assigned_classes.length > 0 ? assigned_classes.map(cls => (
                     <button
                       key={cls.class_id}
                       onClick={() => setSelectedClass(cls)}
-                      className="group bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-3xl p-6 text-left hover:bg-gray-50 dark:hover:bg-slate-700 transition-all shadow-sm hover:shadow-md hover:-translate-y-1 relative overflow-hidden"
+                      className="group bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-3xl p-6 text-left hover:bg-gray-50 dark:hover:bg-slate-700  shadow-sm hover:shadow-md hover:-translate-y-1 relative overflow-hidden"
                     >
                       <div className="absolute top-0 right-0 w-32 h-32 bg-blue-500/10 rounded-full blur-2xl group-hover:bg-blue-500/20 transition-colors"></div>
                       <h4 className="text-2xl font-bold mb-1 relative z-10 text-gray-900 dark:text-white">{cls.class_name}</h4>
@@ -212,7 +233,7 @@ const TeacherDashboard = () => {
           {selectedClass && (
             <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
               <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedClass(null)}></div>
-              <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-white/20 w-full max-w-md rounded-3xl shadow-2xl relative z-10 overflow-hidden animate-fade-in-up">
+              <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-white/20 w-full max-w-md rounded-3xl shadow-2xl relative z-10 overflow-hidden ">
                 <div className="p-8">
                   <div className="flex justify-between items-start mb-6">
                     <div>

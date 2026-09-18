@@ -138,7 +138,7 @@ const Settings = () => {
                   required
                   value={passwordData.old_password}
                   onChange={(e) => setPasswordData({...passwordData, old_password: e.target.value})}
-                  className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all"
+                  className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-red-500/50 "
                   placeholder="Enter current password"
                 />
               </div>
@@ -150,7 +150,7 @@ const Settings = () => {
                   required
                   value={passwordData.new_password}
                   onChange={(e) => setPasswordData({...passwordData, new_password: e.target.value})}
-                  className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all"
+                  className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-red-500/50 "
                   placeholder="Enter new password"
                 />
               </div>
@@ -162,7 +162,7 @@ const Settings = () => {
                   required
                   value={passwordData.confirm_password}
                   onChange={(e) => setPasswordData({...passwordData, confirm_password: e.target.value})}
-                  className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-red-500/50 transition-all"
+                  className="w-full px-4 py-3 rounded-xl bg-white/10 border border-white/20 text-white placeholder-white/40 focus:outline-none focus:ring-2 focus:ring-red-500/50 "
                   placeholder="Confirm new password"
                 />
               </div>
@@ -170,7 +170,7 @@ const Settings = () => {
               <button
                 type="submit"
                 disabled={isChanging}
-                className="w-full py-3.5 px-4 bg-red-500/80 hover:bg-red-600/80 text-white font-semibold rounded-xl shadow-lg transition-all disabled:opacity-50"
+                className="w-full py-3.5 px-4 bg-red-500/80 hover:bg-red-600/80 text-white font-semibold rounded-xl shadow-lg  disabled:opacity-50"
               >
                 {isChanging ? 'Updating...' : 'Change Password'}
               </button>
