@@ -1,5 +1,6 @@
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 from django.db import models
+import datetime
 
 
 class RoleChoices(models.TextChoices):
@@ -19,6 +20,12 @@ class CustomUserManager(BaseUserManager):
         # If IT hasn't provided an email, auto-generate one using the roll number!
         if not email and roll_no:
             email = f"{roll_no}@pending.vvm.edu.in"
+
+        # DYNAMIC DEFAULT PASSWORD:
+        # If no password is supplied (e.g. bulk upload, admin panel), use Sdcce@{year}.
+        # This ensures every account has a non-empty, policy-compliant initial password.
+        if not password:
+            password = f"Sdcce@{datetime.date.today().year}"
 
         email = self.normalize_email(email)
         user = self.model(email=email, roll_no=roll_no, **extra_fields)
