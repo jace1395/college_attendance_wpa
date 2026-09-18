@@ -30,5 +30,10 @@ EXPOSE 8000
 # Collect static files (needed if WhiteNoise / admin is in use)
 # RUN python manage.py collectstatic --noinput
 
-# Run gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:8000", "--workers", "3", "attendance_wpa.wsgi:application"]
+# Copy and wire up the entrypoint script
+# This ensures migrations + seed_core_users run on EVERY startup,
+# so admin@sdcce.edu / Sdcce@{year} always works out of the box.
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
+CMD ["/entrypoint.sh"]
