@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import apiClient from '../../services/apiClient';
+import MenteeReportView from './MenteeReportView';
 
 // MentorDashboard renders as an embedded tab inside TeacherDashboard.
 // It receives an onBack callback to return to the Teacher Dashboard.
@@ -48,8 +49,12 @@ const MentorDashboard = ({ onBack }) => {
     return 'from-red-500 to-orange-400';
   };
 
+  if (selectedMentee) {
+    return <MenteeReportView menteeId={selectedMentee.id} onBack={() => setSelectedMentee(null)} />;
+  }
+
   return (
-    <div className=" flex flex-col gap-6">
+    <div className="flex flex-col gap-8 animate-fade-in">
 
       {/* Panel Header with Back Button */}
       <div className="bg-emerald-900/10 border border-emerald-500/20 rounded-3xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -172,67 +177,6 @@ const MentorDashboard = ({ onBack }) => {
           </div>
         )}
       </div>
-
-      {/* Mentee Detail Modal */}
-      {selectedMentee && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setSelectedMentee(null)}></div>
-          <div className="bg-slate-900/95 border border-white/20 w-full max-w-md rounded-3xl shadow-2xl relative z-10  overflow-hidden">
-            <div className="p-6 border-b border-white/10 flex justify-between items-start">
-              <div>
-                <h3 className="text-xl font-bold text-white">{selectedMentee.name}</h3>
-                <p className="text-white/50 text-sm font-mono">{selectedMentee.roll}</p>
-              </div>
-              <button onClick={() => setSelectedMentee(null)} className="p-2 text-white/40 hover:text-white hover:bg-white/10 rounded-full transition-colors">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/></svg>
-              </button>
-            </div>
-            <div className="p-6 flex flex-col gap-4">
-              <div className="grid grid-cols-2 gap-3">
-                {[
-                  { label: 'Year',       value: selectedMentee.year },
-                  { label: 'Division',   value: selectedMentee.division ? `Div ${selectedMentee.division}` : '—' },
-                  { label: 'Classes Attended', value: selectedMentee.attended ?? '—' },
-                  { label: 'Total Classes',    value: selectedMentee.total ?? '—' },
-                ].map(f => (
-                  <div key={f.label} className="bg-white/5 rounded-xl p-3 border border-white/10">
-                    <p className="text-xs text-white/40 uppercase tracking-wider mb-1">{f.label}</p>
-                    <p className="font-bold text-white/90">{f.value}</p>
-                  </div>
-                ))}
-              </div>
-              <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                <p className="text-xs text-white/40 uppercase tracking-wider mb-2">Overall Attendance</p>
-                <div className="flex items-center gap-4">
-                  <p className={`text-4xl font-extrabold ${getAttColor(selectedMentee.attendance_pct)}`}>
-                    {typeof selectedMentee.attendance_pct === 'number' ? selectedMentee.attendance_pct.toFixed(1) : '—'}%
-                  </p>
-                  <div className="flex-1">
-                    <div className="w-full bg-slate-800/60 rounded-full h-3 overflow-hidden">
-                      <div className={`h-full rounded-full bg-gradient-to-r ${getBarColor(selectedMentee.attendance_pct)} `}
-                        style={{ width: `${Math.min(selectedMentee.attendance_pct ?? 0, 100)}%` }} />
-                    </div>
-                    <p className="text-xs text-white/30 mt-1">{selectedMentee.attendance_pct >= 75 ? 'Eligible' : '⚠ Below minimum (75%)'}</p>
-                  </div>
-                </div>
-              </div>
-              {selectedMentee.subjects && selectedMentee.subjects.length > 0 && (
-                <div className="bg-white/5 rounded-xl p-4 border border-white/10">
-                  <p className="text-xs text-white/40 uppercase tracking-wider mb-3">Subject Breakdown</p>
-                  <div className="flex flex-col gap-2">
-                    {selectedMentee.subjects.map(s => (
-                      <div key={s.name} className="flex items-center justify-between text-sm">
-                        <span className="text-white/70">{s.name}</span>
-                        <span className={`font-bold ${getAttColor(s.pct)}`}>{s.pct}%</span>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

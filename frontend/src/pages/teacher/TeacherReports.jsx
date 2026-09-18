@@ -12,12 +12,14 @@ import {
   Cell,
   Legend,
   LineChart,
-  Line
+  Line,
+  Brush
 } from 'recharts';
 import apiClient from '../../services/apiClient';
 
 const TeacherReports = ({ classes }) => {
   const [filter, setFilter] = useState('monthly'); // 'daily', 'weekly', 'monthly', 'tilldate', 'custom'
+  const [isFullscreen, setIsFullscreen] = useState(false);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [selectedClass, setSelectedClass] = useState(classes?.[0]?.class_id || '');
@@ -28,6 +30,24 @@ const TeacherReports = ({ classes }) => {
   const [pieChartData, setPieChartData] = useState([]);
   const [pieChartPercentage, setPieChartPercentage] = useState(0);
   const [loading, setLoading] = useState(false);
+
+  // Semester logic for month dropdown
+  const selectedClassObj = classes?.find(c => String(c.class_id) === String(selectedClass));
+  let isOddSemester = true;
+  if (selectedClassObj) {
+     const match = selectedClassObj.class_name.match(/Sem (\d+)/i);
+     if (match) {
+        isOddSemester = parseInt(match[1]) % 2 !== 0;
+     }
+  }
+
+  const monthsToShow = isOddSemester ? [
+    { val: 6, label: "June" }, { val: 7, label: "July" }, { val: 8, label: "August" },
+    { val: 9, label: "September" }, { val: 10, label: "October" }, { val: 11, label: "November" },
+  ] : [
+    { val: 12, label: "December" }, { val: 1, label: "January" }, { val: 2, label: "February" },
+    { val: 3, label: "March" }, { val: 4, label: "April" }, { val: 5, label: "May" }
+  ];
 
   // Fallback to dummy dates if backend doesn't provide them
   const semesterStartDate = '2026-07-01';
@@ -219,7 +239,15 @@ const TeacherReports = ({ classes }) => {
   }
 
   return (
-    <div className=" flex flex-col gap-8">
+    <div className={`flex flex-col gap-8 transition-all duration-300 ${isFullscreen ? "fixed inset-0 z-[100] p-4 md:p-8 bg-[#0f172a] overflow-y-auto" : ""}`}>
+      {isFullscreen && (
+        <button 
+          onClick={() => setIsFullscreen(false)}
+          className="fixed top-4 md:top-8 right-4 md:right-8 z-[110] p-3 bg-red-500 hover:bg-red-600 text-white rounded-xl shadow-2xl transition-transform hover:scale-110 cursor-pointer"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+      )}
       {/* Filters */}
       <div className="bg-white dark:bg-gray-800 text-gray-900 dark:text-white backdrop-blur-2xl border border-white/20 rounded-3xl p-6 flex flex-col lg:flex-row gap-6 justify-between items-center shadow-2xl">
         <div className="flex items-center gap-4 w-full lg:w-auto">
@@ -279,32 +307,30 @@ const TeacherReports = ({ classes }) => {
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 transition-all duration-500">
           {/* Chart */}
-          <div className="lg:col-span-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white backdrop-blur-2xl border border-white/20 rounded-3xl p-6 flex flex-col">
+          <div className="lg:col-span-2 bg-white dark:bg-gray-800 text-gray-900 dark:text-white backdrop-blur-2xl border border-white/20 rounded-3xl p-6 flex flex-col relative group transition-all duration-500">
+            <div className="w-full h-full flex flex-col">
+
             <h3 className="text-lg font-semibold mb-6 flex justify-between items-center">
-                Attendance Trends
+                <div className="flex items-center gap-4">
+                  Attendance Trends
+                </div>
                 <select
                   value={selectedMonth}
                   onChange={(e) => setSelectedMonth(e.target.value)}
                   className="text-sm font-normal text-white/80 bg-slate-800 px-3 py-1 rounded-lg border border-white/10 outline-none focus:border-blue-500 [color-scheme:dark]"
                 >
-                  <option value="">All Months</option>
-                  <option value="1">January</option>
-                  <option value="2">February</option>
-                  <option value="3">March</option>
-                  <option value="4">April</option>
-                  <option value="5">May</option>
-                  <option value="6">June</option>
-                  <option value="7">July</option>
-                  <option value="8">August</option>
-                  <option value="9">September</option>
-                  <option value="10">October</option>
-                  <option value="11">November</option>
-                  <option value="12">December</option>
+                  <option value="">Overall</option>
+                  {monthsToShow.map(m => (
+                    <option key={m.val} value={m.val}>{m.label}</option>
+                  ))}
                 </select>
             </h3>
-            <div className="h-[300px] w-full flex-1">
+            <div 
+              onClick={() => !isFullscreen && setIsFullscreen(true)}
+              className={`w-full flex-1 ${isFullscreen ? 'h-full min-h-0' : 'h-[300px] cursor-pointer'}`}
+            >
               {rawHistory.length === 0 ? (
                 <div className="flex items-center justify-center h-full text-white/30 text-sm">
                   No attendance data available for this class.
@@ -314,8 +340,8 @@ const TeacherReports = ({ classes }) => {
                   // Pie Chart
                   if (chartData.type === 'pie') {
                     return (
-                      <div className="w-full h-[300px] min-h-[300px] flex flex-col items-center justify-center mt-4">
-                        <h4 className="text-xl font-bold mb-2">{selectedMonth ? new Date(0, selectedMonth - 1).toLocaleString('en-US', { month: 'long' }) : 'All Months'}</h4>
+                      <div className="w-full h-full min-h-[300px] flex flex-col items-center justify-center mt-4">
+                        <h4 className="text-xl font-bold mb-2">{selectedMonth ? new Date(0, selectedMonth - 1).toLocaleString('en-US', { month: 'long' }) : 'Overall'}</h4>
                         <p className="text-sm text-white/60 mb-4">{pieChartPercentage}% Average Attendance</p>
                         <ResponsiveContainer width="100%" height="100%">
                           <PieChart>
@@ -336,7 +362,7 @@ const TeacherReports = ({ classes }) => {
                       <ResponsiveContainer width="100%" height="100%">
                         <LineChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 20 }} onClick={handleWeeklyClick} className="cursor-pointer">
                           <CartesianGrid strokeDasharray="3 3" stroke="#ffffff15" vertical={false} />
-                          <XAxis dataKey="range" tick={{ fontSize: 12, fill: 'currentColor' }} interval={0} angle={-45} textAnchor="end" height={60} />
+                          <XAxis dataKey="range" tick={{ fontSize: 12, fill: 'currentColor' }} minTickGap={15} angle={-45} textAnchor="end" height={60} />
                           <YAxis stroke="currentColor" className="text-slate-500 dark:text-white/50" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `${val}%`} domain={[0, 100]} />
                           <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff' }} cursor={{fill: 'rgba(255,255,255,0.05)'}} formatter={(value, name, props) => [`${value.toFixed(1)}% (${props.payload.present}/${props.payload.total})`, 'Attendance']} />
                           <Line type="monotone" dataKey="percentage" stroke="#3b82f6" strokeWidth={3} activeDot={{ r: 8 }} isAnimationActive={false} />
@@ -350,7 +376,7 @@ const TeacherReports = ({ classes }) => {
                     <ResponsiveContainer width="100%" height="100%">
                       <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
                         <CartesianGrid strokeDasharray="3 3" stroke="#ffffff15" vertical={false} />
-                        <XAxis dataKey="date" tick={{ fontSize: 12, fill: 'currentColor' }} interval={0} angle={-45} textAnchor="end" height={60} />
+                        <XAxis dataKey="date" tick={{ fontSize: 12, fill: 'currentColor' }} minTickGap={15} angle={-45} textAnchor="end" height={60} />
                         <YAxis stroke="currentColor" className="text-slate-500 dark:text-white/50" fontSize={12} tickLine={false} axisLine={false} />
                         <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff' }} itemStyle={{ color: '#e2e8f0' }} />
                         <Bar dataKey="present" name="Present" fill="#22c55e" radius={[4, 4, 0, 0]} stackId="a" isAnimationActive={false} />
@@ -360,6 +386,7 @@ const TeacherReports = ({ classes }) => {
                   );
                 })()
               )}
+            </div>
             </div>
           </div>
 

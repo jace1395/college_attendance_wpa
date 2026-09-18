@@ -6,6 +6,16 @@ from django.contrib.auth import get_user_model
 from users.models import Department, Stream
 
 User = get_user_model()
+from users.models import AuditLog
+
+def log_audit(user, action, target):
+    if user and user.is_authenticated:
+        AuditLog.objects.create(
+            user=user,
+            role=user.role,
+            action=action[:100],
+            target=target[:255]
+        )
 
 def process_user_upload(file_obj):
     rows = []

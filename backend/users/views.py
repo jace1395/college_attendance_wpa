@@ -31,6 +31,18 @@ class CustomTokenObtainPairView(TokenObtainPairView):
     # 5 attempts per minute per IP — brute-force protection
     throttle_classes = [LoginRateThrottle]
 
+    def post(self, request, *args, **kwargs):
+        response = super().post(request, *args, **kwargs)
+        if response.status_code == 200:
+            from users.models import User
+            from users.services import log_audit
+            email = request.data.get('email')
+            if email:
+                user = User.objects.filter(email__iexact=email).first()
+                if user:
+                    log_audit(user, "User Login", f"Session started via web interface")
+        return response
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.permissions import IsAuthenticated
@@ -70,4 +82,8 @@ class ChangePasswordView(APIView):
         user.set_password(new_password)
         user.is_first_login = False
         user.save()
+        
+        from users.services import log_audit
+        log_audit(user, "Password Updated", "User completed security password change")
+        
         return Response({'success': 'Password updated successfully.'})

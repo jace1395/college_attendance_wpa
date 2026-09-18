@@ -55,7 +55,15 @@ const Settings = () => {
       if (storedUser) {
         storedUser.is_first_login = false;
         localStorage.setItem('user', JSON.stringify(storedUser));
-        setTimeout(() => window.location.reload(), 1000);
+        setTimeout(() => {
+          const role = storedUser.role?.toLowerCase() || '';
+          let path = '/teacher/dashboard';
+          if (role === 'student') path = '/student/dashboard';
+          else if (role === 'admin') path = '/admin/dashboard';
+          else if (role === 'principal') path = '/principal/dashboard';
+          else if (role === 'timetable_incharge') path = '/timetable/dashboard';
+          window.location.href = path;
+        }, 1000);
       }
     } catch (err) {
       const errorMsg = err.response?.data?.error || 'Failed to update password.';
@@ -130,15 +138,15 @@ const Settings = () => {
             <div className="space-y-4">
               {[
                 { label: 'Name', value: profile?.name },
-                { label: 'Email', value: profile?.email },
+                { label: 'Email', value: profile?.email, lowercase: true },
                 { label: 'Role', value: profile?.role },
                 { label: 'Department', value: profile?.department },
-              ].map(({ label, value }) => (
+              ].map(({ label, value, lowercase }) => (
                 <div key={label}>
                   <label className="block text-xs font-semibold text-gray-500 dark:text-white/40 uppercase tracking-wider mb-1">
                     {label}
                   </label>
-                  <div className="w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white/90 capitalize">
+                  <div className={`w-full px-4 py-3 rounded-xl bg-gray-50 dark:bg-white/5 border border-gray-200 dark:border-white/10 text-gray-900 dark:text-white/90 ${lowercase ? 'lowercase' : 'capitalize'}`}>
                     {value || <span className="text-gray-400 dark:text-white/30 italic">Not set</span>}
                   </div>
                 </div>
@@ -157,7 +165,7 @@ const Settings = () => {
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
                 Warning
               </p>
-              <p>If you forget your password, you will not be able to reset it yourself. You must contact your Department HOD or the System Administrator to request a manual password reset.</p>
+              <p>If you forget your password, you will not be able to reset it yourself. You must contact the System Administrator to request a manual password reset.</p>
             </div>
 
             <form onSubmit={handlePasswordChange} className="space-y-5">

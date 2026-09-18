@@ -65,6 +65,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     )
 
     is_active = models.BooleanField(default=True)
+    last_activity = models.DateTimeField(null=True, blank=True)
     
     department = models.ForeignKey('Department', on_delete=models.SET_NULL, null=True, blank=True)
     stream = models.ForeignKey('Stream', on_delete=models.SET_NULL, null=True, blank=True)
@@ -96,3 +97,16 @@ class Stream(models.Model):
 
     def __str__(self):
         return self.name
+
+class AuditLog(models.Model):
+    user = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True)
+    role = models.CharField(max_length=20, null=True, blank=True)
+    action = models.CharField(max_length=100)
+    target = models.CharField(max_length=255)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.action} by {self.user} - {self.timestamp}"
+
+    class Meta:
+        ordering = ['-timestamp']

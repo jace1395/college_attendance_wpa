@@ -137,13 +137,25 @@ class StudentDashboardView(APIView):
         total_conducted_all = 0
         total_attended_all = 0
 
+        from django.db.models import Count
+        batch_ids = [en.class_batch_id for en in filtered_enrollments]
+        
+        sessions = Attendance.objects.filter(class_batch__in=batch_ids).values('class_batch', 'date', 'time_slot').distinct()
+        conducted_map = {}
+        for s in sessions:
+            cb_id = s['class_batch']
+            conducted_map[cb_id] = conducted_map.get(cb_id, 0) + 1
+            
+        attended_counts = Attendance.objects.filter(class_batch__in=batch_ids, student=user, status='Present').values('class_batch').annotate(count=Count('id'))
+        attended_map = {row['class_batch']: row['count'] for row in attended_counts}
+
         for en in filtered_enrollments:
             cb = en.class_batch
             subject = cb.subject
             teacher = cb.teacher
 
-            total_conducted = Attendance.objects.filter(class_batch=cb).values('date', 'time_slot').distinct().count()
-            classes_attended = Attendance.objects.filter(class_batch=cb, student=user, status='Present').count()
+            total_conducted = conducted_map.get(cb.id, 0)
+            classes_attended = attended_map.get(cb.id, 0)
 
             percentage = round((classes_attended / total_conducted * 100), 1) if total_conducted > 0 else 0.0
 
@@ -340,15 +352,35 @@ class TeacherDashboardView(APIView):
         user = get_target_user(request)
         assigned_batches = ClassBatch.objects.filter(teacher=user).select_related('subject')
 
+        from django.db.models import Count, Q
+        batch_ids = [b.id for b in assigned_batches]
+        
+        sessions = Attendance.objects.filter(class_batch__in=batch_ids).values('class_batch', 'date', 'time_slot').distinct()
+        conducted_map = {}
+        for s in sessions:
+            cb_id = s['class_batch']
+            conducted_map[cb_id] = conducted_map.get(cb_id, 0) + 1
+            
+        att_counts = Attendance.objects.filter(class_batch__in=batch_ids).values('class_batch').annotate(
+            total_records=Count('id'),
+            total_present=Count('id', filter=Q(status='Present'))
+        )
+        att_map = {row['class_batch']: row for row in att_counts}
+        
+        enroll_counts = Enrollment.objects.filter(class_batch__in=batch_ids).values('class_batch').annotate(count=Count('id'))
+        enroll_map = {row['class_batch']: row['count'] for row in enroll_counts}
+
         assigned_classes = []
         for batch in assigned_batches:
             subject = batch.subject
             div_str = f" - Div {batch.division}" if batch.division else ""
             class_name = f"{subject.stream} {subject.semester}{div_str}" if subject else f"Class #{batch.id}"
 
-            total_sessions = Attendance.objects.filter(class_batch=batch).values('date', 'time_slot').distinct().count()
-            total_present = Attendance.objects.filter(class_batch=batch, status='Present').count()
-            total_records = Attendance.objects.filter(class_batch=batch).count()
+            total_sessions = conducted_map.get(batch.id, 0)
+            
+            amap = att_map.get(batch.id, {'total_records': 0, 'total_present': 0})
+            total_records = amap['total_records']
+            total_present = amap['total_present']
 
             avg_att = round((total_present / total_records * 100), 1) if total_records > 0 else 0.0
 
@@ -360,7 +392,7 @@ class TeacherDashboardView(APIView):
                 "dept_name": user.department.name if getattr(user, 'department', None) else "Computer Science",
                 "classes_conducted": total_sessions,
                 "avg_attendance": avg_att,
-                "student_count": batch.enrollments.count()
+                "student_count": enroll_map.get(batch.id, 0)
             })
 
         # Monitoring duties
@@ -513,26 +545,50 @@ class MarkAttendanceView(APIView):
             return Response({"error": "ClassBatch not found."}, status=status.HTTP_404_NOT_FOUND)
 
         saved_count = 0
+        student_ids = [item.get('student_id') for item in records if item.get('student_id')]
+        students_dict = User.objects.in_bulk(student_ids)
+
+        existing_records = Attendance.objects.filter(
+            class_batch=batch, date=att_date, time_slot=time_slot
+        ).in_bulk(field_name='student_id')
+
+        records_to_create = []
+        records_to_update = []
+        
         for item in records:
             student_id = item.get('student_id')
             raw_status = item.get('status', 'Absent')
             status_val = 'Present' if raw_status in ['Present', 'P'] else 'Absent'
 
-            student_obj = User.objects.filter(id=student_id).first()
+            student_obj = students_dict.get(student_id)
             if not student_obj:
                 continue
 
-            Attendance.objects.update_or_create(
-                class_batch=batch,
-                student=student_obj,
-                date=att_date,
-                time_slot=time_slot,
-                defaults={
-                    'status': status_val,
-                    'marked_by': request.user
-                }
-            )
-            saved_count += 1
+            existing = existing_records.get(student_id)
+            if existing:
+                if existing.status != status_val or getattr(existing, 'marked_by_id', None) != request.user.id:
+                    existing.status = status_val
+                    existing.marked_by = request.user
+                    records_to_update.append(existing)
+                saved_count += 1
+            else:
+                records_to_create.append(Attendance(
+                    class_batch=batch,
+                    student=student_obj,
+                    date=att_date,
+                    time_slot=time_slot,
+                    status=status_val,
+                    marked_by=request.user
+                ))
+                saved_count += 1
+                
+        if records_to_create:
+            Attendance.objects.bulk_create(records_to_create)
+        if records_to_update:
+            Attendance.objects.bulk_update(records_to_update, ['status', 'marked_by'])
+
+        from users.services import log_audit
+        log_audit(request.user, "Marked Attendance", f"Marked attendance for {batch.subject.name} on {att_date}")
 
         return Response({
             "message": f"Successfully recorded attendance for {saved_count} students.",
@@ -562,12 +618,145 @@ class HODInfoView(APIView):
         })
 
 
+
+class HODOverviewStatsAPIView(APIView):
+    permission_classes = [IsAuthenticated, IsHOD]
+
+    def get(self, request):
+        from django.utils import timezone
+        import datetime
+        from django.db.models import Count, Q
+
+        user = get_target_user(request)
+        period = request.query_params.get('period', 'overall')
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+
+        today = timezone.now().date()
+        date_filter = Q()
+        if period == 'today':
+            date_filter = Q(date=today)
+        elif period == 'week':
+            start_of_week = today - datetime.timedelta(days=today.weekday())
+            date_filter = Q(date__gte=start_of_week)
+        elif period == 'month':
+            date_filter = Q(date__month=today.month, date__year=today.year)
+        elif period == 'custom' and start_date and end_date:
+            date_filter = Q(date__gte=start_date, date__lte=end_date)
+
+        # HOD departments derived from Subject streams or user's assigned streams
+        available_streams = list(Subject.objects.values_list('stream', flat=True).distinct())
+        if not available_streams:
+            available_streams = [choice[0] for choice in StreamChoices.choices]
+
+        # Get all relevant class batches
+        batches = ClassBatch.objects.filter(subject__stream__in=available_streams).select_related('subject')
+
+        # Get enrollments
+        enrollments = Enrollment.objects.filter(class_batch__in=batches).select_related('student', 'class_batch__subject')
+        
+        # We need attendance records for these students in these batches
+        att_qs = Attendance.objects.filter(class_batch__in=batches).filter(date_filter)
+
+        # Dictionary to hold stats for each class string (e.g. 'FY BCA')
+        
+        sem_to_year = {
+            'Sem 1': 'FY', 'Sem 2': 'FY',
+            'Sem 3': 'SY', 'Sem 4': 'SY',
+            'Sem 5': 'TY', 'Sem 6': 'TY'
+        }
+
+        # Initialize results map
+        results = {}
+
+        # 1. Map enrollments to classes and initialize student counts
+        for en in enrollments:
+            s = en.student
+            if not s: continue
+            
+            stream = en.class_batch.subject.stream
+            sem = en.class_batch.subject.semester
+            year_prefix = sem_to_year.get(sem, 'FY')
+            class_key = f"{year_prefix} {stream}"
+            
+            if class_key not in results:
+                results[class_key] = { "students_map": {}, "total": 0, "present": 0, "absent": 0 }
+                
+            if s.id not in results[class_key]["students_map"]:
+                results[class_key]["students_map"][s.id] = { "total": 0, "attended": 0 }
+
+        # 2. Count attendances
+        att_counts = att_qs.values(
+            'class_batch__subject__stream', 
+            'class_batch__subject__semester', 
+            'student_id', 
+            'status'
+        ).annotate(count=Count('id'))
+
+        for row in att_counts:
+            stream = row['class_batch__subject__stream']
+            sem = row['class_batch__subject__semester']
+            year_prefix = sem_to_year.get(sem, 'FY')
+            class_key = f"{year_prefix} {stream}"
+            
+            s_id = row['student_id']
+            status = row['status']
+            count = row['count']
+            
+            if class_key in results and s_id in results[class_key]['students_map']:
+                results[class_key]['students_map'][s_id]['total'] += count
+                if status == 'Present':
+                    results[class_key]['students_map'][s_id]['attended'] += count
+
+        # 3. Calculate final stats
+        final_results = {}
+        for class_key, data in results.items():
+            students = data['students_map']
+            present_count = 0
+            for s_id, s_data in students.items():
+                tot = s_data['total']
+                att = s_data['attended']
+                pct = (att / tot * 100) if tot > 0 else 0
+                if pct >= 75:
+                    present_count += 1
+                    
+            total_students = len(students)
+            absent_count = total_students - present_count
+            
+            final_results[class_key] = {
+                "total": total_students,
+                "present": present_count,
+                "absent": absent_count,
+                "pct": round((present_count / total_students * 100), 1) if total_students > 0 else 0
+            }
+
+        return Response(final_results)
+
 class HODClassStatsView(APIView):
     permission_classes = [IsAuthenticated, IsHOD]
 
     def get(self, request):
         year = request.query_params.get('year', 'FY')
         dept = request.query_params.get('dept', 'BCA')
+        period = request.query_params.get('period', 'overall')
+        start_date = request.query_params.get('start_date')
+        end_date = request.query_params.get('end_date')
+
+        from django.utils import timezone
+        import datetime
+        from django.db.models import Count, Q
+
+        today = timezone.now().date()
+        date_filter = Q()
+        if period == 'today':
+            date_filter = Q(date=today)
+        elif period == 'week':
+            start_of_week = today - datetime.timedelta(days=today.weekday())
+            date_filter = Q(date__gte=start_of_week)
+        elif period == 'month':
+            date_filter = Q(date__month=today.month, date__year=today.year)
+        elif period == 'custom' and start_date and end_date:
+            date_filter = Q(date__gte=start_date, date__lte=end_date)
 
         # Translate year (FY -> Sem 1/2, SY -> Sem 3/4, TY -> Sem 5/6)
         sem_map = {
@@ -582,16 +771,25 @@ class HODClassStatsView(APIView):
             subject__semester__in=sems
         ).distinct()
 
-        enrollments = Enrollment.objects.filter(class_batch__in=batches).select_related('student').distinct()
+        enrollments = Enrollment.objects.filter(class_batch__in=batches).select_related('student').distinct().order_by('student__roll_no')
+        
+        att_counts = Attendance.objects.filter(class_batch__in=batches).filter(date_filter).values('student_id').annotate(
+            total_att=Count('id'),
+            attended_att=Count('id', filter=Q(status='Present'))
+        )
+        stats_map = {row['student_id']: {'total': row['total_att'], 'attended': row['attended_att']} for row in att_counts}
+
         students_map = {}
 
         for en in enrollments:
             s = en.student
             if not s or s.id in students_map:
                 continue
-            att_qs = Attendance.objects.filter(class_batch__in=batches, student=s)
-            total = att_qs.count()
-            attended = att_qs.filter(status='Present').count()
+            
+            s_stats = stats_map.get(s.id, {'total': 0, 'attended': 0})
+            total = s_stats['total']
+            attended = s_stats['attended']
+            
             students_map[s.id] = {
                 "roll": s.roll_no or f"R-{s.id}",
                 "name": s.name or s.email,
@@ -605,13 +803,19 @@ class HODClassStatsView(APIView):
         present_count = sum(1 for s in students_list if s['pct'] >= 75)
         absent_count = total_students - present_count
 
+        daily_records = list(Attendance.objects.filter(class_batch__in=batches).filter(date_filter).values('date').annotate(
+            present=Count('id', filter=Q(status='Present')),
+            absent=Count('id', filter=Q(status='Absent'))
+        ).order_by('date'))
+
         return Response({
             "year": year,
             "dept": dept,
             "total": total_students,
             "present": present_count,
             "absent": absent_count,
-            "students": students_list
+            "students": students_list,
+            "daily_records": daily_records
         })
 
 
@@ -619,18 +823,26 @@ class MentorMenteesView(APIView):
     permission_classes = [IsAuthenticated, IsMentor]
 
     def get(self, request):
+        from django.db.models import Count, Q
+
         mentor = get_target_user(request)
-        mentees_qs = User.objects.filter(mentor=mentor)
+        
+        # Optimize with a single database query using annotations for attendance counts
+        mentees_qs = User.objects.filter(mentor=mentor).annotate(
+            total_attendance=Count('attendance_records'),
+            attended_attendance=Count('attendance_records', filter=Q(attendance_records__status='Present'))
+        ).prefetch_related('enrollment_set__class_batch__subject').order_by('roll_no')
 
         results = []
         for m in mentees_qs:
-            att_qs = Attendance.objects.filter(student=m)
-            total = att_qs.count()
-            attended = att_qs.filter(status='Present').count()
+            total = m.total_attendance
+            attended = m.attended_attendance
             pct = round((attended / total * 100), 1) if total > 0 else 0.0
 
-            first_en = Enrollment.objects.filter(student=m).select_related('class_batch__subject').first()
-            class_str = f"{first_en.class_batch.subject.stream} {first_en.class_batch.subject.semester}" if (first_en and first_en.class_batch.subject) else "Unassigned"
+            # Safe access using prefetched cache
+            en_list = m.enrollment_set.all()
+            first_en = en_list[0] if len(en_list) > 0 else None
+            class_str = f"{first_en.class_batch.subject.stream} {first_en.class_batch.subject.semester}" if (first_en and first_en.class_batch and hasattr(first_en.class_batch, 'subject')) else "Unassigned"
 
             results.append({
                 "id": m.id,
@@ -643,6 +855,182 @@ class MentorMenteesView(APIView):
             })
 
         return Response({"mentees": results})
+
+
+class MenteeReportAPIView(APIView):
+    permission_classes = [IsAuthenticated, IsMentor]
+
+    def get(self, request, mentee_id):
+        from django.db.models import Count, Q
+
+        mentor = get_target_user(request)
+        
+        try:
+            mentee = User.objects.get(id=mentee_id, mentor=mentor, role='Student')
+        except User.DoesNotExist:
+            return Response({"error": "Mentee not found or not assigned to you."}, status=404)
+        
+        month = request.query_params.get('month')
+        subject_id = request.query_params.get('subject_id')
+        
+        base_qs = Attendance.objects.filter(student=mentee).order_by('date')
+        if month:
+            base_qs = base_qs.filter(date__month=int(month))
+        
+        # Subject breakdown (always show all subjects)
+        from django.db.models import Count, Q
+        subject_data = []
+        enrollments = Enrollment.objects.filter(student=mentee).select_related('class_batch__subject')
+        
+        enroll_batch_ids = [en.class_batch_id for en in enrollments]
+        att_counts = base_qs.filter(class_batch_id__in=enroll_batch_ids).values('class_batch_id').annotate(
+            sub_total=Count('id'),
+            sub_present=Count('id', filter=Q(status='Present'))
+        )
+        att_map = {row['class_batch_id']: row for row in att_counts}
+        
+        for en in enrollments:
+            amap = att_map.get(en.class_batch_id, {'sub_total': 0, 'sub_present': 0})
+            sub_total = amap['sub_total']
+            sub_present = amap['sub_present']
+            
+            sub_pct = (sub_present / sub_total * 100) if sub_total > 0 else 0
+            if sub_total > 0:
+                subject_data.append({
+                    "id": en.class_batch.subject.id,
+                    "name": en.class_batch.subject.name,
+                    "pct": round(sub_pct, 1),
+                    "total": sub_total,
+                    "attended": sub_present
+                })
+
+        # Apply subject filter for overall stats and graph history
+        qs = base_qs
+        if subject_id:
+            qs = qs.filter(class_batch__subject_id=subject_id)
+
+        # Calculate overall stats for this time period
+        total_records = qs.count()
+        present_records = qs.filter(status='Present').count()
+        absent_records = total_records - present_records
+        attendance_pct = (present_records / total_records * 100) if total_records > 0 else 0
+
+        # Bar chart history aggregation
+        chart_data_dict = {}
+        for att in qs:
+            d = att.date.strftime('%Y-%m-%d')
+            if d not in chart_data_dict:
+                chart_data_dict[d] = {"date": d, "present": 0, "absent": 0}
+            if att.status == 'Present':
+                chart_data_dict[d]['present'] += 1
+            else:
+                chart_data_dict[d]['absent'] += 1
+
+        chart_data = list(chart_data_dict.values())
+
+        return Response({
+            "mentee": {
+                "id": mentee.id,
+                "name": mentee.name or mentee.email,
+                "roll": mentee.roll_no or f"R-{mentee.id}",
+                "email": mentee.email,
+            },
+            "overall": {
+                "total": total_records,
+                "attended": present_records,
+                "pct": round(attendance_pct, 1)
+            },
+            "history": chart_data,
+            "subjects": subject_data
+        })
+
+
+class HODStudentReportAPIView(APIView):
+    permission_classes = [IsAuthenticated, IsHOD]
+
+    def get(self, request, student_id):
+        from django.db.models import Count, Q
+
+        user = get_target_user(request)
+        
+        try:
+            mentee = User.objects.get(id=student_id, role='Student')
+        except User.DoesNotExist:
+            return Response({"error": "Student not found."}, status=404)
+        
+        month = request.query_params.get('month')
+        subject_id = request.query_params.get('subject_id')
+        
+        base_qs = Attendance.objects.filter(student=mentee).order_by('date')
+        if month:
+            base_qs = base_qs.filter(date__month=int(month))
+        
+        # Subject breakdown (always show all subjects)
+        from django.db.models import Count, Q
+        subject_data = []
+        enrollments = Enrollment.objects.filter(student=mentee).select_related('class_batch__subject')
+        
+        enroll_batch_ids = [en.class_batch_id for en in enrollments]
+        att_counts = base_qs.filter(class_batch_id__in=enroll_batch_ids).values('class_batch_id').annotate(
+            sub_total=Count('id'),
+            sub_present=Count('id', filter=Q(status='Present'))
+        )
+        att_map = {row['class_batch_id']: row for row in att_counts}
+        
+        for en in enrollments:
+            amap = att_map.get(en.class_batch_id, {'sub_total': 0, 'sub_present': 0})
+            sub_total = amap['sub_total']
+            sub_present = amap['sub_present']
+            
+            sub_pct = (sub_present / sub_total * 100) if sub_total > 0 else 0
+            if sub_total > 0:
+                subject_data.append({
+                    "id": en.class_batch.subject.id,
+                    "name": en.class_batch.subject.name,
+                    "pct": round(sub_pct, 1),
+                    "total": sub_total,
+                    "attended": sub_present
+                })
+
+        # Apply subject filter for overall stats and graph history
+        qs = base_qs
+        if subject_id:
+            qs = qs.filter(class_batch__subject_id=subject_id)
+
+        # Calculate overall stats for this time period
+        total_records = qs.count()
+        present_records = qs.filter(status='Present').count()
+        absent_records = total_records - present_records
+        attendance_pct = (present_records / total_records * 100) if total_records > 0 else 0
+
+        # Bar chart history aggregation
+        chart_data_dict = {}
+        for att in qs:
+            d = att.date.strftime('%Y-%m-%d')
+            if d not in chart_data_dict:
+                chart_data_dict[d] = {"date": d, "present": 0, "absent": 0}
+            if att.status == 'Present':
+                chart_data_dict[d]['present'] += 1
+            else:
+                chart_data_dict[d]['absent'] += 1
+
+        chart_data = list(chart_data_dict.values())
+
+        return Response({
+            "mentee": {
+                "id": mentee.id,
+                "name": mentee.name or mentee.email,
+                "roll": mentee.roll_no or f"R-{mentee.id}",
+                "email": mentee.email,
+            },
+            "overall": {
+                "total": total_records,
+                "attended": present_records,
+                "pct": round(attendance_pct, 1)
+            },
+            "history": chart_data,
+            "subjects": subject_data
+        })
 
 
 # ==============================================================================
@@ -740,14 +1128,15 @@ class AdminDashboardView(APIView):
         total_students = User.objects.filter(role='Student').count()
         total_teachers = User.objects.filter(role__in=['Teacher', 'HOD']).count()
         
-        # Active sessions based on last_login being today
-        active_students = User.objects.filter(role='Student', last_login__date=timezone.now().date()).count()
-        active_teachers = User.objects.filter(role__in=['Teacher', 'HOD'], last_login__date=timezone.now().date()).count()
+        # Active sessions based on last_activity within the last 15 minutes
+        time_threshold = timezone.now() - timedelta(minutes=15)
+        active_students = User.objects.filter(role='Student', last_activity__gte=time_threshold).count()
+        active_teachers = User.objects.filter(role__in=['Teacher', 'HOD'], last_activity__gte=time_threshold).count()
+        active_sessions = active_students + active_teachers
         
         # Classes going on today (distinct subject names from today's attendance)
         today_attendance = Attendance.objects.filter(date=timezone.now().date()).select_related('class_batch__subject')
         active_class_names = list(today_attendance.values_list('class_batch__subject__name', flat=True).distinct())
-        active_sessions = today_attendance.values('class_batch').distinct().count()
 
         return Response({
             "admin": {
@@ -763,19 +1152,7 @@ class AdminDashboardView(APIView):
                 "active_teachers": active_teachers,
                 "active_class_names": active_class_names,
                 "last_database_backup": timezone.now().strftime('%b %d, %Y 02:00 AM')
-            },
-            "recent_audit_logs": [
-                {
-                    "action": "User Login",
-                    "target": f"Admin session active: {request.user.email}",
-                    "timestamp": timezone.now().strftime('%Y-%m-%d %H:%M')
-                },
-                {
-                    "action": "Backup Verified",
-                    "target": "Database archive verified",
-                    "timestamp": (timezone.now() - timedelta(hours=4)).strftime('%Y-%m-%d %H:%M')
-                }
-            ]
+            }
         })
 
     def post(self, request):
@@ -795,7 +1172,10 @@ class AdminUsersListView(APIView):
         stream = request.query_params.get('stream')
         year = request.query_params.get('year')
 
-        users_qs = User.objects.all().order_by('-id')
+        from django.db.models import Prefetch
+        users_qs = User.objects.all().order_by('roll_no', '-id').prefetch_related(
+            Prefetch('enrollment_set', queryset=Enrollment.objects.select_related('class_batch__subject'))
+        )
 
         if role:
             role_title = role.capitalize()
@@ -807,10 +1187,12 @@ class AdminUsersListView(APIView):
             user_stream = "N/A"
             user_year = "N/A"
             if u.role == 'Student':
-                en = Enrollment.objects.filter(student=u).select_related('class_batch__subject').first()
-                if en and en.class_batch.subject:
-                    user_stream = en.class_batch.subject.stream
-                    user_year = en.class_batch.subject.semester
+                en_list = u.enrollment_set.all()
+                if en_list:
+                    en = en_list[0]
+                    if en.class_batch.subject:
+                        user_stream = en.class_batch.subject.stream
+                        user_year = en.class_batch.subject.semester
 
             if stream and stream != 'All' and user_stream != stream:
                 continue
@@ -1054,21 +1436,26 @@ class PrincipalStreamView(APIView):
             ("TY", ['Sem 5', 'Sem 6'])
         ]
 
+        from django.db.models import Count, Q
         classes_summary = []
         for label, sems in year_groups:
-            batches = ClassBatch.objects.filter(subject__stream=stream, subject__semester__in=sems)
-            total_students = Enrollment.objects.filter(class_batch__in=batches).values('student').distinct().count()
+            batches_qs = ClassBatch.objects.filter(subject__stream=stream, subject__semester__in=sems)
+            batches_list = list(batches_qs.values_list('id', flat=True))
+            
+            total_students = Enrollment.objects.filter(class_batch_id__in=batches_list).values('student').distinct().count()
 
-            present_count = Attendance.objects.filter(class_batch__in=batches, status='Present').count()
-            absent_count = Attendance.objects.filter(class_batch__in=batches, status='Absent').count()
+            att_aggs = Attendance.objects.filter(class_batch_id__in=batches_list).aggregate(
+                present=Count('id', filter=Q(status='Present')),
+                absent=Count('id', filter=Q(status='Absent'))
+            )
 
             classes_summary.append({
-                "class_id": batches.first().id if batches.exists() else 0,
+                "class_id": batches_qs.first().id if batches_list else 0,
                 "year": label,
                 "stream": stream,
                 "total": total_students,
-                "present": present_count,
-                "absent": absent_count
+                "present": att_aggs['present'] or 0,
+                "absent": att_aggs['absent'] or 0
             })
 
         return Response({"classes": classes_summary})
@@ -1105,13 +1492,35 @@ class PrincipalClassDetailView(APIView):
         ]
 
         # Weekly trend calculation (last 4 weeks)
+        from django.db.models import Count, Q
         weekly_trend = []
         today = timezone.now().date()
+        w_start_total = today - timedelta(days=4 * 7)
+        w_end_total = today
+        
+        # Bulk query for the last 4 weeks
+        w_aggs = Attendance.objects.filter(class_batch=batch, date__range=[w_start_total, w_end_total]).values('date').annotate(
+            present=Count('id', filter=Q(status='Present')),
+            total=Count('id')
+        )
+        
+        # Build map by date
+        date_map = {row['date']: row for row in w_aggs}
+
         for w in range(4, 0, -1):
             w_start = today - timedelta(days=w * 7)
             w_end = w_start + timedelta(days=6)
-            w_pres = Attendance.objects.filter(class_batch=batch, date__range=[w_start, w_end], status='Present').count()
-            w_total = Attendance.objects.filter(class_batch=batch, date__range=[w_start, w_end]).count()
+            
+            w_pres = 0
+            w_total = 0
+            # Aggregate from date map in Python
+            curr_date = w_start
+            while curr_date <= w_end:
+                if curr_date in date_map:
+                    w_pres += date_map[curr_date]['present']
+                    w_total += date_map[curr_date]['total']
+                curr_date += timedelta(days=1)
+                
             w_pct = round((w_pres / w_total * 100), 1) if w_total > 0 else 0.0
             weekly_trend.append({"week": f"Wk {5 - w}", "pct": w_pct})
 
@@ -1315,4 +1724,53 @@ class TeacherReportAPIView(APIView):
             "pieChartPercentage": round(percentage, 1),
             "defaulters": defaulters,
             "avg_attendance": avg_attendance
+        })
+
+import math
+from users.models import AuditLog
+
+class AuditLogPaginationView(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def get(self, request):
+        role_filter = request.query_params.get('role', 'All')
+        try:
+            page = int(request.query_params.get('page', 1))
+        except ValueError:
+            page = 1
+            
+        per_page = 20
+        
+        queryset = AuditLog.objects.select_related('user').all()
+        if role_filter and role_filter != 'All':
+            queryset = queryset.filter(role=role_filter)
+            
+        total_logs = queryset.count()
+        total_pages = math.ceil(total_logs / per_page)
+        
+        if page < 1:
+            page = 1
+        elif page > total_pages and total_pages > 0:
+            page = total_pages
+            
+        start = (page - 1) * per_page
+        end = start + per_page
+        
+        logs_qs = queryset[start:end]
+        
+        logs_data = [
+            {
+                "action": log.action,
+                "target": log.target,
+                "role": log.role,
+                "timestamp": timezone.localtime(log.timestamp).strftime('%Y-%m-%d %H:%M')
+            }
+            for log in logs_qs
+        ]
+        
+        return Response({
+            "logs": logs_data,
+            "total_pages": total_pages,
+            "current_page": page,
+            "total_logs": total_logs
         })

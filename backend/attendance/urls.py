@@ -14,8 +14,11 @@ from .views import (
     
     # HOD & Mentor Views
     HODInfoView,
+    HODOverviewStatsAPIView,
     HODClassStatsView,
+    HODStudentReportAPIView,
     MentorMenteesView,
+    MenteeReportAPIView,
     
     # Timetable Views
     TimetableDashboardView,
@@ -30,6 +33,7 @@ from .views import (
     AdminDenyUnlockView,
     AdminTeacherSubjectsView,
     AdminBackupExportView,
+    AuditLogPaginationView,
     
     # Principal Views
     PrincipalDashboardView,
@@ -65,8 +69,11 @@ urlpatterns = [
     # 3. HOD & Mentor Extensions
     # --------------------------------------------------------------------------
     path('api/teacher/hod/info/', HODInfoView.as_view(), name='hod-info'),
+    path('api/teacher/hod/overview-stats/', HODOverviewStatsAPIView.as_view(), name='hod-overview-stats'),
     path('api/teacher/hod/class-stats/', HODClassStatsView.as_view(), name='hod-class-stats'),
+    path('api/teacher/hod/student/<int:student_id>/report/', HODStudentReportAPIView.as_view(), name='hod-student-report'),
     path('api/teacher/mentor/mentees/', MentorMenteesView.as_view(), name='mentor-mentees'),
+    path('api/teacher/mentor/mentees/<int:mentee_id>/report/', MenteeReportAPIView.as_view(), name='mentor-mentee-report'),
 
     # --------------------------------------------------------------------------
     # 4. Timetable Incharge
@@ -85,6 +92,7 @@ urlpatterns = [
     path('api/admin/unlock-requests/<int:request_id>/deny/', AdminDenyUnlockView.as_view(), name='admin-deny-unlock'),
     path('api/admin/teacher-subjects/', AdminTeacherSubjectsView.as_view(), name='admin-teacher-subjects'),
     path('api/admin/backup/export/', AdminBackupExportView.as_view(), name='admin-backup-export'),
+    path('api/admin/audit-logs/', AuditLogPaginationView.as_view(), name='admin-audit-logs'),
     path('api/upload/', FileUploadAPIView.as_view(), name='file-upload'),
 
     # --------------------------------------------------------------------------
