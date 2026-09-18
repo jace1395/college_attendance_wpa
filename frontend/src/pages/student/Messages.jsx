@@ -31,17 +31,15 @@ const Messages = () => {
     const newMsg = { id: Date.now(), from: "me", text: draft.trim(), time: "Today " + nowTime() };
     setThreads(prev => ({ ...prev, [activeContact]: [...(prev[activeContact] || []), newMsg] }));
     setDraft("");
-    // Simulate reply after 1.5s
-    setTimeout(() => {
-      const replies = [
-        "Thank you for reaching out. I will get back to you soon.",
-        "Noted. We will discuss this further.",
-        "Please check the notice board for updates.",
-        "I have received your message. Please meet me in my office.",
-      ];
-      const reply = { id: Date.now() + 1, from: "contact", text: replies[Math.floor(Math.random() * replies.length)], time: "Today " + nowTime() };
-      setThreads(prev => ({ ...prev, [activeContact]: [...(prev[activeContact] || []), reply] }));
-    }, 1500);
+    // Auto reply instantly (removed 1.5s delay)
+    const replies = [
+      "Thank you for reaching out. I will get back to you soon.",
+      "Noted. We will discuss this further.",
+      "Please check the notice board for updates.",
+      "I have received your message. Please meet me in my office.",
+    ];
+    const reply = { id: Date.now() + 1, from: "contact", text: replies[Math.floor(Math.random() * replies.length)], time: "Today " + nowTime() };
+    setThreads(prev => ({ ...prev, [activeContact]: [...(prev[activeContact] || []), reply] }));
   };
 
   const contact = CONTACTS.find(c => c.id === activeContact);

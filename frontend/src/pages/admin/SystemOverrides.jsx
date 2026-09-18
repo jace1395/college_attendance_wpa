@@ -53,7 +53,7 @@ const SystemOverrides = () => {
       } finally {
         setIsLoadingSubjects(false);
       }
-    }, 600);
+    }, 50);
     return () => clearTimeout(timer);
   }, [teacherEmail]);
 

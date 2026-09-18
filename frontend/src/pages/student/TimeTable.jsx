@@ -19,11 +19,9 @@ const TimeTable = () => {
 
     checkTime();
 
-    // Mock API fetch
-    setTimeout(() => {
-      setTimetable([]);
-      setLoading(false);
-    }, 500);
+    // Mock API fetch (made instant)
+    setTimetable([]);
+    setLoading(false);
 
     // Optional: set interval to check time every minute
     const interval = setInterval(checkTime, 60000);

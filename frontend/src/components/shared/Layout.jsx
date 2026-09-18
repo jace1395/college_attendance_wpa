@@ -1,0 +1,81 @@
+import React from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext';
+import ThemeToggle from './ThemeToggle';
+
+/**
+ * Layout — shared wrapper for all authenticated dashboards.
+ *
+ * Provides:
+ *  • Fixed background image layer (never alters the image itself)
+ *  • Top header: app title, ThemeToggle, Settings link, Logout button
+ *  • Scrollable content wrapper
+ *
+ * Each dashboard renders only its inner content as {children}.
+ */
+const Layout = ({ children }) => {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
+
+  return (
+    <>
+      {/* Fixed Background Layer — DO NOT alter this */}
+      <div className="fixed inset-0 -z-10 bg-[url('/imgs/login-signup.jpg')] bg-cover bg-center bg-no-repeat">
+        <div className="absolute inset-0 bg-white/90 dark:bg-slate-900/85 backdrop-blur-md"></div>
+      </div>
+
+      {/* Scrollable Content Wrapper */}
+      <div className="relative z-0 min-h-screen w-full overflow-y-auto text-gray-900 dark:text-white">
+        <div className="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-6 flex flex-col min-h-screen">
+
+          {/* ── Global Header ── */}
+          <header className="flex flex-wrap justify-between items-center mb-8 gap-4">
+            <h1 className="text-2xl font-bold tracking-wider text-gray-900 dark:text-white">
+              SDCCE | <span className="text-blue-500 dark:text-blue-400">ATTENDANCE</span>
+            </h1>
+
+            <div className="flex items-center gap-3">
+              <ThemeToggle />
+
+              <Link
+                to="/settings"
+                className="px-3 py-2 rounded-xl bg-white/70 dark:bg-white/10 border border-gray-200 dark:border-white/10 text-gray-700 dark:text-white/70 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-white/20 transition-colors text-sm font-medium flex items-center gap-1.5"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                    d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                Settings
+              </Link>
+
+              <button
+                onClick={handleLogout}
+                className="px-3 py-2 bg-red-500/15 text-red-600 dark:text-red-300 hover:bg-red-500/30 rounded-xl border border-red-500/25 dark:border-red-500/30 transition-colors text-sm font-medium flex items-center gap-1.5"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2"
+                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+                Logout
+              </button>
+            </div>
+          </header>
+
+          {/* ── Page Content ── */}
+          <main className="flex-1">
+            {children}
+          </main>
+
+        </div>
+      </div>
+    </>
+  );
+};
+
+export default Layout;

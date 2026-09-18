@@ -123,16 +123,18 @@ const PrincipalReportsHub = ({ streams, onNavigateToView }) => {
 
   const handleExport = (format) => {
     setIsExporting(true);
-    setTimeout(() => {
-      setIsExporting(false);
-      const blob = new Blob(["Mock " + format.toUpperCase() + " data for " + activeProg], { type: "text/plain" });
-      const url  = window.URL.createObjectURL(blob);
-      const a    = document.createElement("a");
-      a.href     = url;
-      a.download = "attendance_report_" + activeProg + "_" + new Date().getTime() + "." + format;
-      document.body.appendChild(a); a.click();
-      window.URL.revokeObjectURL(url); document.body.removeChild(a);
-    }, 1500);
+    setIsExporting(true);
+    // Removed 1.5s delay
+    const blob = new Blob(["Mock " + format.toUpperCase() + " data for " + activeProg], { type: "text/plain" });
+    const url  = window.URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href     = url;
+    a.download = "attendance_report_" + activeProg + "_" + new Date().getTime() + "." + format;
+    document.body.appendChild(a); 
+    a.click();
+    window.URL.revokeObjectURL(url); 
+    document.body.removeChild(a);
+    setIsExporting(false);
   };
 
   return (

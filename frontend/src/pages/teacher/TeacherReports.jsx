@@ -10,8 +10,6 @@ import {
   PieChart,
   Pie,
   Cell,
-  AreaChart,
-  Area,
   Legend,
   LineChart,
   Line
@@ -183,6 +181,43 @@ const TeacherReports = ({ classes }) => {
     return [];
   }, [rawHistory, filter, startDate, endDate]);
 
+  // Skeleton panel shown while data is loading
+  if (loading) {
+    return (
+      <div className="animate-pulse flex flex-col gap-8">
+        {/* Filter bar skeleton */}
+        <div className="bg-white dark:bg-gray-800 border border-white/20 rounded-3xl p-6 flex gap-6 items-center">
+          <div className="h-9 bg-gray-200 dark:bg-slate-700 rounded-xl w-48" />
+          <div className="flex gap-2 ml-auto">
+            {[1,2,3,4].map(i => <div key={i} className="h-8 w-20 bg-gray-200 dark:bg-slate-700 rounded-lg" />)}
+          </div>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          {/* Chart skeleton */}
+          <div className="lg:col-span-2 bg-white dark:bg-gray-800 border border-white/20 rounded-3xl p-6">
+            <div className="h-5 bg-gray-200 dark:bg-slate-700 rounded w-40 mb-6" />
+            <div className="h-[300px] bg-gray-100 dark:bg-slate-700/50 rounded-2xl" />
+          </div>
+          {/* Defaulters skeleton */}
+          <div className="bg-white dark:bg-gray-800 border border-red-500/30 rounded-3xl p-6">
+            <div className="h-5 bg-gray-200 dark:bg-slate-700 rounded w-32 mb-6" />
+            <div className="space-y-3">
+              {[1,2,3,4,5].map(i => (
+                <div key={i} className="flex justify-between p-3 bg-gray-50 dark:bg-slate-700/40 rounded-xl">
+                  <div className="space-y-1.5">
+                    <div className="h-4 bg-gray-200 dark:bg-slate-600 rounded w-28" />
+                    <div className="h-3 bg-gray-200 dark:bg-slate-600 rounded w-16" />
+                  </div>
+                  <div className="h-6 w-12 bg-gray-200 dark:bg-slate-600 rounded" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="animate-fade-in-up flex flex-col gap-8">
       {/* Filters */}
@@ -201,7 +236,7 @@ const TeacherReports = ({ classes }) => {
         </div>
         
         <div className="flex flex-wrap items-center gap-4 w-full lg:w-auto">
-            <span className="text-sm font-medium text-white/70 uppercase tracking-wider">Time:</span>
+            <span className="text-sm font-medium text-white/70 uppercase tracking-wider">TIME:</span>
             <div className="flex gap-1 bg-slate-900/50 p-1 rounded-xl border border-white/5 overflow-x-auto w-full sm:w-auto">
             {['daily', 'weekly', 'monthly'].map(f => (
                 <button
@@ -270,11 +305,7 @@ const TeacherReports = ({ classes }) => {
                 </select>
             </h3>
             <div className="h-[300px] w-full flex-1">
-              {loading ? (
-                <div className="flex items-center justify-center h-full">
-                  <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-                </div>
-              ) : rawHistory.length === 0 ? (
+              {rawHistory.length === 0 ? (
                 <div className="flex items-center justify-center h-full text-white/30 text-sm">
                   No attendance data available for this class.
                 </div>
@@ -288,7 +319,7 @@ const TeacherReports = ({ classes }) => {
                         <p className="text-sm text-white/60 mb-4">{pieChartPercentage}% Average Attendance</p>
                         <ResponsiveContainer width="100%" height="100%">
                           <PieChart>
-                            <Pie data={pieChartData} cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={5} dataKey="value">
+                            <Pie data={pieChartData} cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={5} dataKey="value" isAnimationActive={false}>
                               {pieChartData.map((entry, index) => <Cell key={`cell-${index}`} fill={entry.fill} />)}
                             </Pie>
                             <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff' }} />
@@ -299,7 +330,6 @@ const TeacherReports = ({ classes }) => {
                     );
                   }
 
-
                   // Weekly Line Chart
                   if (filter === 'weekly') {
                     return (
@@ -309,7 +339,7 @@ const TeacherReports = ({ classes }) => {
                           <XAxis dataKey="range" tick={{ fontSize: 12, fill: 'currentColor' }} interval={0} angle={-45} textAnchor="end" height={60} />
                           <YAxis stroke="currentColor" className="text-slate-500 dark:text-white/50" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(val) => `${val}%`} domain={[0, 100]} />
                           <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff' }} cursor={{fill: 'rgba(255,255,255,0.05)'}} formatter={(value, name, props) => [`${value.toFixed(1)}% (${props.payload.present}/${props.payload.total})`, 'Attendance']} />
-                          <Line type="monotone" dataKey="percentage" stroke="#3b82f6" strokeWidth={3} activeDot={{ r: 8 }} />
+                          <Line type="monotone" dataKey="percentage" stroke="#3b82f6" strokeWidth={3} activeDot={{ r: 8 }} isAnimationActive={false} />
                         </LineChart>
                       </ResponsiveContainer>
                     );
@@ -344,11 +374,7 @@ const TeacherReports = ({ classes }) => {
             
             <div className="flex-1 overflow-y-auto pr-2">
                 <div className="space-y-3">
-                    {loading ? (
-                      <div className="flex justify-center py-8">
-                        <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-red-400"></div>
-                      </div>
-                    ) : defaulters.length === 0 ? (
+                    {defaulters.length === 0 ? (
                         <div className="text-center py-8 text-white/40">No defaulters found.</div>
                     ) : defaulters.map(student => (
                         <div key={student.id} className="flex justify-between items-center p-3 bg-slate-900/40 rounded-xl border border-white/5 hover:border-red-500/30 transition-colors">
