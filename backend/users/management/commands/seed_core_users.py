@@ -28,11 +28,12 @@ class Command(BaseCommand):
             admin_user.role = RoleChoices.ADMIN
             admin_user.is_superuser = True
             admin_user.is_staff = True
-            
-        admin_user.set_password(default_password)
-        admin_user.save()
-        
-        self.stdout.write(self.style.SUCCESS(f"Admin user {'created' if admin_created else 'updated'}: {admin_email} | Password updated"))
+            admin_user.save()
+            self.stdout.write(self.style.SUCCESS(f"Admin user updated: {admin_email} | Password kept as is"))
+        else:
+            admin_user.set_password(default_password)
+            admin_user.save()
+            self.stdout.write(self.style.SUCCESS(f"Admin user created: {admin_email} | Password set to default"))
 
         # 3. Create Principal
         principal_email = 'principal@vvm.edu.in'
@@ -45,9 +46,10 @@ class Command(BaseCommand):
         
         if not principal_created:
             principal_user.role = RoleChoices.PRINCIPAL
-            
-        principal_user.set_password(default_password)
-        principal_user.save()
-        
-        self.stdout.write(self.style.SUCCESS(f"Principal user {'created' if principal_created else 'updated'}: {principal_email} | Password updated"))
+            principal_user.save()
+            self.stdout.write(self.style.SUCCESS(f"Principal user updated: {principal_email} | Password kept as is"))
+        else:
+            principal_user.set_password(default_password)
+            principal_user.save()
+            self.stdout.write(self.style.SUCCESS(f"Principal user created: {principal_email} | Password set to default"))
         self.stdout.write(self.style.SUCCESS('Database seeding completed successfully.'))
