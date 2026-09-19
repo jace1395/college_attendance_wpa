@@ -10,7 +10,7 @@ import {
 } from 'recharts';
 import apiClient from '../../services/apiClient';
 
-const MenteeReportView = ({ menteeId, apiEndpoint, onBack }) => {
+const StudentAttendanceModal = ({ studentId, apiEndpoint, onBack }) => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedMonth, setSelectedMonth] = useState('');
@@ -31,7 +31,7 @@ const MenteeReportView = ({ menteeId, apiEndpoint, onBack }) => {
         if (selectedMonth) params.month = selectedMonth;
         if (selectedSubject) params.subject_id = selectedSubject;
         
-        const endpoint = apiEndpoint || `/api/teacher/mentor/mentees/${menteeId}/report/`;
+        const endpoint = apiEndpoint || `/api/teacher/mentor/mentees/${studentId}/report/`;
         const res = await apiClient.get(endpoint, { params });
         setData(res.data);
       } catch (err) {
@@ -41,7 +41,7 @@ const MenteeReportView = ({ menteeId, apiEndpoint, onBack }) => {
       }
     };
     fetchReport();
-  }, [menteeId, selectedMonth, selectedSubject]);
+  }, [studentId, selectedMonth, selectedSubject]);
 
   const getAttColor = (pct) => {
     if (pct >= 85) return 'text-green-400';
@@ -193,4 +193,4 @@ const MenteeReportView = ({ menteeId, apiEndpoint, onBack }) => {
   );
 };
 
-export default MenteeReportView;
+export default StudentAttendanceModal;

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import apiClient from '../../services/apiClient';
 import PrincipalNoticeBoard from '../principal/PrincipalNoticeBoard';
-import MenteeReportView from './MenteeReportView';
+import StudentAttendanceModal from '../../components/shared/StudentAttendanceModal';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 
 const YEARS = ['FY', 'SY', 'TY'];
@@ -10,11 +10,12 @@ const YEARS = ['FY', 'SY', 'TY'];
 // ─── Mini Bar ───────────────────────────────────────────────────────────────
 const MiniBar = ({ pct }) => {
   const good = pct >= 75;
+
   return (
     <div className="w-full bg-slate-800/60 rounded-full h-2.5 overflow-hidden">
       <div
         className={`h-full rounded-full ${
-          good ? 'bg-gradient-to-r from-green-500 to-emerald-400' : 'bg-gradient-to-r from-red-500 to-orange-400'
+          good ? 'bg-linear-to-r from-green-500 to-emerald-400' : 'bg-linear-to-r from-red-500 to-orange-400'
         }`}
         style={{ width: Math.min(pct, 100) + '%' }}
       />
@@ -120,33 +121,36 @@ const HODDashboard = ({ onBack }) => {
     const sorted = [...currentDetail.daily_records].sort((a, b) => new Date(a.date) - new Date(b.date));
 
     if (chartFilter === 'weekly') {
-      const weeks = [];
-      let currentWeek = [];
-      let weekStart = null;
-      sorted.forEach((record) => {
+      const weeksMap = {};
+      sorted.forEach(record => {
         const d = new Date(record.date);
-        if (currentWeek.length === 0) weekStart = d;
-        const diffDays = Math.floor((d - weekStart) / (1000 * 60 * 60 * 24));
-        if (diffDays >= 7) {
-          weeks.push([...currentWeek]);
-          currentWeek = [record];
-          weekStart = d;
-        } else {
-          currentWeek.push(record);
+        const day = d.getDay();
+        const diff = d.getDate() - day + (day === 0 ? -6 : 1);
+        const monday = new Date(d.setDate(diff));
+        monday.setHours(0,0,0,0);
+        const key = monday.toISOString().split('T')[0];
+        
+        if (!weeksMap[key]) {
+           weeksMap[key] = { present: 0, absent: 0, startDate: monday };
         }
+        weeksMap[key].present += record.present;
+        weeksMap[key].absent += record.absent;
       });
-      if (currentWeek.length > 0) weeks.push(currentWeek);
 
-      return weeks.map(week => {
-        const present = week.reduce((sum, r) => sum + r.present, 0);
-        const absent = week.reduce((sum, r) => sum + r.absent, 0);
-        const total = present + absent;
-        const startStr = new Date(week[0].date).toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
-        const endStr = new Date(week[week.length-1].date).toLocaleDateString('en-US', { month: 'short', day: '2-digit' });
+      return Object.keys(weeksMap).sort().map(k => {
+        const w = weeksMap[k];
+        const total = w.present + w.absent;
+        const endStr = new Date(w.startDate);
+        endStr.setDate(endStr.getDate() + 6);
+        
+        const sStr = w.startDate.toLocaleString('en-US', { month: 'short', day: 'numeric' });
+        const eStr = endStr.toLocaleString('en-US', { month: 'short', day: 'numeric' });
         return {
-          date: `${startStr} - ${endStr}`,
-          present, absent, total,
-          percentage: total > 0 ? (present / total) * 100 : 0
+          date: `${sStr} - ${eStr}`,
+          present: w.present,
+          absent: w.absent,
+          total,
+          percentage: total > 0 ? (w.present / total) * 100 : 0
         };
       });
     }
@@ -172,7 +176,7 @@ const HODDashboard = ({ onBack }) => {
       });
     }
 
-    // Default: daily
+    // Default: daily or custom
     return sorted.map(record => {
       const total = record.present + record.absent;
       return {
@@ -195,6 +199,16 @@ const HODDashboard = ({ onBack }) => {
     return { total, present, absent, pct: total ? ((present / total) * 100).toFixed(1) : '0' };
   }, [overviewData]);
 
+  if (selectedStudent) {
+    return (
+      <StudentAttendanceModal 
+         studentId={selectedStudent} 
+         apiEndpoint={`/api/teacher/hod/student/${selectedStudent}/report/`}
+         onBack={() => setSelectedStudent(null)} 
+      />
+    );
+  }
+
   return (
     <div className="flex flex-col gap-6 animate-fade-in">
       {/* ── Header ─────────────────────────────────────────────────────────── */}
@@ -206,7 +220,7 @@ const HODDashboard = ({ onBack }) => {
             </svg>
           </div>
           <div>
-            <h2 className="text-xl font-bold text-white">HOD Panel</h2>
+            <h2 className="text-xl font-bold text-slate-900 dark:text-white">HOD Panel</h2>
             <p className="text-purple-300/70 text-sm">
               {departments.length > 0
                 ? `Departments: ${departments.join(', ')} — Full oversight view`
@@ -217,7 +231,7 @@ const HODDashboard = ({ onBack }) => {
         {onBack && (
           <button
             onClick={onBack}
-            className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/15 border border-white/20 text-white/80 hover:text-white rounded-xl text-sm font-medium shrink-0"
+            className="flex items-center gap-2 px-4 py-2 bg-slate-300/50 dark:bg-white/10 hover:bg-white/15 border border-slate-400/60 dark:border-white/20 text-slate-700 dark:text-white/80 hover:text-white rounded-xl text-sm font-medium shrink-0"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
@@ -228,7 +242,7 @@ const HODDashboard = ({ onBack }) => {
       </div>
 
       {/* ── Sub-Tab Navigation ──────────────────────────────────────────────── */}
-      <div className="flex flex-wrap gap-2 bg-slate-900/50 p-1.5 rounded-2xl border border-white/10 shadow-sm">
+      <div className="flex flex-wrap gap-2 bg-white/80 dark:bg-slate-900/50 p-1.5 rounded-2xl border border-slate-300/60 dark:border-white/10 shadow-sm">
         {[
           { key: 'overview', label: 'Overview' },
           { key: 'class',    label: 'Class View' },
@@ -240,7 +254,7 @@ const HODDashboard = ({ onBack }) => {
             className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-colors ${
               activeTab === tab.key
                 ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20'
-                : 'text-white/60 hover:text-white hover:bg-white/5'
+                : 'text-slate-600 dark:text-white/60 hover:text-white hover:bg-slate-200/50 dark:bg-white/5'
             }`}
           >
             {tab.label}
@@ -253,15 +267,15 @@ const HODDashboard = ({ onBack }) => {
         <div className="flex flex-col gap-6">
           
           {/* Time Filter Controls */}
-          <div className="flex flex-wrap items-center gap-3 p-4 bg-white/5 border border-white/10 rounded-2xl">
-             <div className="flex items-center gap-2 text-white/80 font-medium">
+          <div className="flex flex-wrap items-center gap-3 p-4 bg-slate-200/50 dark:bg-white/5 border border-slate-300/60 dark:border-white/10 rounded-2xl">
+             <div className="flex items-center gap-2 text-slate-700 dark:text-white/80 font-medium">
                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                <span>Filter Range:</span>
              </div>
              <select 
                value={period} 
                onChange={(e) => setPeriod(e.target.value)}
-               className="bg-slate-900 border border-white/20 text-white rounded-xl px-4 py-2 outline-none focus:border-purple-500"
+               className="bg-white/90 dark:bg-slate-900 border border-slate-400/60 dark:border-white/20 text-slate-800 dark:text-white rounded-xl px-4 py-2 outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
              >
                <option value="overall">All-Time Overall</option>
                <option value="today">Today</option>
@@ -276,14 +290,14 @@ const HODDashboard = ({ onBack }) => {
                    type="date" 
                    value={startDate}
                    onChange={e => setStartDate(e.target.value)}
-                   className="bg-slate-900 border border-white/20 text-white rounded-xl px-3 py-2 outline-none focus:border-purple-500 [color-scheme:dark]"
+                   className="bg-white/90 dark:bg-slate-900 border border-slate-400/60 dark:border-white/20 text-slate-800 dark:text-white rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent scheme-dark"
                  />
-                 <span className="text-white/50">to</span>
+                 <span className="text-slate-500 dark:text-white/50">to</span>
                  <input 
                    type="date" 
                    value={endDate}
                    onChange={e => setEndDate(e.target.value)}
-                   className="bg-slate-900 border border-white/20 text-white rounded-xl px-3 py-2 outline-none focus:border-purple-500 [color-scheme:dark]"
+                   className="bg-white/90 dark:bg-slate-900 border border-slate-400/60 dark:border-white/20 text-slate-800 dark:text-white rounded-xl px-3 py-2 outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent scheme-dark"
                  />
                </div>
              )}
@@ -294,7 +308,7 @@ const HODDashboard = ({ onBack }) => {
               <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-400"></div>
             </div>
           ) : departments.length === 0 ? (
-            <div className="text-center py-14 text-white/30 bg-white/5 rounded-3xl border border-white/10">
+            <div className="text-center py-14 text-slate-400 dark:text-white/30 bg-slate-200/50 dark:bg-white/5 rounded-3xl border border-slate-300/60 dark:border-white/10">
               <p className="font-semibold text-lg mb-1">No departments assigned yet</p>
             </div>
           ) : (
@@ -303,13 +317,13 @@ const HODDashboard = ({ onBack }) => {
               {summary && (
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
                   {[
-                    { label: 'Total Students', value: summary.total,   color: 'bg-blue-500/10 border-blue-500/30',   text: 'text-white' },
+                    { label: 'Total Students', value: summary.total,   color: 'bg-blue-500/10 border-blue-500/30',   text: 'text-slate-900 dark:text-white' },
                     { label: 'Above 75%',      value: summary.present, color: 'bg-green-500/10 border-green-500/30', text: 'text-green-400' },
                     { label: 'Below 75%',      value: summary.absent,  color: 'bg-red-500/10 border-red-500/30',     text: 'text-red-400' },
                     { label: 'Avg Attendance', value: summary.pct + '%', color: 'bg-purple-500/10 border-purple-500/30', text: 'text-purple-400' },
                   ].map(c => (
                     <div key={c.label} className={`rounded-2xl p-5 border ${c.color}`}>
-                      <p className="text-xs text-white/40 uppercase tracking-wider font-semibold mb-1">{c.label}</p>
+                      <p className="text-xs text-slate-500 dark:text-white/40 uppercase tracking-wider font-semibold mb-1">{c.label}</p>
                       <p className={`text-3xl font-extrabold tracking-tight ${c.text}`}>{c.value}</p>
                     </div>
                   ))}
@@ -319,10 +333,10 @@ const HODDashboard = ({ onBack }) => {
               {/* Structured Side-by-Side Department View */}
               <div className={`grid grid-cols-1 md:grid-cols-${Math.min(departments.length, 3)} gap-6`}>
                 {departments.map(dept => (
-                  <div key={dept} className="flex flex-col gap-4 bg-slate-900/40 p-4 rounded-3xl border border-white/5">
+                  <div key={dept} className="flex flex-col gap-4 bg-white/70 dark:bg-slate-900/40 p-4 rounded-3xl border border-slate-300/50 dark:border-white/5">
                     <div className="flex items-center gap-2 mb-2 px-2">
                        <div className="w-2 h-6 bg-purple-500 rounded-full"></div>
-                       <h3 className="text-xl font-bold text-white tracking-wide">{dept} Department</h3>
+                       <h3 className="text-xl font-bold text-slate-800 dark:text-white tracking-wide">{dept} Department</h3>
                     </div>
                     {YEARS.map(yr => {
                       const cls = `${yr} ${dept}`;
@@ -333,23 +347,23 @@ const HODDashboard = ({ onBack }) => {
                         <button
                           key={cls}
                           onClick={() => { setSelectedClass(cls); setActiveTab('class'); }}
-                          className="bg-white/5 hover:bg-purple-500/10 border border-white/10 hover:border-purple-500/30 rounded-2xl p-5 text-left group shadow-lg hover:shadow-purple-500/10 transition-all duration-200"
+                          className="bg-slate-200/50 dark:bg-white/5 hover:bg-purple-500/10 border border-slate-300/60 dark:border-white/10 hover:border-purple-500/30 rounded-2xl p-5 text-left group shadow-lg hover:shadow-purple-500/10 transition-all duration-200"
                         >
                           <div className="flex justify-between items-start mb-2">
-                             <p className="font-extrabold text-lg text-white group-hover:text-purple-300 transition-colors">{cls}</p>
-                             {data && <span className={`font-bold px-2 py-0.5 rounded-lg text-xs ${pct >= 75 ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>{pct}%</span>}
+                             <p className="font-extrabold text-lg text-slate-800 dark:text-white group-hover:text-purple-600 dark:group-hover:text-purple-300 transition-colors">{cls}</p>
+                             {data && <span className={`font-bold px-2 py-0.5 rounded-lg text-xs ${pct >= 75 ? 'bg-green-500/20 text-green-600 dark:text-green-400' : 'bg-red-500/20 text-red-600 dark:text-red-400'}`}>{pct}%</span>}
                           </div>
                           
                           {data ? (
                             <>
-                              <div className="flex justify-between text-xs text-white/50 mb-3">
+                              <div className="flex justify-between text-xs text-slate-600 dark:text-white/50 mb-3">
                                 <span>Total Students: {data.total}</span>
-                                <span><span className="text-green-400 font-medium">Safe: {data.present}</span> | <span className="text-red-400 font-medium">Danger: {data.absent}</span></span>
+                                <span><span className="text-green-600 dark:text-green-400 font-medium">Safe: {data.present}</span> | <span className="text-red-600 dark:text-red-400 font-medium">Danger: {data.absent}</span></span>
                               </div>
                               <MiniBar pct={parseFloat(pct)} />
                             </>
                           ) : (
-                            <p className="text-xs text-white/30 mt-1">No data for selected period</p>
+                            <p className="text-xs text-slate-400 dark:text-white/30 mt-1">No data for selected period</p>
                           )}
                         </button>
                       );
@@ -365,18 +379,9 @@ const HODDashboard = ({ onBack }) => {
       {/* ── CLASS VIEW TAB ──────────────────────────────────────────────────── */}
       {activeTab === 'class' && (
         <div className="flex flex-col gap-6 animate-fade-in">
-          {selectedStudent ? (
-             <div className="bg-slate-900/40 p-4 rounded-3xl border border-white/5">
-                <MenteeReportView 
-                   menteeId={selectedStudent} 
-                   apiEndpoint={`/api/teacher/hod/student/${selectedStudent}/report/`}
-                   onBack={() => setSelectedStudent(null)} 
-                />
-             </div>
-          ) : (
-            <>
+
           {classList.length > 0 && (
-            <div className="flex flex-wrap gap-2 bg-slate-900/50 p-1.5 rounded-2xl border border-white/10">
+            <div className="flex flex-wrap gap-2 bg-white/80 dark:bg-slate-900/50 p-1.5 rounded-2xl border border-slate-300/60 dark:border-white/10">
               {classList.map(cls => (
                 <button
                   key={cls}
@@ -384,7 +389,7 @@ const HODDashboard = ({ onBack }) => {
                   className={`px-4 py-2 rounded-xl text-sm font-bold transition-colors ${
                     selectedClass === cls
                       ? 'bg-purple-600 text-white shadow-lg'
-                      : 'text-white/60 hover:text-white hover:bg-white/5'
+                      : 'text-slate-600 dark:text-white/60 hover:text-white hover:bg-slate-200/50 dark:bg-white/5'
                   }`}
                 >
                   {cls}
@@ -394,7 +399,7 @@ const HODDashboard = ({ onBack }) => {
           )}
 
           {!selectedClass ? (
-            <div className="text-center py-14 text-white/30 bg-white/5 rounded-3xl border border-white/10">
+            <div className="text-center py-14 text-slate-400 dark:text-white/30 bg-slate-200/50 dark:bg-white/5 rounded-3xl border border-slate-300/60 dark:border-white/10">
               Select a class above to view detailed attendance.
             </div>
           ) : loadingClass ? (
@@ -405,7 +410,7 @@ const HODDashboard = ({ onBack }) => {
             <div className="flex flex-col gap-6">
               <div className="bg-purple-900/10 border border-purple-500/20 rounded-2xl p-5 flex flex-wrap items-center justify-between gap-4">
                 <div>
-                  <h3 className="text-2xl font-extrabold text-white">{selectedClass}</h3>
+                  <h3 className="text-2xl font-extrabold text-slate-900 dark:text-white">{selectedClass}</h3>
                   <p className="text-purple-300/60 text-sm mt-0.5">{currentDetail.total} enrolled students</p>
                 </div>
                 <div className="flex gap-4">
@@ -416,16 +421,62 @@ const HODDashboard = ({ onBack }) => {
                   ].map(s => (
                     <div key={s.label} className="text-center">
                       <p className={`text-2xl font-extrabold ${s.color}`}>{s.value}</p>
-                      <p className="text-xs text-white/40 uppercase tracking-wider">{s.label}</p>
+                      <p className="text-xs text-slate-500 dark:text-white/40 uppercase tracking-wider">{s.label}</p>
                     </div>
                   ))}
                 </div>
               </div>
 
-              <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden shadow-xl">
+              {chartData.length > 0 && (
+                <div className="bg-white/70 dark:bg-slate-900/40 border border-slate-300/50 dark:border-white/5 rounded-2xl p-6">
+                  <div className="flex items-center justify-between mb-6">
+                    <h4 className="text-sm font-bold text-slate-500 dark:text-white/50 uppercase tracking-wider">Attendance Trend</h4>
+                    <div className="flex bg-slate-800/50 rounded-lg p-1 border border-slate-300/60 dark:border-white/10">
+                      {['daily', 'weekly', 'monthly', 'custom'].map(f => (
+                        <button
+                          key={f}
+                          onClick={() => setChartFilter(f)}
+                          className={`px-3 py-1.5 text-xs font-bold rounded-md transition-colors ${
+                            chartFilter === f ? 'bg-purple-600 text-white shadow' : 'text-slate-500 dark:text-white/40 hover:text-slate-700 dark:text-white/80'
+                          }`}
+                        >
+                          {f.charAt(0).toUpperCase() + f.slice(1)}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                  <div className="h-75 w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                        <defs>
+                          <linearGradient id="colorPresent" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#10b981" stopOpacity={0.3}/>
+                            <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                          </linearGradient>
+                          <linearGradient id="colorAbsent" x1="0" y1="0" x2="0" y2="1">
+                            <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/>
+                            <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+                          </linearGradient>
+                        </defs>
+                        <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" vertical={false} />
+                        <XAxis dataKey="date" stroke="rgba(255,255,255,0.2)" fontSize={12} tickMargin={10} />
+                        <YAxis stroke="rgba(255,255,255,0.2)" fontSize={12} tickFormatter={(val) => Math.round(val)} />
+                        <RechartsTooltip 
+                          contentStyle={{ backgroundColor: '#0f172a', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff' }}
+                          itemStyle={{ color: '#e2e8f0' }}
+                        />
+                        <Area type="monotone" dataKey="present" name="Present" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorPresent)" />
+                        <Area type="monotone" dataKey="absent" name="Absent" stroke="#ef4444" strokeWidth={3} fillOpacity={1} fill="url(#colorAbsent)" />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </div>
+              )}
+
+              <div className="bg-slate-200/50 dark:bg-white/5 border border-slate-300/60 dark:border-white/10 rounded-2xl overflow-hidden shadow-xl">
                 <table className="w-full text-sm text-left">
                   <thead>
-                    <tr className="bg-white/5 text-white/40 text-xs uppercase tracking-wider">
+                    <tr className="bg-slate-200/50 dark:bg-white/5 text-slate-500 dark:text-white/40 text-xs uppercase tracking-wider">
                       <th className="px-5 py-3">Roll No</th>
                       <th className="px-5 py-3">Name</th>
                       <th className="px-5 py-3">Attended</th>
@@ -437,25 +488,25 @@ const HODDashboard = ({ onBack }) => {
                   <tbody>
                     {(currentDetail.students || []).length === 0 ? (
                       <tr>
-                        <td colSpan="6" className="px-5 py-10 text-center text-white/30 text-sm">
+                        <td colSpan="6" className="px-5 py-10 text-center text-slate-400 dark:text-white/30 text-sm">
                           No student data yet.
                         </td>
                       </tr>
                     ) : currentDetail.students.map(s => {
                       const pct = s.total ? ((s.attended / s.total) * 100).toFixed(1) : 0;
                       return (
-                        <tr key={s.roll} onClick={() => setSelectedStudent(s.id)} className={`border-t border-white/5 hover:bg-white/10 cursor-pointer transition-colors ${pct < 75 ? 'bg-red-900/10' : ''}`}>
+                        <tr key={s.roll} onClick={() => setSelectedStudent(s.id)} className={`border-t border-slate-300/50 dark:border-white/5 hover:bg-slate-300/50 dark:bg-white/10 cursor-pointer transition-colors ${pct < 75 ? 'bg-red-900/10' : ''}`}>
                           <td className="px-5 py-3 font-mono text-purple-300 text-xs">{s.roll}</td>
-                          <td className="px-5 py-3 font-semibold text-white/90">{s.name}</td>
+                          <td className="px-5 py-3 font-semibold text-slate-800 dark:text-white/90">{s.name}</td>
                           <td className="px-5 py-3 text-green-400 font-bold">{s.attended}</td>
-                          <td className="px-5 py-3 text-white/60">{s.total}</td>
+                          <td className="px-5 py-3 text-slate-600 dark:text-white/60">{s.total}</td>
                           <td className="px-5 py-3">
                             <span className={`text-sm font-extrabold ${pct >= 75 ? 'text-green-400' : 'text-red-400'}`}>{pct}%</span>
                           </td>
                           <td className="px-5 py-3">
                             <button 
                               onClick={(e) => { e.stopPropagation(); setSelectedStudent(s.id); }}
-                              className="text-xs px-4 py-1.5 bg-white/5 hover:bg-white/20 border border-white/10 rounded-lg font-semibold transition-colors shadow-sm"
+                              className="text-xs px-4 py-1.5 bg-slate-200/50 dark:bg-white/5 hover:bg-slate-400/50 dark:bg-white/20 border border-slate-300/60 dark:border-white/10 rounded-lg font-semibold transition-colors shadow-sm"
                             >
                               View
                             </button>
@@ -468,8 +519,6 @@ const HODDashboard = ({ onBack }) => {
               </div>
             </div>
           ) : null}
-          </>
-          )}
         </div>
       )}
 

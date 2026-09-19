@@ -791,6 +791,7 @@ class HODClassStatsView(APIView):
             attended = s_stats['attended']
             
             students_map[s.id] = {
+                "id": s.id,
                 "roll": s.roll_no or f"R-{s.id}",
                 "name": s.name or s.email,
                 "total": total,
