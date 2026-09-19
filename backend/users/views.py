@@ -19,7 +19,8 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             'is_hod': self.user.is_hod,
             'is_mentor': self.user.is_mentor,
             'is_timetable_incharge': self.user.is_timetable_incharge,
-            'department': self.user.department.name if getattr(self.user, 'department', None) else 'General',
+            'department': self.user.department.name if getattr(self.user, 'department', None) else None,
+            'stream': self.user.stream.name if getattr(self.user, 'stream', None) else None,
             'is_first_login': self.user.is_first_login
         }
         return data
@@ -60,7 +61,8 @@ class UserMeView(APIView):
             'email': user.email.lower(),
             'role': user.role,
             'is_first_login': user.is_first_login,
-            'department': user.department.name if getattr(user, 'department', None) else 'General',
+            'department': user.department.name if getattr(user, 'department', None) else None,
+            'stream': user.stream.name if getattr(user, 'stream', None) else None,
         })
 
 class ChangePasswordView(APIView):

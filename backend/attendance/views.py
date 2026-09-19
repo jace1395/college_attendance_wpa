@@ -1189,10 +1189,10 @@ class TimetableAssignView(APIView):
         )
         
         TimetableActivityLog.objects.create(
-            action="Teacher Assigned",
-            detail=f"{teacher.name or teacher.email} assigned to {batch.subject.name if batch.subject else 'Class Batch'}.",
+            action="Teaching Duty Assigned",
+            detail=f"{teacher.name or teacher.email} assigned to teach {batch.subject.name if batch.subject else 'Class Batch'}.",
             user=request.user,
-            color="bg-emerald-500"
+            color="bg-blue-500"
         )
 
         return Response({
@@ -1244,21 +1244,31 @@ class MonitoringDutyListCreateView(APIView):
         date = request.data.get('date')
         time_slot = request.data.get('time_slot')
         class_room = request.data.get('class_room')
+        class_batch_id = request.data.get('class_batch_id')
 
         try:
             teacher = User.objects.get(id=teacher_id)
+            cb = ClassBatch.objects.get(id=class_batch_id) if class_batch_id else None
+            
             MonitoringDuty.objects.create(
                 teacher=teacher,
                 assigned_by=request.user,
                 date=date,
                 time_slot=time_slot,
                 class_room=class_room,
+                class_batch=cb,
                 status='Pending'
             )
             Notification.objects.create(
                 user=teacher,
                 message=f"You have been assigned a new monitoring duty on {date} at {time_slot} in {class_room}.",
                 action_url='/teacher/dashboard'
+            )
+            TimetableActivityLog.objects.create(
+                action="Monitoring Duty Assigned",
+                detail=f"{teacher.name or teacher.email} assigned to monitor {class_room}.",
+                user=request.user,
+                color="bg-purple-500"
             )
             return Response({"success": True}, status=status.HTTP_201_CREATED)
         except Exception as e:
@@ -1269,13 +1279,21 @@ class TeacherMonitoringDutyView(APIView):
 
     def get(self, request):
         user = get_target_user(request)
-        # Fetch duties for this teacher, ordered by date
-        duties = MonitoringDuty.objects.filter(teacher=user).order_by('-date', 'time_slot')
+        # Fetch all duties for this teacher so frontend can separate active and archived
+        duties = MonitoringDuty.objects.filter(teacher=user).select_related('class_batch__subject').order_by('-date', 'time_slot')
         
         data = []
         for d in duties:
             start_time_str = d.time_slot.split('-')[0].strip() if '-' in d.time_slot else d.time_slot
             end_time_str = d.time_slot.split('-')[1].strip() if '-' in d.time_slot else ''
+            
+            c_name = "General Duty"
+            total_enrolled = 0
+            if d.class_batch:
+                sub = d.class_batch.subject
+                year = "FY" if sub.semester in ['Sem 1', 'Sem 2'] else "SY" if sub.semester in ['Sem 3', 'Sem 4'] else "TY"
+                c_name = f"{year} {sub.stream}"
+                total_enrolled = d.class_batch.enrollments.count()
             
             data.append({
                 "id": d.id,
@@ -1283,9 +1301,10 @@ class TeacherMonitoringDutyView(APIView):
                 "time_start": start_time_str,
                 "time_end": end_time_str,
                 "room": d.class_room,
-                "class_name": "General Duty",
+                "class_name": c_name,
                 "status": d.status,
-                "total_students": d.total_students_present
+                "total_students": d.total_students_present,
+                "total_enrolled": total_enrolled
             })
             
         return Response(data)
@@ -1356,6 +1375,30 @@ class FreeTeachersView(APIView):
         return Response(free_teachers)
 
 
+class MonitorClassesView(APIView):
+    permission_classes = [IsAuthenticated, IsTimetableIncharge]
+
+    def get(self, request):
+        batches = ClassBatch.objects.select_related('subject').all()
+        # To avoid showing 50 subjects for FY BCA, we can group by Stream + Semester
+        # However, the user needs to select a ClassBatch. 
+        # We'll just return unique batches, maybe the first one for each Stream/Year
+        seen = set()
+        data = []
+        for b in batches:
+            year = "FY" if b.subject.semester in ['Sem 1', 'Sem 2'] else "SY" if b.subject.semester in ['Sem 3', 'Sem 4'] else "TY"
+            key = f"{year} {b.subject.stream}"
+            if key not in seen:
+                seen.add(key)
+                # Count total enrollments for this representative batch
+                total = Enrollment.objects.filter(class_batch=b).count()
+                data.append({"id": b.id, "name": key, "total_students": total})
+                
+        # Sort data nicely
+        data.sort(key=lambda x: x['name'])
+        return Response(data)
+
+
 # ==============================================================================
 # 6. Admin Console
 # ==============================================================================
@@ -1408,34 +1451,38 @@ class AdminUsersListView(APIView):
 
     def get(self, request):
         role = request.query_params.get('role')
-        stream = request.query_params.get('stream')
-        year = request.query_params.get('year')
+        stream_filter = request.query_params.get('stream')
+        year_filter = request.query_params.get('year')
 
         from django.db.models import Prefetch
-        users_qs = User.objects.all().order_by('roll_no', '-id').prefetch_related(
+        users_qs = User.objects.all().order_by('roll_no', '-id').select_related('department', 'stream').prefetch_related(
             Prefetch('enrollment_set', queryset=Enrollment.objects.select_related('class_batch__subject'))
         )
 
         if role:
             role_title = role.capitalize()
-            if role_title in ['Student', 'Teacher', 'Admin', 'Principal']:
-                users_qs = users_qs.filter(role=role_title)
+            if role_title in ['Student', 'Teacher', 'Admin', 'Principal', 'Hods', 'Mentors']:
+                if role_title == 'Hods':
+                    users_qs = users_qs.filter(is_hod=True)
+                elif role_title == 'Mentors':
+                    users_qs = users_qs.filter(is_mentor=True)
+                else:
+                    users_qs = users_qs.filter(role=role_title)
 
         results = []
         for u in users_qs[:200]:
-            user_stream = "N/A"
+            user_stream = u.stream.name if getattr(u, 'stream', None) else "N/A"
+            user_dept = u.department.name if getattr(u, 'department', None) else "N/A"
             user_year = "N/A"
+            
             if u.role == 'Student':
                 en_list = u.enrollment_set.all()
-                if en_list:
-                    en = en_list[0]
-                    if en.class_batch.subject:
-                        user_stream = en.class_batch.subject.stream
-                        user_year = en.class_batch.subject.semester
+                if en_list and en_list[0].class_batch.subject:
+                    user_year = en_list[0].class_batch.subject.semester
 
-            if stream and stream != 'All' and user_stream != stream:
+            if stream_filter and stream_filter != 'All' and user_stream != stream_filter:
                 continue
-            if year and year != 'All' and user_year != year:
+            if year_filter and year_filter != 'All' and user_year != year_filter:
                 continue
 
             results.append({
@@ -1444,6 +1491,7 @@ class AdminUsersListView(APIView):
                 "email": u.email,
                 "roll_no": u.roll_no,
                 "role": u.role,
+                "department": user_dept,
                 "stream": user_stream,
                 "year": user_year,
                 "status": "active" if u.is_active and not u.is_archived else "inactive",
@@ -1451,6 +1499,40 @@ class AdminUsersListView(APIView):
             })
 
         return Response({"users": results})
+
+    def post(self, request):
+        from users.models import Department, Stream
+        
+        name = request.data.get('name')
+        email = request.data.get('email')
+        role = request.data.get('role', 'Student').capitalize()
+        stream_name = request.data.get('stream')
+        department_name = request.data.get('department')
+        roll_no = request.data.get('roll_no')
+
+        if not email and not roll_no:
+            return Response({"error": "Either email or roll number is required."}, status=400)
+
+        dept = None
+        if department_name:
+            dept = Department.objects.filter(name=department_name).first()
+
+        stream = None
+        if stream_name and role == 'Student':
+            stream = Stream.objects.filter(name=stream_name).first()
+
+        try:
+            user = User.objects.create_user(
+                email=email,
+                roll_no=roll_no,
+                name=name,
+                role=role,
+                department=dept,
+                stream=stream
+            )
+            return Response({"message": "User created successfully", "user_id": user.id})
+        except Exception as e:
+            return Response({"error": str(e)}, status=400)
 
 
 class AdminDeactivateUserView(APIView):
@@ -2013,3 +2095,38 @@ class AuditLogPaginationView(APIView):
             "current_page": page,
             "total_logs": total_logs
         })
+
+class MonitoringUnlockRequestView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = get_target_user(request)
+        duty_id = request.data.get("duty_id")
+        
+        try:
+            duty = MonitoringDuty.objects.get(id=duty_id, teacher=user)
+        except MonitoringDuty.DoesNotExist:
+            return Response({"error": "Monitoring duty not found."}, status=status.HTTP_404_NOT_FOUND)
+            
+        if duty.status != 'Completed':
+            return Response({"error": "Only completed duties can be unlocked."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        admins = User.objects.filter(is_superuser=True)
+        
+        notifications = []
+        for admin in admins:
+            name = user.get_full_name() or user.username
+            notifications.append(
+                Notification(
+                    user=admin, 
+                    message=f"Teacher {name} has requested to unlock monitoring duty for {duty.class_room} ({duty.time_slot}) on {duty.date}.",
+                    action_url='/admin/dashboard'
+                )
+            )
+            
+        if notifications:
+            Notification.objects.bulk_create(notifications)
+            
+        return Response({"message": "Unlock request sent to administrators."})

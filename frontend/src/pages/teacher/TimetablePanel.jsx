@@ -12,7 +12,7 @@ const TimetablePanel = ({ onBack }) => {
     uploaded_timetables: 0,
     pending_assignments: 0,
   });
-  
+
   const [filters, setFilters] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -21,10 +21,10 @@ const TimetablePanel = ({ onBack }) => {
   const [selectedStream, setSelectedStream] = useState('');
   const [selectedYear, setSelectedYear] = useState('');
   const [selectedSubject, setSelectedSubject] = useState('');
-  
+
   const [assignClass, setAssignClass] = useState('');
   const [assignTeacher, setAssignTeacher] = useState('');
-  
+
   const [assignLoading, setAssignLoading] = useState(false);
   const [assignMsg, setAssignMsg] = useState(null);
 
@@ -32,6 +32,8 @@ const TimetablePanel = ({ onBack }) => {
   const [monitorDate, setMonitorDate] = useState('');
   const [monitorTime, setMonitorTime] = useState('');
   const [monitorRoom, setMonitorRoom] = useState('');
+  const [monitorClasses, setMonitorClasses] = useState([]);
+  const [monitorSelectedClassBatch, setMonitorSelectedClassBatch] = useState('');
   const [freeTeachers, setFreeTeachers] = useState([]);
   const [selectedMonitorTeacher, setSelectedMonitorTeacher] = useState('');
   const [monitorLoading, setMonitorLoading] = useState(false);
@@ -47,9 +49,10 @@ const TimetablePanel = ({ onBack }) => {
     const fetchDashboard = async () => {
       setLoading(true);
       try {
-        const [dashRes, filterRes] = await Promise.all([
+        const [dashRes, filterRes, classesRes] = await Promise.all([
           apiClient.get('/api/timetable/dashboard/'),
-          apiClient.get('/api/timetable/filters/')
+          apiClient.get('/api/timetable/filters/'),
+          apiClient.get('/api/timetable/monitor/classes/')
         ]);
         setStats({
           total_classes_per_week: dashRes.data.total_classes_per_week ?? 0,
@@ -58,6 +61,7 @@ const TimetablePanel = ({ onBack }) => {
           pending_assignments: dashRes.data.pending_assignments ?? 0,
         });
         setFilters(filterRes.data || []);
+        setMonitorClasses(classesRes.data || []);
       } catch (err) {
         console.error('Error fetching dashboard or filters', err);
       } finally {
@@ -111,10 +115,12 @@ const TimetablePanel = ({ onBack }) => {
         teacher_id: selectedMonitorTeacher,
         date: monitorDate,
         time_slot: monitorTime,
-        class_room: monitorRoom
+        class_room: monitorRoom,
+        class_batch_id: monitorSelectedClassBatch
       });
       setMonitorMsg({ ok: true, text: 'Monitoring duty assigned!' });
       setMonitorRoom('');
+      setMonitorSelectedClassBatch('');
       setSelectedMonitorTeacher('');
       fetchActivities(1);
       setActivityPage(1);
@@ -226,7 +232,7 @@ const TimetablePanel = ({ onBack }) => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        
+
         {/* Assign Monitoring Duty */}
         <div className="lg:col-span-1 bg-slate-900/80 backdrop-blur-2xl border border-white/20 rounded-3xl p-6 shadow-2xl flex flex-col gap-4">
           <div className="flex items-center gap-3">
@@ -239,22 +245,20 @@ const TimetablePanel = ({ onBack }) => {
             <h3 className="font-bold text-white/90">Assign Monitoring</h3>
           </div>
           <p className="text-sm text-white/50 mb-2">Check availability & assign monitoring duties.</p>
-          
+
           <div>
             <label className="text-xs text-white/40 mb-1 block uppercase">Date</label>
             <input type="date" value={monitorDate} onChange={e => setMonitorDate(e.target.value)} className="w-full bg-slate-900/60 text-white/80 rounded-xl px-3 py-2 border border-white/10 outline-none focus:border-purple-500 text-sm" />
           </div>
           <div>
             <label className="text-xs text-white/40 mb-1 block uppercase">Time Slot</label>
-            <select value={monitorTime} onChange={e => setMonitorTime(e.target.value)} className="w-full bg-slate-900/60 text-white/80 rounded-xl px-3 py-2 border border-white/10 outline-none focus:border-purple-500 text-sm">
-              <option value="">— Select Slot —</option>
-              <option value="09:00 AM - 10:00 AM">09:00 AM - 10:00 AM</option>
-              <option value="10:00 AM - 11:00 AM">10:00 AM - 11:00 AM</option>
-              <option value="11:00 AM - 12:00 PM">11:00 AM - 12:00 PM</option>
-              <option value="12:00 PM - 01:00 PM">12:00 PM - 01:00 PM</option>
-              <option value="01:30 PM - 02:30 PM">01:30 PM - 02:30 PM</option>
-              <option value="02:30 PM - 03:30 PM">02:30 PM - 03:30 PM</option>
-            </select>
+            <input
+              type="text"
+              placeholder="e.g. 08:15 AM - 09:15 AM"
+              value={monitorTime}
+              onChange={e => setMonitorTime(e.target.value)}
+              className="w-full bg-slate-900/60 text-white/80 rounded-xl px-3 py-2 border border-white/10 outline-none focus:border-purple-500 text-sm"
+            />
           </div>
 
           {monitorDate && monitorTime && (
@@ -280,9 +284,18 @@ const TimetablePanel = ({ onBack }) => {
               {freeTeachers.map(t => <option key={t.id} value={t.id}>{t.name} ({t.dept})</option>)}
             </select>
           </div>
-          <div>
-            <label className="text-xs text-white/40 mb-1 block uppercase">Class Room</label>
-            <input type="text" placeholder="e.g. Lab 1" value={monitorRoom} onChange={e => setMonitorRoom(e.target.value)} className="w-full bg-slate-900/60 text-white/80 rounded-xl px-3 py-2 border border-white/10 outline-none focus:border-purple-500 text-sm" />
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="text-xs text-white/40 mb-1 block uppercase">Class</label>
+              <select value={monitorSelectedClassBatch} onChange={e => setMonitorSelectedClassBatch(e.target.value)} className="w-full bg-slate-900/60 text-white/80 rounded-xl px-3 py-2 border border-white/10 outline-none focus:border-purple-500 text-sm">
+                <option value="">— Select Class —</option>
+                {monitorClasses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-white/40 mb-1 block uppercase">Class Room</label>
+              <input type="text" placeholder="e.g. Lab 1" value={monitorRoom} onChange={e => setMonitorRoom(e.target.value)} className="w-full bg-slate-900/60 text-white/80 rounded-xl px-3 py-2 border border-white/10 outline-none focus:border-purple-500 text-sm" />
+            </div>
           </div>
 
           {monitorMsg && (
@@ -417,18 +430,18 @@ const TimetablePanel = ({ onBack }) => {
                 <p className="text-xs text-white/30 font-mono whitespace-nowrap">{r.time}</p>
               </div>
             ))}
-            
+
             <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/10">
-              <button 
-                disabled={!activityData.previous} 
+              <button
+                disabled={!activityData.previous}
                 onClick={() => setActivityPage(p => p - 1)}
                 className="px-4 py-1.5 rounded-lg text-sm font-medium bg-white/5 hover:bg-white/10 disabled:opacity-30 transition-colors text-white/70"
               >
                 Previous
               </button>
               <span className="text-white/40 text-sm font-medium">Page {activityPage}</span>
-              <button 
-                disabled={!activityData.next} 
+              <button
+                disabled={!activityData.next}
                 onClick={() => setActivityPage(p => p + 1)}
                 className="px-4 py-1.5 rounded-lg text-sm font-medium bg-white/5 hover:bg-white/10 disabled:opacity-30 transition-colors text-white/70"
               >

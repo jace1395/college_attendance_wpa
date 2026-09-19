@@ -141,6 +141,7 @@ const Settings = () => {
                 { label: 'Email', value: profile?.email, lowercase: true },
                 { label: 'Role', value: profile?.role },
                 { label: 'Department', value: profile?.department },
+                ...(profile?.stream ? [{ label: 'Stream', value: profile?.stream }] : []),
               ].map(({ label, value, lowercase }) => (
                 <div key={label}>
                   <label className="block text-xs font-semibold text-gray-500 dark:text-white/40 uppercase tracking-wider mb-1">

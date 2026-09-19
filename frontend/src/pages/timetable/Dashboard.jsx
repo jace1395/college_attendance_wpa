@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { useAuth } from "../../context/AuthContext";
+import React, { useState, useEffect } from 'react';
+import { useAuth } from '../../context/AuthContext';
+import apiClient from '../../services/apiClient';
 import { useNavigate, Link } from "react-router-dom";
 import ThemeToggle from "../../components/shared/ThemeToggle";
 // Overview-only tab — Edit, Reschedule, and Monitor have been removed per spec
@@ -52,10 +53,9 @@ const TimetableDashboard = ({ embedded = false, onBack }) => {
         })));
         
         // Fetch filters
-        const filterRes = await fetch('/api/timetable/filters/');
-        if (filterRes.ok) {
-          const filterData = await filterRes.json();
-          setFilters(filterData);
+        const filterRes = await apiClient.get('/api/timetable/filters/');
+        if (filterRes.status === 200) {
+          setFilters(filterRes.data);
         }
       } catch (e) {
         console.error("Dashboard data load error", e);
@@ -71,9 +71,9 @@ const TimetableDashboard = ({ embedded = false, onBack }) => {
     const fetchLogs = async () => {
       setLoadingLogs(true);
       try {
-        const res = await fetch(`/api/timetable/activity-log/?page=${page}`);
-        if (res.ok) {
-          const data = await res.json();
+        const res = await apiClient.get(`/api/timetable/activity-log/?page=${page}`);
+        if (res.status === 200) {
+          const data = res.data;
           setRecentActivity(data.results || []);
           setTotalPages(Math.ceil(data.count / 5) || 1);
         }
@@ -90,15 +90,11 @@ const TimetableDashboard = ({ embedded = false, onBack }) => {
     if (!selectedClass || !selectedTeacher) return;
     setAssigning(true);
     try {
-      const res = await fetch('/api/timetable/assign/', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
-        },
-        body: JSON.stringify({ class_id: selectedClass, teacher_id: selectedTeacher })
+      const res = await apiClient.post('/api/timetable/assign/', {
+        class_id: selectedClass, 
+        teacher_id: selectedTeacher
       });
-      if (res.ok) {
+      if (res.status === 200 || res.status === 201) {
         setSelectedDept("");
         setSelectedStream("");
         setSelectedYear("");

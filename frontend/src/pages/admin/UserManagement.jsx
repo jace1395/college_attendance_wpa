@@ -3,12 +3,25 @@ import apiClient from '../../services/apiClient';
 
 const YEARS   = ['FY', 'SY', 'TY'];
 const STREAMS = ['BVoc', 'BCA', 'BBA', 'BCom', 'BBA(FS)'];
+const DEPTS   = ['Computer Science', 'Finance'];
 
 const UserManagement = () => {
   const [activeSubTab, setActiveSubTab] = useState('students');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [uploadStatus, setUploadStatus] = useState(null);
+
+  // New User State
+  const [newUser, setNewUser] = useState({
+    name: '',
+    email: '',
+    role: 'student',
+    stream: '',
+    department: '',
+    year: '',
+    roll_no: ''
+  });
+  const [isCreatingUser, setIsCreatingUser] = useState(false);
 
   // Password Reset State
   const [resetModalUser, setResetModalUser] = useState(null);
@@ -117,6 +130,23 @@ const UserManagement = () => {
       setResetError(msg);
     } finally {
       setIsResetting(false);
+    }
+  };
+
+  const handleCreateUser = async (e) => {
+    e.preventDefault();
+    setIsCreatingUser(true);
+    try {
+      await apiClient.post('/api/admin/users/', newUser);
+      alert('User added successfully!');
+      setIsAddModalOpen(false);
+      setNewUser({ name: '', email: '', role: 'student', stream: '', department: '', year: '', roll_no: '' });
+      // Refresh the list by triggering a re-fetch, simple hack is to change subtab back and forth or just reload window
+      window.location.reload(); 
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to create user');
+    } finally {
+      setIsCreatingUser(false);
     }
   };
 
@@ -320,52 +350,72 @@ const UserManagement = () => {
               </button>
             </div>
 
-            <div className="p-6 flex flex-col gap-4">
-              <div>
-                <label className="block text-sm text-white/60 mb-1 ml-1">Full Name</label>
-                <input type="text" className="w-full bg-slate-900/50 text-white rounded-xl px-4 py-2.5 outline-none border border-slate-600 focus:border-blue-500" />
-              </div>
-              <div>
-                <label className="block text-sm text-white/60 mb-1 ml-1">Email Address</label>
-                <input type="email" className="w-full bg-slate-900/50 text-white rounded-xl px-4 py-2.5 outline-none border border-slate-600 focus:border-blue-500" />
-              </div>
-              <div className="grid grid-cols-2 gap-4">
+            <form onSubmit={handleCreateUser}>
+              <div className="p-6 flex flex-col gap-4">
                 <div>
-                  <label className="block text-sm text-white/60 mb-1 ml-1">Role</label>
-                  <select className="w-full bg-slate-900/50 text-white rounded-xl px-4 py-2.5 outline-none border border-slate-600 focus:border-blue-500 appearance-none">
-                    <option value="student">Student</option>
-                    <option value="teacher">Teacher</option>
-                    <option value="principal">Principal</option>
-                  </select>
+                  <label className="block text-sm text-white/60 mb-1 ml-1">Full Name</label>
+                  <input type="text" required value={newUser.name} onChange={e => setNewUser({...newUser, name: e.target.value})} className="w-full bg-slate-900/50 text-white rounded-xl px-4 py-2.5 outline-none border border-slate-600 focus:border-blue-500" />
                 </div>
                 <div>
-                  <label className="block text-sm text-white/60 mb-1 ml-1">Stream</label>
-                  <select className="w-full bg-slate-900/50 text-white rounded-xl px-4 py-2.5 outline-none border border-slate-600 focus:border-blue-500 appearance-none">
-                    <option value="">—</option>
-                    {STREAMS.map(s => <option key={s} value={s}>{s}</option>)}
-                  </select>
+                  <label className="block text-sm text-white/60 mb-1 ml-1">Email Address</label>
+                  <input type="email" value={newUser.email} onChange={e => setNewUser({...newUser, email: e.target.value})} className="w-full bg-slate-900/50 text-white rounded-xl px-4 py-2.5 outline-none border border-slate-600 focus:border-blue-500" />
+                </div>
+                <div>
+                  <label className="block text-sm text-white/60 mb-1 ml-1">Roll Number / ID</label>
+                  <input type="text" value={newUser.roll_no} onChange={e => setNewUser({...newUser, roll_no: e.target.value})} className="w-full bg-slate-900/50 text-white rounded-xl px-4 py-2.5 outline-none border border-slate-600 focus:border-blue-500" />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm text-white/60 mb-1 ml-1">Role</label>
+                    <select value={newUser.role} onChange={e => setNewUser({...newUser, role: e.target.value})} className="w-full bg-slate-900/50 text-white rounded-xl px-4 py-2.5 outline-none border border-slate-600 focus:border-blue-500 appearance-none">
+                      <option value="student">Student</option>
+                      <option value="teacher">Teacher</option>
+                      <option value="principal">Principal</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-sm text-white/60 mb-1 ml-1">Department</label>
+                    <select value={newUser.department} onChange={e => setNewUser({...newUser, department: e.target.value})} className="w-full bg-slate-900/50 text-white rounded-xl px-4 py-2.5 outline-none border border-slate-600 focus:border-blue-500 appearance-none">
+                      <option value="">—</option>
+                      {DEPTS.map(d => <option key={d} value={d}>{d}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  {newUser.role === 'student' && (
+                    <div>
+                      <label className="block text-sm text-white/60 mb-1 ml-1">Stream</label>
+                      <select value={newUser.stream} onChange={e => setNewUser({...newUser, stream: e.target.value})} className="w-full bg-slate-900/50 text-white rounded-xl px-4 py-2.5 outline-none border border-slate-600 focus:border-blue-500 appearance-none">
+                        <option value="">—</option>
+                        {STREAMS.map(s => <option key={s} value={s}>{s}</option>)}
+                      </select>
+                    </div>
+                  )}
+                  {newUser.role === 'student' && (
+                    <div>
+                      <label className="block text-sm text-white/60 mb-1 ml-1">Year</label>
+                      <select value={newUser.year} onChange={e => setNewUser({...newUser, year: e.target.value})} className="w-full bg-slate-900/50 text-white rounded-xl px-4 py-2.5 outline-none border border-slate-600 focus:border-blue-500 appearance-none">
+                        <option value="">—</option>
+                        {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+                      </select>
+                    </div>
+                  )}
                 </div>
               </div>
-              <div>
-                <label className="block text-sm text-white/60 mb-1 ml-1">Year</label>
-                <select className="w-full bg-slate-900/50 text-white rounded-xl px-4 py-2.5 outline-none border border-slate-600 focus:border-blue-500 appearance-none">
-                  <option value="">—</option>
-                  {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
-                </select>
-              </div>
-            </div>
 
-            <div className="bg-slate-900 px-6 py-4 flex justify-end gap-3 border-t border-slate-700">
-              <button onClick={() => setIsAddModalOpen(false)} className="px-4 py-2 text-white/70 hover:text-white transition-colors">
-                Cancel
-              </button>
-              <button
-                onClick={() => { alert('User added successfully!'); setIsAddModalOpen(false); }}
-                className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-xl font-bold shadow-lg transition-transform transform "
-              >
-                Save User
-              </button>
-            </div>
+              <div className="bg-slate-900 px-6 py-4 flex justify-end gap-3 border-t border-slate-700">
+                <button type="button" onClick={() => setIsAddModalOpen(false)} className="px-4 py-2 text-white/70 hover:text-white transition-colors">
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isCreatingUser}
+                  className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-xl font-bold shadow-lg transition-transform transform disabled:opacity-50"
+                >
+                  {isCreatingUser ? 'Saving...' : 'Save User'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
