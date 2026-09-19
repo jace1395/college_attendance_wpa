@@ -70,6 +70,10 @@ class Attendance(models.Model):
 
     class Meta:
         unique_together = ('class_batch', 'student', 'date', 'time_slot')
+        indexes = [
+            models.Index(fields=['class_batch', 'date']),
+            models.Index(fields=['student', 'date']),
+        ]
 
 
 class AttendanceTicket(models.Model):
@@ -90,6 +94,7 @@ class Notification(models.Model):
     objects = models.Manager()
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notifications')
     message = models.TextField()
+    action_url = models.CharField(max_length=255, null=True, blank=True)
     is_read = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -97,7 +102,7 @@ class Notification(models.Model):
 
 class MonitoringDuty(models.Model):
     objects = models.Manager()
-    STATUS_CHOICES = [('Pending', 'Pending'), ('Ongoing', 'Ongoing'), ('Empty', 'Empty')]
+    STATUS_CHOICES = [('Pending', 'Pending'), ('Ongoing', 'Ongoing'), ('Completed', 'Completed'), ('Empty', 'Empty')]
 
     teacher = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='monitoring_duties')
     assigned_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True,
@@ -106,8 +111,10 @@ class MonitoringDuty(models.Model):
     date = models.DateField()
     time_slot = models.CharField(max_length=50)
     class_room = models.CharField(max_length=50)
+    class_batch = models.ForeignKey(ClassBatch, on_delete=models.SET_NULL, null=True, blank=True)
 
     status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='Pending')
+    total_students_present = models.IntegerField(null=True, blank=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):

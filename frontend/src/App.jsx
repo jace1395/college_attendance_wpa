@@ -26,6 +26,7 @@ const SubjectDetail = lazy(() => import("./pages/student/SubjectDetail"));
 const TimeTable = lazy(() => import("./pages/student/TimeTable"));
 
 const Messages = lazy(() => import("./pages/student/Messages"));
+const Notifications = lazy(() => import("./pages/student/Notifications"));
 
 // Shared (all roles)
 const Settings = lazy(() => import("./pages/shared/Settings"));
@@ -79,6 +80,7 @@ function App() {
                 <Route path="/student/timetable" element={<TimeTable />} />
 
                 <Route path="/student/messages" element={<Messages />} />
+                <Route path="/student/notifications" element={<Notifications />} />
                 <Route path="/student/:id" element={<StudentDashboard />} />
                 {/* Keep old /student/settings path for backwards compat */}
                 <Route path="/student/settings" element={<Settings />} />

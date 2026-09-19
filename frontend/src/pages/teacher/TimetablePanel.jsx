@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import apiClient from '../../services/apiClient';
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 
 const TimetablePanel = ({ onBack }) => {
   const { user } = useAuth();
@@ -26,6 +27,15 @@ const TimetablePanel = ({ onBack }) => {
   
   const [assignLoading, setAssignLoading] = useState(false);
   const [assignMsg, setAssignMsg] = useState(null);
+
+  // Monitoring Assign States
+  const [monitorDate, setMonitorDate] = useState('');
+  const [monitorTime, setMonitorTime] = useState('');
+  const [monitorRoom, setMonitorRoom] = useState('');
+  const [freeTeachers, setFreeTeachers] = useState([]);
+  const [selectedMonitorTeacher, setSelectedMonitorTeacher] = useState('');
+  const [monitorLoading, setMonitorLoading] = useState(false);
+  const [monitorMsg, setMonitorMsg] = useState(null);
 
   // Activity Log Pagination
   const [activityPage, setActivityPage] = useState(1);
@@ -72,6 +82,48 @@ const TimetablePanel = ({ onBack }) => {
   useEffect(() => {
     fetchActivities(activityPage);
   }, [activityPage]);
+
+  useEffect(() => {
+    if (monitorDate && monitorTime) {
+      apiClient.get(`/api/timetable/free-teachers/?date=${monitorDate}&time_slot=${monitorTime}`)
+        .then(res => {
+          setFreeTeachers(res.data);
+          setSelectedMonitorTeacher('');
+        })
+        .catch(err => {
+          console.error("Failed to load free teachers", err);
+          setFreeTeachers([]);
+        });
+    } else {
+      setFreeTeachers([]);
+    }
+  }, [monitorDate, monitorTime]);
+
+  const handleMonitorAssign = async () => {
+    if (!monitorDate || !monitorTime || !monitorRoom || !selectedMonitorTeacher) {
+      setMonitorMsg({ ok: false, text: 'Please fill all fields' });
+      return;
+    }
+    setMonitorLoading(true);
+    setMonitorMsg(null);
+    try {
+      await apiClient.post('/api/timetable/monitor/assign/', {
+        teacher_id: selectedMonitorTeacher,
+        date: monitorDate,
+        time_slot: monitorTime,
+        class_room: monitorRoom
+      });
+      setMonitorMsg({ ok: true, text: 'Monitoring duty assigned!' });
+      setMonitorRoom('');
+      setSelectedMonitorTeacher('');
+      fetchActivities(1);
+      setActivityPage(1);
+    } catch (err) {
+      setMonitorMsg({ ok: false, text: 'Assignment failed' });
+    } finally {
+      setMonitorLoading(false);
+    }
+  };
 
   // Derived Options
   const deptObj = filters.find(d => d.id === parseInt(selectedDept));
@@ -130,6 +182,11 @@ const TimetablePanel = ({ onBack }) => {
     { label: 'Pending Assignments', key: 'pending_assignments', icon: 'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z', color: 'bg-red-500/10 border-red-500/30', text: 'text-red-400' },
   ];
 
+  const chartData = monitorDate && monitorTime ? [
+    { name: 'Free', value: freeTeachers.length, color: '#10b981' },
+    { name: 'Busy', value: Math.max(0, stats.active_teachers - freeTeachers.length), color: '#ef4444' }
+  ] : [];
+
   return (
     <div className="flex flex-col gap-6 pb-12">
       {/* ── Header ──────────────────────────────────────────────────────────── */}
@@ -142,11 +199,11 @@ const TimetablePanel = ({ onBack }) => {
           </div>
           <div>
             <h2 className="text-xl font-bold text-white">Timetable Incharge Panel</h2>
-            <p className="text-amber-300/70 text-sm">Upload timetables and assign teachers to class slots</p>
+            <p className="text-amber-300/70 text-sm">Upload timetables, assign teachers, and monitor duties</p>
           </div>
         </div>
         {onBack && (
-          <button onClick={onBack} className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/15 border border-white/20 text-white/80 hover:text-white rounded-xl text-sm font-medium shrink-0">
+          <button onClick={onBack} className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/15 border border-white/20 text-white/80 hover:text-white rounded-xl text-sm font-medium shrink-0 transition-colors">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
             </svg>
@@ -168,98 +225,167 @@ const TimetablePanel = ({ onBack }) => {
         ))}
       </div>
 
-      {/* ── Upload + Assign ─────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {/* Upload Card */}
-        <div className="bg-slate-900/80 backdrop-blur-2xl border border-white/20 rounded-3xl p-6 shadow-2xl flex flex-col gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* Assign Monitoring Duty */}
+        <div className="lg:col-span-1 bg-slate-900/80 backdrop-blur-2xl border border-white/20 rounded-3xl p-6 shadow-2xl flex flex-col gap-4">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-500/20 rounded-xl">
-              <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+            <div className="p-2 bg-purple-500/20 rounded-xl">
+              <svg className="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
               </svg>
             </div>
-            <h3 className="font-bold text-white/90">Upload Timetable</h3>
+            <h3 className="font-bold text-white/90">Assign Monitoring</h3>
           </div>
-          <p className="text-sm text-white/50">Upload a new timetable file for a class (Excel / CSV).</p>
-          <label className="border-2 border-dashed border-white/20 rounded-2xl p-8 text-center hover:border-blue-400/50 transition-colors cursor-pointer group">
-            <input type="file" accept=".xlsx,.csv" className="hidden" />
-            <svg className="w-10 h-10 mx-auto mb-3 text-white/30 group-hover:text-blue-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-            </svg>
-            <p className="text-white/40 text-sm group-hover:text-white/60 transition-colors">Drag & drop or click to upload</p>
-            <p className="text-white/20 text-xs mt-1">Supports .xlsx, .csv</p>
-          </label>
-          <button className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold transition-transform transform shadow-lg shadow-blue-500/20">
-            Upload File
-          </button>
-        </div>
-
-        {/* Assign Card */}
-        <div className="bg-slate-900/80 backdrop-blur-2xl border border-white/20 rounded-3xl p-6 shadow-2xl flex flex-col gap-4">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-emerald-500/20 rounded-xl">
-              <svg className="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
-              </svg>
-            </div>
-            <h3 className="font-bold text-white/90">Assign Teacher to Class</h3>
+          <p className="text-sm text-white/50 mb-2">Check availability & assign monitoring duties.</p>
+          
+          <div>
+            <label className="text-xs text-white/40 mb-1 block uppercase">Date</label>
+            <input type="date" value={monitorDate} onChange={e => setMonitorDate(e.target.value)} className="w-full bg-slate-900/60 text-white/80 rounded-xl px-3 py-2 border border-white/10 outline-none focus:border-purple-500 text-sm" />
           </div>
-          <p className="text-sm text-white/50">Link a teacher to a subject / class slot in the timetable.</p>
-
-          <div className="grid grid-cols-2 gap-3 flex-1">
-            <div>
-              <label className="text-xs text-white/40 mb-1.5 block uppercase tracking-wider">Department</label>
-              <select value={selectedDept} onChange={handleDeptChange} className="w-full bg-slate-900/60 text-white/80 rounded-xl px-3 py-2 border border-white/10 outline-none focus:border-emerald-500 text-sm">
-                <option value="">— Select Dept —</option>
-                {filters.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="text-xs text-white/40 mb-1.5 block uppercase tracking-wider">Stream</label>
-              <select value={selectedStream} onChange={handleStreamChange} disabled={!selectedDept} className="w-full bg-slate-900/60 text-white/80 rounded-xl px-3 py-2 border border-white/10 outline-none focus:border-emerald-500 text-sm disabled:opacity-50">
-                <option value="">— Select Stream —</option>
-                {streams.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="text-xs text-white/40 mb-1.5 block uppercase tracking-wider">Year</label>
-              <select value={selectedYear} onChange={handleYearChange} disabled={!selectedStream} className="w-full bg-slate-900/60 text-white/80 rounded-xl px-3 py-2 border border-white/10 outline-none focus:border-emerald-500 text-sm disabled:opacity-50">
-                <option value="">— Select Year —</option>
-                {years.map(y => <option key={y.name} value={y.name}>{y.name}</option>)}
-              </select>
-            </div>
-            <div>
-              <label className="text-xs text-white/40 mb-1.5 block uppercase tracking-wider">Subject</label>
-              <select value={selectedSubject} onChange={handleSubjectChange} disabled={!selectedYear} className="w-full bg-slate-900/60 text-white/80 rounded-xl px-3 py-2 border border-white/10 outline-none focus:border-emerald-500 text-sm disabled:opacity-50">
-                <option value="">— Select Subject —</option>
-                {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
-              </select>
-            </div>
-            <div className="col-span-2">
-              <label className="text-xs text-white/40 mb-1.5 block uppercase tracking-wider">Class / Division</label>
-              <select value={assignClass} onChange={e => setAssignClass(e.target.value)} disabled={!selectedSubject} className="w-full bg-slate-900/60 text-white/80 rounded-xl px-3 py-2 border border-white/10 outline-none focus:border-emerald-500 text-sm disabled:opacity-50">
-                <option value="">— Select Class —</option>
-                {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
-              </select>
-            </div>
-            <div className="col-span-2">
-              <label className="text-xs text-white/40 mb-1.5 block uppercase tracking-wider">Assign Teacher</label>
-              <select value={assignTeacher} onChange={e => setAssignTeacher(e.target.value)} disabled={!selectedDept} className="w-full bg-slate-900/60 text-white/80 rounded-xl px-3 py-2 border border-white/10 outline-none focus:border-emerald-500 text-sm disabled:opacity-50">
-                <option value="">— Select Teacher —</option>
-                {teachers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
-              </select>
-            </div>
+          <div>
+            <label className="text-xs text-white/40 mb-1 block uppercase">Time Slot</label>
+            <select value={monitorTime} onChange={e => setMonitorTime(e.target.value)} className="w-full bg-slate-900/60 text-white/80 rounded-xl px-3 py-2 border border-white/10 outline-none focus:border-purple-500 text-sm">
+              <option value="">— Select Slot —</option>
+              <option value="09:00 AM - 10:00 AM">09:00 AM - 10:00 AM</option>
+              <option value="10:00 AM - 11:00 AM">10:00 AM - 11:00 AM</option>
+              <option value="11:00 AM - 12:00 PM">11:00 AM - 12:00 PM</option>
+              <option value="12:00 PM - 01:00 PM">12:00 PM - 01:00 PM</option>
+              <option value="01:30 PM - 02:30 PM">01:30 PM - 02:30 PM</option>
+              <option value="02:30 PM - 03:30 PM">02:30 PM - 03:30 PM</option>
+            </select>
           </div>
 
-          {assignMsg && (
-            <p className={`text-sm font-semibold px-4 py-2 rounded-xl mt-2 ${assignMsg.ok ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'}`}>
-              {assignMsg.text}
+          {monitorDate && monitorTime && (
+            <div className="h-32 mt-2 -ml-4">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie data={chartData} cx="50%" cy="50%" innerRadius={30} outerRadius={45} dataKey="value" stroke="none" isAnimationActive={false}>
+                    {chartData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={entry.color} />
+                    ))}
+                  </Pie>
+                  <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff' }} />
+                  <Legend verticalAlign="middle" align="right" layout="vertical" iconType="circle" />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+          )}
+
+          <div>
+            <label className="text-xs text-white/40 mb-1 block uppercase">Free Teacher</label>
+            <select value={selectedMonitorTeacher} onChange={e => setSelectedMonitorTeacher(e.target.value)} disabled={!monitorDate || !monitorTime} className="w-full bg-slate-900/60 text-white/80 rounded-xl px-3 py-2 border border-white/10 outline-none focus:border-purple-500 text-sm disabled:opacity-50">
+              <option value="">— Select Free Teacher —</option>
+              {freeTeachers.map(t => <option key={t.id} value={t.id}>{t.name} ({t.dept})</option>)}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs text-white/40 mb-1 block uppercase">Class Room</label>
+            <input type="text" placeholder="e.g. Lab 1" value={monitorRoom} onChange={e => setMonitorRoom(e.target.value)} className="w-full bg-slate-900/60 text-white/80 rounded-xl px-3 py-2 border border-white/10 outline-none focus:border-purple-500 text-sm" />
+          </div>
+
+          {monitorMsg && (
+            <p className={`text-sm font-semibold px-4 py-2 rounded-xl mt-2 ${monitorMsg.ok ? 'bg-purple-500/20 text-purple-300' : 'bg-red-500/20 text-red-300'}`}>
+              {monitorMsg.text}
             </p>
           )}
 
-          <button onClick={handleAssign} disabled={assignLoading} className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white py-3 rounded-xl font-bold transition-transform transform shadow-lg shadow-emerald-500/20 mt-4">
-            {assignLoading ? 'Assigning...' : 'Assign Teacher'}
+          <button onClick={handleMonitorAssign} disabled={monitorLoading} className="w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white py-3 rounded-xl font-bold transition-colors shadow-lg shadow-purple-500/20 mt-auto">
+            {monitorLoading ? 'Assigning...' : 'Assign Duty'}
           </button>
+        </div>
+
+        {/* ── Upload + Assign Timetable ──────────────────────────────────────── */}
+        <div className="lg:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Upload Card */}
+          <div className="bg-slate-900/80 backdrop-blur-2xl border border-white/20 rounded-3xl p-6 shadow-2xl flex flex-col gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-500/20 rounded-xl">
+                <svg className="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+                </svg>
+              </div>
+              <h3 className="font-bold text-white/90">Upload Timetable</h3>
+            </div>
+            <p className="text-sm text-white/50">Upload a new timetable file for a class.</p>
+            <label className="border-2 border-dashed border-white/20 rounded-2xl p-8 text-center hover:border-blue-400/50 transition-colors cursor-pointer group mt-4">
+              <input type="file" accept=".xlsx,.csv" className="hidden" />
+              <svg className="w-10 h-10 mx-auto mb-3 text-white/30 group-hover:text-blue-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+              <p className="text-white/40 text-sm group-hover:text-white/60 transition-colors">Drag & drop to upload</p>
+            </label>
+            <button className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold transition-colors shadow-lg shadow-blue-500/20 mt-auto">
+              Upload File
+            </button>
+          </div>
+
+          {/* Assign Card */}
+          <div className="bg-slate-900/80 backdrop-blur-2xl border border-white/20 rounded-3xl p-6 shadow-2xl flex flex-col gap-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-emerald-500/20 rounded-xl">
+                <svg className="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+              </div>
+              <h3 className="font-bold text-white/90">Assign Teacher</h3>
+            </div>
+            <p className="text-sm text-white/50">Link a teacher to a subject.</p>
+
+            <div className="grid grid-cols-2 gap-3 flex-1">
+              <div>
+                <label className="text-xs text-white/40 mb-1.5 block uppercase tracking-wider">Department</label>
+                <select value={selectedDept} onChange={handleDeptChange} className="w-full bg-slate-900/60 text-white/80 rounded-xl px-3 py-2 border border-white/10 outline-none focus:border-emerald-500 text-sm">
+                  <option value="">— Select Dept —</option>
+                  {filters.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-white/40 mb-1.5 block uppercase tracking-wider">Stream</label>
+                <select value={selectedStream} onChange={handleStreamChange} disabled={!selectedDept} className="w-full bg-slate-900/60 text-white/80 rounded-xl px-3 py-2 border border-white/10 outline-none focus:border-emerald-500 text-sm disabled:opacity-50">
+                  <option value="">— Select Stream —</option>
+                  {streams.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+              </div>
+              <div className="col-span-2">
+                <label className="text-xs text-white/40 mb-1.5 block uppercase tracking-wider">Year & Subject</label>
+                <div className="flex gap-3">
+                  <select value={selectedYear} onChange={handleYearChange} disabled={!selectedStream} className="w-1/3 bg-slate-900/60 text-white/80 rounded-xl px-3 py-2 border border-white/10 outline-none focus:border-emerald-500 text-sm disabled:opacity-50">
+                    <option value="">Year</option>
+                    {years.map(y => <option key={y.name} value={y.name}>{y.name}</option>)}
+                  </select>
+                  <select value={selectedSubject} onChange={handleSubjectChange} disabled={!selectedYear} className="flex-1 bg-slate-900/60 text-white/80 rounded-xl px-3 py-2 border border-white/10 outline-none focus:border-emerald-500 text-sm disabled:opacity-50">
+                    <option value="">— Select Subject —</option>
+                    {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </select>
+                </div>
+              </div>
+              <div className="col-span-2">
+                <label className="text-xs text-white/40 mb-1.5 block uppercase tracking-wider">Class & Teacher</label>
+                <div className="flex gap-3">
+                  <select value={assignClass} onChange={e => setAssignClass(e.target.value)} disabled={!selectedSubject} className="w-1/3 bg-slate-900/60 text-white/80 rounded-xl px-3 py-2 border border-white/10 outline-none focus:border-emerald-500 text-sm disabled:opacity-50">
+                    <option value="">Class</option>
+                    {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                  </select>
+                  <select value={assignTeacher} onChange={e => setAssignTeacher(e.target.value)} disabled={!selectedDept} className="flex-1 bg-slate-900/60 text-white/80 rounded-xl px-3 py-2 border border-white/10 outline-none focus:border-emerald-500 text-sm disabled:opacity-50">
+                    <option value="">— Select Teacher —</option>
+                    {teachers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            {assignMsg && (
+              <p className={`text-sm font-semibold px-4 py-2 rounded-xl mt-2 ${assignMsg.ok ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'}`}>
+                {assignMsg.text}
+              </p>
+            )}
+
+            <button onClick={handleAssign} disabled={assignLoading} className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white py-3 rounded-xl font-bold transition-colors shadow-lg shadow-emerald-500/20 mt-auto">
+              {assignLoading ? 'Assigning...' : 'Assign'}
+            </button>
+          </div>
         </div>
       </div>
 
@@ -277,7 +403,7 @@ const TimetablePanel = ({ onBack }) => {
           </div>
         ) : activityData.results.length === 0 ? (
           <p className="text-center py-8 text-white/30 text-sm">
-            No recent activity. Timetable uploads and assignments will appear here.
+            No recent activity.
           </p>
         ) : (
           <div className="flex flex-col gap-3">

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import Layout from '../../components/shared/Layout';
 
 const TimeTable = () => {
   const [timetable, setTimetable] = useState([]);
@@ -31,31 +32,20 @@ const TimeTable = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-slate-900 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-blue-500"></div>
+      <div className="flex justify-center py-8">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
       </div>
     );
   }
 
   return (
-    <div 
-      className="min-h-screen bg-cover bg-center bg-fixed text-white pb-10"
-      style={{ backgroundImage: 'url("/imgs/login-signup.jpg")' }}
-    >
-      {/* Dark overlay with blur */}
-      <div className="fixed inset-0 bg-slate-900/70 backdrop-blur-md pointer-events-none"></div>
-
-      <div className="relative z-10 p-6 md:p-10 max-w-5xl mx-auto min-h-screen flex flex-col">
-        {/* Breadcrumb Navigation */}
-        <Link to="/student/dashboard" className="text-blue-400 hover:text-blue-300 mb-6 inline-flex items-center gap-2 font-medium w-fit">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 19l-7-7m0 0l7-7m-7 7h18"></path></svg>
-          Back to Dashboard
-        </Link>
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-3xl font-bold">Daily Timetable</h1>
-          <div className="flex items-center gap-4">
-            <Link to="/student/settings" className="px-4 py-2 bg-white/10 hover:bg-white/20 rounded-xl transition-colors border border-white/20 text-sm font-medium">Settings</Link>
-          </div>
+    <Layout>
+      <div className="max-w-4xl mx-auto">
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Daily Timetable</h1>
+          <Link to="/student/dashboard" className="px-4 py-2 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 rounded-lg text-sm transition-colors border border-gray-200 dark:border-slate-700">
+            Back to Dashboard
+          </Link>
         </div>
         
         {isPastSixPM ? (
@@ -95,7 +85,7 @@ const TimeTable = () => {
         )}
 
       </div>
-    </div>
+    </Layout>
   );
 };
 

@@ -1,24 +1,84 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 
 const DAYS = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
 const PERIODS = ["8:00-9:00", "9:00-10:00", "10:00-11:00", "11:15-12:15", "12:15-1:15", "2:00-3:00", "3:00-4:00"];
-const SUBJECTS = ["Accountancy", "Economics", "Business Law", "Mathematics", "Data Structures", "Cloud Computing", "Web Development", "Marketing", "Finance", "HR Management", "Banking", "Financial Markets"];
-
-const TEACHERS_DATA = [];
-
 const DOT_COLORS = ["bg-violet-400", "bg-sky-400", "bg-emerald-400", "bg-amber-400", "bg-rose-400", "bg-cyan-400"];
 
 const TeacherMonitor = () => {
   const [search, setSearch] = useState("");
   const [dayFilter, setDay] = useState("All");
   const [selected, setSelected] = useState(null);
+  
+  const [teachersData, setTeachersData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Assignment states
+  const [assignDate, setAssignDate] = useState(new Date().toISOString().split('T')[0]);
+  const [assignSlot, setAssignSlot] = useState(PERIODS[0]);
+  const [assignRoom, setAssignRoom] = useState("");
+  const [assigning, setAssigning] = useState(false);
+
+  useEffect(() => {
+    const fetchTeachers = async () => {
+      setLoading(true);
+      try {
+        const token = localStorage.getItem('access_token');
+        const res = await fetch('/api/timetable/monitor/teachers/', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setTeachersData(data);
+        }
+      } catch (err) {
+        console.error("Error fetching teachers data", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchTeachers();
+  }, []);
+
+  const handleAssign = async () => {
+    if (!selected || !assignDate || !assignSlot || !assignRoom) {
+      alert("Please fill all assignment fields");
+      return;
+    }
+    setAssigning(true);
+    try {
+      const token = localStorage.getItem('access_token');
+      const res = await fetch('/api/timetable/monitor/assign/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          teacher_id: selected.id,
+          date: assignDate,
+          time_slot: assignSlot,
+          class_room: assignRoom
+        })
+      });
+      if (res.ok) {
+        alert("Monitoring duty assigned successfully!");
+        setAssignRoom("");
+      } else {
+        alert("Failed to assign duty.");
+      }
+    } catch (e) {
+      alert("Error occurred.");
+    } finally {
+      setAssigning(false);
+    }
+  };
 
   const filtered = useMemo(() => {
-    return TEACHERS_DATA.filter(t => {
+    return teachersData.filter(t => {
       const matchSearch = t.name.toLowerCase().includes(search.toLowerCase()) || t.dept.toLowerCase().includes(search.toLowerCase());
       return matchSearch;
     });
-  }, [search]);
+  }, [search, teachersData]);
 
   const totalPeriods = t => Object.values(t.schedule).reduce((s, a) => s + a.length, 0);
   const dayPeriods = (t, d) => t.schedule[d] || [];
@@ -27,8 +87,8 @@ const TeacherMonitor = () => {
     <div className="flex flex-col gap-5 ">
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
-          <h3 className="text-sm font-bold text-white/90">Teacher Monir</h3>
-          <p className="text-xs text-white/40 mt-0.5">Assigned Teacher a class to Monitor</p>
+          <h3 className="text-sm font-bold text-white/90">Teacher Monitor</h3>
+          <p className="text-xs text-white/40 mt-0.5">Assign Teachers a class to Monitor</p>
         </div>
         <div className="flex gap-3 flex-wrap">
           <div className="relative">
@@ -44,88 +104,110 @@ const TeacherMonitor = () => {
         </div>
       </div>
 
-      {/* Summary Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-        {TEACHERS_DATA.map((t, i) => {
-          const total = totalPeriods(t);
-          const dLoad = dayFilter !== "All" ? dayPeriods(t, dayFilter).length : total;
-          const busyPct = Math.round((total / (DAYS.length * PERIODS.length)) * 100);
-          return (
-            <button key={t.id} onClick={() => setSelected(selected?.id === t.id ? null : t)}
-              className={"rounded-2xl p-4 border text-left  " + (selected?.id === t.id ? "bg-blue-600/20 border-blue-500/40" : "bg-white/5 border-white/10 hover:bg-white/8 hover:border-white/20")}>
-              <div className={"w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold mb-2 " + DOT_COLORS[i % DOT_COLORS.length] + "/20"}>
-                <span className={DOT_COLORS[i % DOT_COLORS.length].replace("bg-", "text-")}>{t.name.split(" ").map(w => w[0]).slice(1, 3).join("")}</span>
-              </div>
-              <p className="font-bold text-white/80 text-xs leading-tight truncate">{t.name.split(" ").slice(1).join(" ")}</p>
-              <p className="text-white/40 text-xs truncate">{t.dept}</p>
-              <p className={"text-xs font-bold mt-2 " + (dayFilter !== "All" ? (dLoad > 3 ? "text-red-400" : "text-green-400") : "text-white/60")}>
-                {dayFilter !== "All" ? dLoad + " period" + (dLoad !== 1 ? "s" : "") + " today" : total + " total periods"}
-              </p>
-            </button>
-          );
-        })}
-      </div>
+      {loading ? (
+        <div className="flex justify-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+        </div>
+      ) : (
+        <>
+          {/* Summary Cards */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            {teachersData.map((t, i) => {
+              const total = totalPeriods(t);
+              const dLoad = dayFilter !== "All" ? dayPeriods(t, dayFilter).length : total;
+              return (
+                <button key={t.id} onClick={() => setSelected(selected?.id === t.id ? null : t)}
+                  className={"rounded-2xl p-4 border text-left  " + (selected?.id === t.id ? "bg-blue-600/20 border-blue-500/40" : "bg-white/5 border-white/10 hover:bg-white/8 hover:border-white/20")}>
+                  <div className={"w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold mb-2 " + DOT_COLORS[i % DOT_COLORS.length] + "/20"}>
+                    <span className={DOT_COLORS[i % DOT_COLORS.length].replace("bg-", "text-")}>{t.name.split(" ").map(w => w[0]).slice(0, 2).join("")}</span>
+                  </div>
+                  <p className="font-bold text-white/80 text-xs leading-tight truncate">{t.name}</p>
+                  <p className="text-white/40 text-xs truncate">{t.dept}</p>
+                  <p className={"text-xs font-bold mt-2 " + (dayFilter !== "All" ? (dLoad > 3 ? "text-red-400" : "text-green-400") : "text-white/60")}>
+                    {dayFilter !== "All" ? dLoad + " period" + (dLoad !== 1 ? "s" : "") + " today" : total + " total periods"}
+                  </p>
+                </button>
+              );
+            })}
+          </div>
 
-      {/* Detail Table */}
-      <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden shadow-xl">
-        <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between">
-          <h3 className="text-sm font-bold text-white/80">
-            {selected ? selected.name + " — Schedule" : "All Teachers — Weekly Schedule"}
-          </h3>
-          {selected && <button onClick={() => setSelected(null)} className="text-xs text-white/40 hover:text-white transition-colors">Show all</button>}
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-xs text-left">
-            <thead>
-              <tr className="bg-white/5 text-white/40 text-xs uppercase tracking-wider">
-                <th className="px-4 py-3 min-w-[140px]">Teacher</th>
-                {(dayFilter !== "All" ? [dayFilter] : DAYS).map(d => (
-                  <th key={d} className="px-3 py-3 min-w-[100px]">{d}</th>
-                ))}
-                <th className="px-4 py-3 text-right">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {(selected ? [selected] : filtered).map((t, ti) => (
-                <tr key={t.id} className={"border-t border-white/5 " + (selected?.id === t.id ? "bg-blue-600/5" : "hover:bg-white/5 transition-colors")}>
-                  <td className="px-4 py-3">
-                    <p className="font-bold text-white/80 text-xs">{t.name.split(" ").slice(0, 2).join(" ")}</p>
-                    <p className="text-white/40 text-xs">{t.dept}</p>
-                  </td>
-                  {(dayFilter !== "All" ? [dayFilter] : DAYS).map(d => {
-                    const slots = dayPeriods(t, d);
-                    const heavy = slots.length >= 4;
-                    return (
-                      <td key={d} className="px-3 py-3">
-                        {slots.length > 0 ? (
-                          <div className="flex flex-col gap-1">
-                            {slots.map(s => (
-                              <span key={s} className={"text-xs px-1.5 py-0.5 rounded font-medium " + (heavy ? "bg-red-500/20 text-red-300" : "bg-blue-500/15 text-blue-300")}>
-                                {s}
-                              </span>
-                            ))}
-                          </div>
-                        ) : (
-                          <span className="text-white/20">—</span>
-                        )}
+          {/* Assignment Panel when a teacher is selected */}
+          {selected && (
+            <div className="bg-blue-900/20 border border-blue-500/30 rounded-2xl p-4 shadow-xl flex flex-col md:flex-row items-center gap-4">
+              <div className="flex-1">
+                <h4 className="text-sm font-bold text-white mb-1">Assign Duty to {selected.name}</h4>
+                <p className="text-xs text-blue-300/70">Select the date, time slot, and room for the monitoring duty.</p>
+              </div>
+              <div className="flex flex-wrap gap-2 items-center">
+                <input type="date" value={assignDate} onChange={e => setAssignDate(e.target.value)} className="bg-slate-900 text-white/80 rounded-lg px-3 py-1.5 border border-white/10 text-xs outline-none focus:border-blue-500" />
+                <select value={assignSlot} onChange={e => setAssignSlot(e.target.value)} className="bg-slate-900 text-white/80 rounded-lg px-3 py-1.5 border border-white/10 text-xs outline-none focus:border-blue-500">
+                  {PERIODS.map(p => <option key={p} value={p}>{p}</option>)}
+                </select>
+                <input type="text" value={assignRoom} onChange={e => setAssignRoom(e.target.value)} placeholder="Room No" className="bg-slate-900 text-white/80 rounded-lg px-3 py-1.5 border border-white/10 text-xs w-24 outline-none focus:border-blue-500" />
+                <button onClick={handleAssign} disabled={assigning || !assignRoom} className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-4 py-1.5 rounded-lg text-xs font-bold shadow-lg shadow-blue-500/20 transition-colors">
+                  {assigning ? "Assigning..." : "Assign"}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Detail Table */}
+          <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden shadow-xl">
+            <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between">
+              <h3 className="text-sm font-bold text-white/80">
+                {selected ? selected.name + " — Schedule" : "All Teachers — Weekly Schedule"}
+              </h3>
+              {selected && <button onClick={() => setSelected(null)} className="text-xs text-white/40 hover:text-white transition-colors">Show all</button>}
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-xs text-left">
+                <thead>
+                  <tr className="bg-white/5 text-white/40 text-xs uppercase tracking-wider">
+                    <th className="px-4 py-3 min-w-[140px]">Teacher</th>
+                    {(dayFilter !== "All" ? [dayFilter] : DAYS).map(d => (
+                      <th key={d} className="px-3 py-3 min-w-[100px]">{d}</th>
+                    ))}
+                    <th className="px-4 py-3 text-right">Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {(selected ? [selected] : filtered).map((t, ti) => (
+                    <tr key={t.id} className={"border-t border-white/5 " + (selected?.id === t.id ? "bg-blue-600/5" : "hover:bg-white/5 transition-colors")}>
+                      <td className="px-4 py-3">
+                        <p className="font-bold text-white/80 text-xs">{t.name}</p>
+                        <p className="text-white/40 text-xs">{t.dept}</p>
                       </td>
-                    );
-                  })}
-                  <td className="px-4 py-3 text-right">
-                    <span className={"font-bold text-sm " + (totalPeriods(t) >= 20 ? "text-red-400" : "text-green-400")}>{totalPeriods(t)}</span>
-                    <span className="text-white/30 text-xs"> / {DAYS.length * PERIODS.length}</span>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-        <div className="px-5 py-3 border-t border-white/10 flex gap-4 text-xs text-white/40">
-          <span className="flex items-center gap-1.5"><span className="inline-block w-2.5 h-2.5 rounded-sm bg-blue-500/30"></span>Normal load</span>
-          <span className="flex items-center gap-1.5"><span className="inline-block w-2.5 h-2.5 rounded-sm bg-red-500/30"></span>Heavy load (4+ periods/day)</span>
-          <span className="flex items-center gap-1.5 ml-auto"><strong className="text-green-400">20+</strong> total = overloaded</span>
-        </div>
-      </div>
+                      {(dayFilter !== "All" ? [dayFilter] : DAYS).map(d => {
+                        const slots = dayPeriods(t, d);
+                        const heavy = slots.length >= 4;
+                        return (
+                          <td key={d} className="px-3 py-3">
+                            {slots.length > 0 ? (
+                              <div className="flex flex-col gap-1">
+                                {slots.map(s => (
+                                  <span key={s} className={"text-xs px-1.5 py-0.5 rounded font-medium " + (heavy ? "bg-red-500/20 text-red-300" : "bg-blue-500/15 text-blue-300")}>
+                                    {s}
+                                  </span>
+                                ))}
+                              </div>
+                            ) : (
+                              <span className="text-white/20">—</span>
+                            )}
+                          </td>
+                        );
+                      })}
+                      <td className="px-4 py-3 text-right">
+                        <span className={"font-bold text-sm " + (totalPeriods(t) >= 20 ? "text-red-400" : "text-green-400")}>{totalPeriods(t)}</span>
+                        <span className="text-white/30 text-xs"> / {DAYS.length * PERIODS.length}</span>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </>
+      )}
     </div>
   );
 };

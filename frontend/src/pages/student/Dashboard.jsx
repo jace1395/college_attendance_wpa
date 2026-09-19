@@ -155,13 +155,15 @@ const StudentDashboard = () => {
               <div className="flex justify-center w-full">
                 <div className="flex flex-wrap items-center justify-center gap-1 p-1 bg-gray-100 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl">
                   <Link to="/student/timetable" className="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700/50">Timetable</Link>
+                  <Link to="/student/notifications" className="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700/50">Notifications</Link>
+                  <a href="#subjects" className="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700/50">Subjects</a>
                 </div>
               </div>
             </div>
           )}
 
           {/* Subjects Grid */}
-          <h3 className="text-2xl font-semibold mb-6 text-gray-900 dark:text-white">Your Classes</h3>
+          <h3 id="subjects" className="text-2xl font-semibold mb-6 text-gray-900 dark:text-white pt-4">Your Classes</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-10">
             {subjects && subjects.length > 0 ? subjects.map((subject) => (
               <Link

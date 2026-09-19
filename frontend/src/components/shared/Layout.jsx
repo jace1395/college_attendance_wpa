@@ -42,8 +42,9 @@ const Layout = ({ children }) => {
 
           {/* ── Global Header ── */}
           <header className="flex flex-wrap justify-between items-center mb-8 gap-4">
-            <h1 className="text-2xl font-bold tracking-wider text-gray-900 dark:text-white">
-              SDCCE | <span className="text-blue-500 dark:text-blue-400">ATTENDANCE</span>
+            <h1 className="flex items-center gap-3 text-2xl font-bold tracking-wider text-gray-900 dark:text-white">
+              <img src="/imgs/Logo.jpg" alt="Logo" className="w-10 h-10 rounded-full object-cover" />
+              Attendance <span className="text-blue-500 dark:text-blue-400">SDCCE</span>
             </h1>
 
             <div className="flex items-center gap-3">

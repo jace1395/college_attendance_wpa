@@ -13,12 +13,33 @@ const apiClient = axios.create({
 // ---------------------------------------------------------------------------
 // Request Interceptor — attach Bearer token from localStorage
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Simple GET Cache
+// ---------------------------------------------------------------------------
+const cache = new Map();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 apiClient.interceptors.request.use(
   (config) => {
     const accessToken = localStorage.getItem('access_token');
     if (accessToken) {
       config.headers['Authorization'] = `Bearer ${accessToken}`;
     }
+
+    if (config.method === 'get') {
+      const cached = cache.get(config.url);
+      if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+        config.adapter = () => Promise.resolve({
+          data: cached.data,
+          status: 200,
+          statusText: 'OK',
+          headers: {},
+          config,
+          request: {}
+        });
+      }
+    }
+
     return config;
   },
   (error) => Promise.reject(error)
@@ -42,7 +63,18 @@ const processQueue = (error, token = null) => {
 };
 
 apiClient.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    if (response.config.method === 'get') {
+      cache.set(response.config.url, {
+        data: response.data,
+        timestamp: Date.now()
+      });
+    } else if (['post', 'put', 'patch', 'delete'].includes(response.config.method?.toLowerCase())) {
+      // Invalidate all cache on mutations for full state consistency
+      cache.clear();
+    }
+    return response;
+  },
   async (error) => {
     const originalRequest = error.config;
 

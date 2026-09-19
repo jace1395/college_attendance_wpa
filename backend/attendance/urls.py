@@ -25,6 +25,10 @@ from .views import (
     TimetableAssignView,
     TimetableActivityLogView,
     TimetableFiltersAPIView,
+    MonitoringTeacherWorkloadView,
+    MonitoringDutyListCreateView,
+    TeacherMonitoringDutyView,
+    FreeTeachersView,
     
     # Admin Views
     AdminDashboardView,
@@ -84,6 +88,10 @@ urlpatterns = [
     path('api/timetable/assign/', TimetableAssignView.as_view(), name='timetable-assign'),
     path('api/timetable/activity-log/', TimetableActivityLogView.as_view(), name='timetable-activity-log'),
     path('api/timetable/filters/', TimetableFiltersAPIView.as_view(), name='timetable-filters'),
+    path('api/timetable/monitor/teachers/', MonitoringTeacherWorkloadView.as_view(), name='timetable-monitor-teachers'),
+    path('api/timetable/monitor/assign/', MonitoringDutyListCreateView.as_view(), name='timetable-monitor-assign'),
+    path('api/timetable/free-teachers/', FreeTeachersView.as_view(), name='timetable-free-teachers'),
+    path('api/teacher/monitoring/duties/', TeacherMonitoringDutyView.as_view(), name='teacher-monitoring-duties'),
 
     # --------------------------------------------------------------------------
     # 5. Admin Console

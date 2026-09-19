@@ -17,6 +17,21 @@ const TimetableDashboard = ({ embedded = false, onBack }) => {
   const [stats, setStats] = useState(STATS);
   const [recentActivity, setRecentActivity] = useState([]);
   const [loading, setLoading] = useState(true);
+  
+  // Filtering & Assign state
+  const [filters, setFilters] = useState([]);
+  const [selectedDept, setSelectedDept] = useState("");
+  const [selectedStream, setSelectedStream] = useState("");
+  const [selectedYear, setSelectedYear] = useState("");
+  const [selectedSubject, setSelectedSubject] = useState("");
+  const [selectedClass, setSelectedClass] = useState("");
+  const [selectedTeacher, setSelectedTeacher] = useState("");
+  const [assigning, setAssigning] = useState(false);
+
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [loadingLogs, setLoadingLogs] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -26,7 +41,6 @@ const TimetableDashboard = ({ embedded = false, onBack }) => {
         const res = await fetch(`/api/timetable/dashboard/?email=${user.email}`);
         if (!res.ok) throw new Error();
         const data = await res.json();
-        // Populate stats from API
         setStats(prev => prev.map((s, i) => ({
           ...s,
           value: [
@@ -36,15 +50,83 @@ const TimetableDashboard = ({ embedded = false, onBack }) => {
             data.pending_assignments,
           ][i] ?? 0
         })));
-        setRecentActivity(data.recent_activity || []);
-      } catch {
-        setRecentActivity([]);
+        
+        // Fetch filters
+        const filterRes = await fetch('/api/timetable/filters/');
+        if (filterRes.ok) {
+          const filterData = await filterRes.json();
+          setFilters(filterData);
+        }
+      } catch (e) {
+        console.error("Dashboard data load error", e);
       } finally {
         setLoading(false);
       }
     };
     fetchData();
   }, [user]);
+
+  useEffect(() => {
+    if (!user) return;
+    const fetchLogs = async () => {
+      setLoadingLogs(true);
+      try {
+        const res = await fetch(`/api/timetable/activity-log/?page=${page}`);
+        if (res.ok) {
+          const data = await res.json();
+          setRecentActivity(data.results || []);
+          setTotalPages(Math.ceil(data.count / 5) || 1);
+        }
+      } catch (e) {
+        setRecentActivity([]);
+      } finally {
+        setLoadingLogs(false);
+      }
+    };
+    fetchLogs();
+  }, [user, page]);
+
+  const handleAssign = async () => {
+    if (!selectedClass || !selectedTeacher) return;
+    setAssigning(true);
+    try {
+      const res = await fetch('/api/timetable/assign/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem('access_token')}`
+        },
+        body: JSON.stringify({ class_id: selectedClass, teacher_id: selectedTeacher })
+      });
+      if (res.ok) {
+        setSelectedDept("");
+        setSelectedStream("");
+        setSelectedYear("");
+        setSelectedSubject("");
+        setSelectedClass("");
+        setSelectedTeacher("");
+        setPage(1); // Reset page to trigger log refresh
+        alert('Assigned successfully!');
+      } else {
+        alert('Assignment failed.');
+      }
+    } catch (e) {
+      alert('Error occurred.');
+    } finally {
+      setAssigning(false);
+    }
+  };
+
+  // Derived filter options based on selection
+  const deptData = filters.find(d => d.id == selectedDept);
+  const currentStreams = deptData ? deptData.streams : [];
+  const streamData = currentStreams.find(s => s.id == selectedStream);
+  const currentYears = streamData ? streamData.years : [];
+  const yearData = currentYears.find(y => y.name === selectedYear);
+  const currentSubjects = yearData ? yearData.subjects : [];
+  const subjectData = currentSubjects.find(s => s.id == selectedSubject);
+  const currentClasses = subjectData ? subjectData.classes : [];
+  const currentTeachers = deptData ? deptData.teachers : [];
 
   // When embedded inside TeacherDashboard, render as a clean panel
   if (embedded) {
@@ -194,7 +276,7 @@ const TimetableDashboard = ({ embedded = false, onBack }) => {
               <p className="text-white/40 text-sm">Drag & drop or click to upload</p>
               <p className="text-white/20 text-xs mt-1">Supports .xlsx, .csv</p>
             </div>
-            <button className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold transition-transform transform  shadow-lg shadow-blue-500/20">
+            <button className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold transition-transform transform shadow-lg shadow-blue-500/20">
               Upload File
             </button>
           </div>
@@ -211,36 +293,111 @@ const TimetableDashboard = ({ embedded = false, onBack }) => {
             </div>
             <p className="text-sm text-white/50">Link a teacher to a subject/class slot in the timetable.</p>
 
-            <div className="flex flex-col gap-3">
+            <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="text-xs text-white/40 mb-1 block">Select Class</label>
-                <select className="w-full bg-slate-900/60 text-white/80 rounded-xl px-4 py-2.5 border border-white/10 outline-none focus:border-emerald-500 text-sm appearance-none">
-                  <option value="">— Select a class —</option>
-                  {/* Populated from API */}
+                <label className="text-xs text-white/40 mb-1 block">Department</label>
+                <select 
+                  value={selectedDept} onChange={e => { setSelectedDept(e.target.value); setSelectedStream(""); setSelectedYear(""); setSelectedSubject(""); setSelectedClass(""); setSelectedTeacher(""); }}
+                  className="w-full bg-slate-900/60 text-white/80 rounded-xl px-4 py-2 border border-white/10 outline-none focus:border-emerald-500 text-sm appearance-none"
+                >
+                  <option value="">— Select Dept —</option>
+                  {filters.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
                 </select>
               </div>
               <div>
-                <label className="text-xs text-white/40 mb-1 block">Select Teacher</label>
-                <select className="w-full bg-slate-900/60 text-white/80 rounded-xl px-4 py-2.5 border border-white/10 outline-none focus:border-emerald-500 text-sm appearance-none">
-                  <option value="">— Select a teacher —</option>
-                  {/* Populated from API */}
+                <label className="text-xs text-white/40 mb-1 block">Stream</label>
+                <select 
+                  value={selectedStream} onChange={e => { setSelectedStream(e.target.value); setSelectedYear(""); setSelectedSubject(""); setSelectedClass(""); setSelectedTeacher(""); }}
+                  className="w-full bg-slate-900/60 text-white/80 rounded-xl px-4 py-2 border border-white/10 outline-none focus:border-emerald-500 text-sm appearance-none"
+                  disabled={!selectedDept}
+                >
+                  <option value="">— Select Stream —</option>
+                  {currentStreams.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-white/40 mb-1 block">Year</label>
+                <select 
+                  value={selectedYear} onChange={e => { setSelectedYear(e.target.value); setSelectedSubject(""); setSelectedClass(""); setSelectedTeacher(""); }}
+                  className="w-full bg-slate-900/60 text-white/80 rounded-xl px-4 py-2 border border-white/10 outline-none focus:border-emerald-500 text-sm appearance-none"
+                  disabled={!selectedStream}
+                >
+                  <option value="">— Select Year —</option>
+                  {currentYears.map(y => <option key={y.name} value={y.name}>{y.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-white/40 mb-1 block">Subject</label>
+                <select 
+                  value={selectedSubject} onChange={e => { setSelectedSubject(e.target.value); setSelectedClass(""); setSelectedTeacher(""); }}
+                  className="w-full bg-slate-900/60 text-white/80 rounded-xl px-4 py-2 border border-white/10 outline-none focus:border-emerald-500 text-sm appearance-none"
+                  disabled={!selectedYear}
+                >
+                  <option value="">— Select Subject —</option>
+                  {currentSubjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-white/40 mb-1 block">Class</label>
+                <select 
+                  value={selectedClass} onChange={e => setSelectedClass(e.target.value)}
+                  className="w-full bg-slate-900/60 text-white/80 rounded-xl px-4 py-2 border border-white/10 outline-none focus:border-emerald-500 text-sm appearance-none"
+                  disabled={!selectedSubject}
+                >
+                  <option value="">— Select Class —</option>
+                  {currentClasses.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs text-white/40 mb-1 block">Teacher</label>
+                <select 
+                  value={selectedTeacher} onChange={e => setSelectedTeacher(e.target.value)}
+                  className="w-full bg-slate-900/60 text-white/80 rounded-xl px-4 py-2 border border-white/10 outline-none focus:border-emerald-500 text-sm appearance-none"
+                  disabled={!selectedClass}
+                >
+                  <option value="">— Select Teacher —</option>
+                  {currentTeachers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
                 </select>
               </div>
             </div>
 
-            <button className="w-full bg-emerald-600 hover:bg-emerald-500 text-white py-3 rounded-xl font-bold transition-transform transform  shadow-lg shadow-emerald-500/20 mt-auto">
-              Assign
+            <button 
+              onClick={handleAssign}
+              disabled={!selectedClass || !selectedTeacher || assigning}
+              className={`w-full py-3 rounded-xl font-bold transition-transform transform shadow-lg mt-auto ${
+                !selectedClass || !selectedTeacher || assigning 
+                ? 'bg-slate-700 text-white/50 cursor-not-allowed' 
+                : 'bg-emerald-600 hover:bg-emerald-500 text-white shadow-emerald-500/20'
+              }`}
+            >
+              {assigning ? 'Assigning...' : 'Assign'}
             </button>
           </div>
         </div>
 
         {/* Recent Activity */}
         <div className="bg-white/5 border border-white/10 rounded-2xl p-5 shadow-xl">
-          <h3 className="text-sm font-bold text-white/80 mb-4 flex items-center gap-2">
-            <svg className="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            Recent Activity
-          </h3>
-          {loading ? (
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-bold text-white/80 flex items-center gap-2">
+              <svg className="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              Recent Activity
+            </h3>
+            <div className="flex gap-2">
+              <button 
+                disabled={page === 1 || loadingLogs}
+                onClick={() => setPage(p => p - 1)}
+                className="px-2 py-1 bg-white/10 rounded hover:bg-white/20 disabled:opacity-50 text-xs text-white"
+              >Prev</button>
+              <span className="text-xs text-white/50 py-1">Page {page} of {totalPages}</span>
+              <button 
+                disabled={page === totalPages || loadingLogs}
+                onClick={() => setPage(p => p + 1)}
+                className="px-2 py-1 bg-white/10 rounded hover:bg-white/20 disabled:opacity-50 text-xs text-white"
+              >Next</button>
+            </div>
+          </div>
+          
+          {loadingLogs ? (
             <div className="flex justify-center py-8">
               <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-amber-400"></div>
             </div>
@@ -252,7 +409,7 @@ const TimetableDashboard = ({ embedded = false, onBack }) => {
             <div className="flex flex-col gap-3">
               {recentActivity.map((r, i) => (
                 <div key={i} className="flex items-center gap-4 p-3 bg-slate-900/40 rounded-xl border border-white/5 hover:bg-white/5 transition-colors">
-                  <span className={"w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-lg " + (r.color || "bg-amber-500")} />
+                  <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 shadow-lg ${r.color || "bg-amber-500"}`} />
                   <div className="flex-1">
                     <p className="text-sm font-semibold text-white/80">{r.action}</p>
                     <p className="text-xs text-white/40">{r.detail}</p>

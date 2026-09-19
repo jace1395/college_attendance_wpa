@@ -597,19 +597,10 @@ html.light .bg-slate-800\/90.text-white {
   color: #0f172a !important;
 }
 
-/* Animations */
-@keyframes fade-in-up {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.animate-fade-in-up {
-  animation: fade-in-up 0.35s ease-out both;
+/* GLOBAL DE-ANIMATION */
+* {
+  transition: none !important;
+  animation: none !important;
+  --tw-scale-x: 1 !important;
+  --tw-scale-y: 1 !important;
 }

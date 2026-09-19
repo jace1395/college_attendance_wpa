@@ -271,6 +271,7 @@ class StudentNotificationsView(APIView):
                 "message": n.message,
                 "type": notif_type,
                 "read": n.is_read,
+                "action_url": n.action_url,
                 "timestamp": n.created_at.strftime('%b %d, %Y %I:%M %p')
             })
 
@@ -588,6 +589,27 @@ class MarkAttendanceView(APIView):
             Attendance.objects.bulk_create(records_to_create)
         if records_to_update:
             Attendance.objects.bulk_update(records_to_update, ['status', 'marked_by'])
+
+        # Notification Triggers
+        notifications_to_create = []
+        action_url = f"/student/subject/{batch.id}"
+        
+        for record in records_to_create:
+            notifications_to_create.append(Notification(
+                user=record.student,
+                message=f"You have been marked {record.status} for {batch.subject.name} on {att_date}.",
+                action_url=action_url
+            ))
+            
+        for record in records_to_update:
+            notifications_to_create.append(Notification(
+                user=record.student,
+                message=f"Your attendance for {batch.subject.name} on {att_date} was updated to {record.status}.",
+                action_url=action_url
+            ))
+            
+        if notifications_to_create:
+            Notification.objects.bulk_create(notifications_to_create)
 
         from users.services import log_audit
         log_audit(request.user, "Marked Attendance", f"Marked attendance for {batch.subject.name} on {att_date}")
@@ -1181,7 +1203,161 @@ class TimetableAssignView(APIView):
 
 
 # ==============================================================================
-# 5. Admin Views
+# 5. Monitoring Features
+# ==============================================================================
+
+class MonitoringTeacherWorkloadView(APIView):
+    permission_classes = [IsAuthenticated, IsTimetableIncharge]
+
+    def get(self, request):
+        # Fetch all teachers
+        teachers = User.objects.filter(role__in=['Teacher', 'HOD'], is_active=True).select_related('department')
+        
+        # Calculate daily workloads from Timetable
+        timetables = Timetable.objects.select_related('class_batch__teacher').all()
+        
+        # Also fetch monitoring duties assigned
+        monitoring_duties = MonitoringDuty.objects.all()
+
+        data = []
+        for t in teachers:
+            t_schedules = [tt for tt in timetables if getattr(tt.class_batch, 'teacher_id', None) == t.id]
+            schedule_map = {}
+            for day, _ in Timetable.DAYS_OF_WEEK:
+                day_slots = [tt.start_time.strftime('%I:%M %p') + '-' + tt.end_time.strftime('%I:%M %p') for tt in t_schedules if tt.day_of_week == day]
+                schedule_map[day] = day_slots
+                
+            data.append({
+                "id": t.id,
+                "name": t.name or t.email,
+                "dept": t.department.name if t.department else "General",
+                "schedule": schedule_map
+            })
+            
+        return Response(data)
+
+class MonitoringDutyListCreateView(APIView):
+    permission_classes = [IsAuthenticated, IsTimetableIncharge]
+
+    def post(self, request):
+        teacher_id = request.data.get('teacher_id')
+        date = request.data.get('date')
+        time_slot = request.data.get('time_slot')
+        class_room = request.data.get('class_room')
+
+        try:
+            teacher = User.objects.get(id=teacher_id)
+            MonitoringDuty.objects.create(
+                teacher=teacher,
+                assigned_by=request.user,
+                date=date,
+                time_slot=time_slot,
+                class_room=class_room,
+                status='Pending'
+            )
+            Notification.objects.create(
+                user=teacher,
+                message=f"You have been assigned a new monitoring duty on {date} at {time_slot} in {class_room}.",
+                action_url='/teacher/dashboard'
+            )
+            return Response({"success": True}, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            return Response({"error": str(e)}, status=status.HTTP_400_BAD_REQUEST)
+
+class TeacherMonitoringDutyView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = get_target_user(request)
+        # Fetch duties for this teacher, ordered by date
+        duties = MonitoringDuty.objects.filter(teacher=user).order_by('-date', 'time_slot')
+        
+        data = []
+        for d in duties:
+            start_time_str = d.time_slot.split('-')[0].strip() if '-' in d.time_slot else d.time_slot
+            end_time_str = d.time_slot.split('-')[1].strip() if '-' in d.time_slot else ''
+            
+            data.append({
+                "id": d.id,
+                "date": d.date.isoformat(),
+                "time_start": start_time_str,
+                "time_end": end_time_str,
+                "room": d.class_room,
+                "class_name": "General Duty",
+                "status": d.status,
+                "total_students": d.total_students_present
+            })
+            
+        return Response(data)
+
+    def post(self, request):
+        user = get_target_user(request)
+        duty_id = request.data.get('duty_id')
+        total_students = request.data.get('total_students_present')
+
+        try:
+            duty = MonitoringDuty.objects.get(id=duty_id, teacher=user)
+            duty.total_students_present = total_students
+            duty.status = 'Completed'
+            duty.save()
+            return Response({"success": True})
+        except MonitoringDuty.DoesNotExist:
+            return Response({"error": "Duty not found."}, status=status.HTTP_404_NOT_FOUND)
+
+
+class FreeTeachersView(APIView):
+    permission_classes = [IsAuthenticated, IsTimetableIncharge]
+
+    def get(self, request):
+        date = request.query_params.get('date')
+        time_slot = request.query_params.get('time_slot')
+        
+        if not date or not time_slot:
+            return Response({"error": "date and time_slot are required"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        import datetime
+        try:
+            date_obj = datetime.datetime.strptime(date, '%Y-%m-%d').date()
+        except ValueError:
+            return Response({"error": "Invalid date format. Use YYYY-MM-DD"}, status=status.HTTP_400_BAD_REQUEST)
+            
+        day_of_week = date_obj.strftime('%A')
+        
+        start_time_str = time_slot.split('-')[0].strip() if '-' in time_slot else time_slot
+        try:
+            start_time = datetime.datetime.strptime(start_time_str, '%I:%M %p').time()
+        except ValueError:
+            start_time = None
+        
+        all_teachers = User.objects.filter(role__in=['Teacher', 'HOD'], is_active=True).select_related('department')
+        
+        busy_timetable = Timetable.objects.filter(
+            day_of_week=day_of_week,
+            start_time=start_time,
+            class_batch__teacher__isnull=False
+        ).values_list('class_batch__teacher_id', flat=True) if start_time else []
+        
+        busy_monitoring = MonitoringDuty.objects.filter(
+            date=date,
+            time_slot=time_slot
+        ).values_list('teacher_id', flat=True)
+        
+        busy_teacher_ids = set(list(busy_timetable) + list(busy_monitoring))
+        
+        free_teachers = []
+        for t in all_teachers:
+            if t.id not in busy_teacher_ids:
+                free_teachers.append({
+                    "id": t.id,
+                    "name": t.name or t.email,
+                    "dept": t.department.name if getattr(t, 'department', None) else "General"
+                })
+                
+        return Response(free_teachers)
+
+
+# ==============================================================================
+# 6. Admin Console
 # ==============================================================================
 
 class AdminDashboardView(APIView):

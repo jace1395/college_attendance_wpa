@@ -91,8 +91,18 @@ const HODDashboard = ({ onBack }) => {
   }, [period, startDate, endDate]);
 
   // ── Fetch Detailed Class Stats ────────────────────────────────────────────
+  // Simple cache to prevent re-fetching when switching tabs
+  const cacheKey = `${selectedClass}_${period}_${startDate}_${endDate}`;
+  const [classCache, setClassCache] = useState({});
+
   useEffect(() => {
     if (!selectedClass) return;
+    
+    if (classCache[cacheKey]) {
+      setClassDataDetails(prev => ({ ...prev, [selectedClass]: classCache[cacheKey] }));
+      return;
+    }
+
     const fetchClass = async () => {
       setLoadingClass(true);
       try {
@@ -104,6 +114,7 @@ const HODDashboard = ({ onBack }) => {
         }
         const { data } = await apiClient.get('/api/teacher/hod/class-stats/', { params });
         setClassDataDetails(prev => ({ ...prev, [selectedClass]: data }));
+        setClassCache(prev => ({ ...prev, [cacheKey]: data }));
       } catch {
         setClassDataDetails(prev => ({ ...prev, [selectedClass]: { total: 0, present: 0, absent: 0, students: [] } }));
       } finally {
@@ -111,7 +122,7 @@ const HODDashboard = ({ onBack }) => {
       }
     };
     fetchClass();
-  }, [selectedClass, period, startDate, endDate]);
+  }, [selectedClass, period, startDate, endDate, cacheKey]);
 
   const currentDetail = selectedClass ? (classDataDetails[selectedClass] || null) : null;
 
@@ -475,8 +486,8 @@ const HODDashboard = ({ onBack }) => {
                           contentStyle={{ backgroundColor: '#0f172a', borderColor: 'rgba(255,255,255,0.1)', borderRadius: '12px', color: '#fff' }}
                           itemStyle={{ color: '#e2e8f0' }}
                         />
-                        <Area type="monotone" dataKey="present" name="Present" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorPresent)" />
-                        <Area type="monotone" dataKey="absent" name="Absent" stroke="#ef4444" strokeWidth={3} fillOpacity={1} fill="url(#colorAbsent)" />
+                        <Area type="monotone" dataKey="present" name="Present" stroke="#10b981" strokeWidth={3} fillOpacity={1} fill="url(#colorPresent)" isAnimationActive={false} />
+                        <Area type="monotone" dataKey="absent" name="Absent" stroke="#ef4444" strokeWidth={3} fillOpacity={1} fill="url(#colorAbsent)" isAnimationActive={false} />
                       </AreaChart>
                     </ResponsiveContainer>
                   </div>
