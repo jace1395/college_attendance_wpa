@@ -23,6 +23,8 @@ from .views import (
     # Timetable Views
     TimetableDashboardView,
     TimetableAssignView,
+    TimetableActivityLogView,
+    TimetableFiltersAPIView,
     
     # Admin Views
     AdminDashboardView,
@@ -80,6 +82,8 @@ urlpatterns = [
     # --------------------------------------------------------------------------
     path('api/timetable/dashboard/', TimetableDashboardView.as_view(), name='timetable-dashboard'),
     path('api/timetable/assign/', TimetableAssignView.as_view(), name='timetable-assign'),
+    path('api/timetable/activity-log/', TimetableActivityLogView.as_view(), name='timetable-activity-log'),
+    path('api/timetable/filters/', TimetableFiltersAPIView.as_view(), name='timetable-filters'),
 
     # --------------------------------------------------------------------------
     # 5. Admin Console

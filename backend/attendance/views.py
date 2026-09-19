@@ -14,16 +14,18 @@ from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated, BasePermission
 from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.pagination import PageNumberPagination
 
 # import pandas as pd
 
 from .models import (
     Subject, ClassBatch, Enrollment, Attendance,
     AttendanceTicket, Notification, MonitoringDuty, Timetable,
-    StreamChoices, SemesterChoices
+    StreamChoices, SemesterChoices, TimetableActivityLog
 )
 from .services import generate_attendance_report, process_timetable_upload
 from users.services import process_user_upload
+from users.models import Department, Stream
 
 User = get_user_model()
 
@@ -884,7 +886,7 @@ class MenteeReportAPIView(APIView):
         enrollments = Enrollment.objects.filter(student=mentee).select_related('class_batch__subject')
         
         enroll_batch_ids = [en.class_batch_id for en in enrollments]
-        att_counts = base_qs.filter(class_batch_id__in=enroll_batch_ids).values('class_batch_id').annotate(
+        att_counts = base_qs.order_by().filter(class_batch_id__in=enroll_batch_ids).values('class_batch_id').annotate(
             sub_total=Count('id'),
             sub_present=Count('id', filter=Q(status='Present'))
         )
@@ -972,7 +974,7 @@ class HODStudentReportAPIView(APIView):
         enrollments = Enrollment.objects.filter(student=mentee).select_related('class_batch__subject')
         
         enroll_batch_ids = [en.class_batch_id for en in enrollments]
-        att_counts = base_qs.filter(class_batch_id__in=enroll_batch_ids).values('class_batch_id').annotate(
+        att_counts = base_qs.order_by().filter(class_batch_id__in=enroll_batch_ids).values('class_batch_id').annotate(
             sub_total=Count('id'),
             sub_present=Count('id', filter=Q(status='Present'))
         )
@@ -1047,44 +1049,97 @@ class TimetableDashboardView(APIView):
         uploaded_timetables = Timetable.objects.values('class_batch').distinct().count()
         pending_assignments = ClassBatch.objects.filter(teacher__isnull=True).count()
 
-        # Class options for assignment dropdown
-        batches = ClassBatch.objects.select_related('subject').all()
-        classes_data = [
-            {
-                "id": b.id,
-                "name": f"{b.subject.name} ({b.subject.stream} {b.subject.semester})" if b.subject else f"Class #{b.id}"
-            }
-            for b in batches
-        ]
-
-        # Teachers list for assignment dropdown
-        teachers_qs = User.objects.filter(role__in=['Teacher', 'HOD'], is_active=True)
-        teachers_data = [
-            {
-                "id": t.id,
-                "name": t.name or t.email,
-                "email": t.email
-            }
-            for t in teachers_qs
-        ]
-
-        recent_activity = [
-            {
-                "id": 1,
-                "action": "Timetable schedule synced",
-                "timestamp": timezone.now().strftime('%Y-%m-%d %H:%M')
-            }
-        ]
-
         return Response({
             "total_classes_per_week": total_classes_week,
             "active_teachers": active_teachers,
             "uploaded_timetables": uploaded_timetables,
             "pending_assignments": pending_assignments,
-            "classes": classes_data,
-            "teachers": teachers_data,
-            "recent_activity": recent_activity
         })
+
+
+class TimetableActivityPagination(PageNumberPagination):
+    page_size = 5
+    page_size_query_param = 'page_size'
+    max_page_size = 50
+
+class TimetableActivityLogView(APIView):
+    permission_classes = [IsAuthenticated, IsTimetableIncharge]
+    
+    def get(self, request):
+        logs = TimetableActivityLog.objects.select_related('user').order_by('-created_at')
+        paginator = TimetableActivityPagination()
+        paginated_logs = paginator.paginate_queryset(logs, request, view=self)
+        
+        data = [
+            {
+                "id": log.id,
+                "action": log.action,
+                "detail": log.detail,
+                "time": log.created_at.strftime('%Y-%m-%d %I:%M %p'),
+                "color": log.color
+            }
+            for log in paginated_logs
+        ]
+        return paginator.get_paginated_response(data)
+
+
+class TimetableFiltersAPIView(APIView):
+    permission_classes = [IsAuthenticated, IsTimetableIncharge]
+
+    def get(self, request):
+        departments = Department.objects.prefetch_related('stream_set').all()
+        
+        data = []
+        all_subjects = list(Subject.objects.prefetch_related('classes').all())
+        all_teachers = list(User.objects.filter(role__in=['Teacher', 'HOD'], is_active=True).select_related('department'))
+        
+        for dept in departments:
+            dept_data = {
+                "id": dept.id,
+                "name": dept.name,
+                "teachers": [{"id": t.id, "name": t.name or t.email} for t in all_teachers if getattr(t, 'department_id', None) == dept.id],
+                "streams": []
+            }
+            
+            for stream in dept.stream_set.all():
+                stream_data = {
+                    "id": stream.id,
+                    "name": stream.name,
+                    "years": []
+                }
+                
+                years_map = {
+                    "FY": ["Sem 1", "Sem 2"],
+                    "SY": ["Sem 3", "Sem 4"],
+                    "TY": ["Sem 5", "Sem 6"]
+                }
+                
+                for year_name, sems in years_map.items():
+                    year_subjects = []
+                    for sub in all_subjects:
+                        if sub.stream == stream.name and sub.semester in sems:
+                            classes_data = [
+                                {"id": cls.id, "name": f"{sub.name} - Div {cls.division}" if cls.division else f"{sub.name} (Class #{cls.id})"}
+                                for cls in sub.classes.all()
+                            ]
+                            if classes_data:
+                                year_subjects.append({
+                                    "id": sub.id,
+                                    "name": sub.name,
+                                    "classes": classes_data
+                                })
+                    
+                    if year_subjects:
+                        stream_data["years"].append({
+                            "name": year_name,
+                            "subjects": year_subjects
+                        })
+                        
+                dept_data["streams"].append(stream_data)
+                
+            data.append(dept_data)
+            
+        return Response(data)
 
 
 class TimetableAssignView(APIView):
@@ -1109,6 +1164,13 @@ class TimetableAssignView(APIView):
         Notification.objects.create(
             user=teacher,
             message=f"You have been assigned as the teacher for {batch.subject.name if batch.subject else 'Class Batch'}."
+        )
+        
+        TimetableActivityLog.objects.create(
+            action="Teacher Assigned",
+            detail=f"{teacher.name or teacher.email} assigned to {batch.subject.name if batch.subject else 'Class Batch'}.",
+            user=request.user,
+            color="bg-emerald-500"
         )
 
         return Response({

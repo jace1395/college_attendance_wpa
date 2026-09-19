@@ -2,10 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import apiClient from '../../services/apiClient';
 
-// TimetablePanel renders as an EMBEDDED TAB inside TeacherDashboard.
-// It is shown ONLY if the teacher is assigned as Timetable Incharge.
-// There is NO separate login or route for this — it is an extension tab,
-// exactly like HOD or Mentor panels.
 const TimetablePanel = ({ onBack }) => {
   const { user } = useAuth();
 
@@ -15,41 +11,96 @@ const TimetablePanel = ({ onBack }) => {
     uploaded_timetables: 0,
     pending_assignments: 0,
   });
-  const [classes, setClasses] = useState([]); // available classes
-  const [teachers, setTeachers] = useState([]); // available teachers
-  const [recentActivity, setRecentActivity] = useState([]);
+  
+  const [filters, setFilters] = useState([]);
   const [loading, setLoading] = useState(true);
 
+  // Cascading Selection States
+  const [selectedDept, setSelectedDept] = useState('');
+  const [selectedStream, setSelectedStream] = useState('');
+  const [selectedYear, setSelectedYear] = useState('');
+  const [selectedSubject, setSelectedSubject] = useState('');
+  
   const [assignClass, setAssignClass] = useState('');
   const [assignTeacher, setAssignTeacher] = useState('');
+  
   const [assignLoading, setAssignLoading] = useState(false);
   const [assignMsg, setAssignMsg] = useState(null);
 
+  // Activity Log Pagination
+  const [activityPage, setActivityPage] = useState(1);
+  const [activityData, setActivityData] = useState({ results: [], next: null, previous: null });
+  const [activityLoading, setActivityLoading] = useState(false);
+
   useEffect(() => {
     if (!user) return;
-    const fetchData = async () => {
+    const fetchDashboard = async () => {
       setLoading(true);
       try {
-        const { data } = await apiClient.get('/api/timetable/dashboard/');
+        const [dashRes, filterRes] = await Promise.all([
+          apiClient.get('/api/timetable/dashboard/'),
+          apiClient.get('/api/timetable/filters/')
+        ]);
         setStats({
-          total_classes_per_week: data.total_classes_per_week ?? 0,
-          active_teachers: data.active_teachers ?? 0,
-          uploaded_timetables: data.uploaded_timetables ?? 0,
-          pending_assignments: data.pending_assignments ?? 0,
+          total_classes_per_week: dashRes.data.total_classes_per_week ?? 0,
+          active_teachers: dashRes.data.active_teachers ?? 0,
+          uploaded_timetables: dashRes.data.uploaded_timetables ?? 0,
+          pending_assignments: dashRes.data.pending_assignments ?? 0,
         });
-        setClasses(data.classes || []);
-        setTeachers(data.teachers || []);
-        setRecentActivity(data.recent_activity || []);
-      } catch {
-        setClasses([]);
-        setTeachers([]);
-        setRecentActivity([]);
+        setFilters(filterRes.data || []);
+      } catch (err) {
+        console.error('Error fetching dashboard or filters', err);
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
+    fetchDashboard();
   }, [user]);
+
+  const fetchActivities = async (page) => {
+    setActivityLoading(true);
+    try {
+      const { data } = await apiClient.get(`/api/timetable/activity-log/?page=${page}`);
+      setActivityData(data);
+    } catch {
+      setActivityData({ results: [], next: null, previous: null });
+    } finally {
+      setActivityLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchActivities(activityPage);
+  }, [activityPage]);
+
+  // Derived Options
+  const deptObj = filters.find(d => d.id === parseInt(selectedDept));
+  const streams = deptObj?.streams || [];
+  const streamObj = streams.find(s => s.id === parseInt(selectedStream));
+  const years = streamObj?.years || [];
+  const yearObj = years.find(y => y.name === selectedYear);
+  const subjects = yearObj?.subjects || [];
+  const subjectObj = subjects.find(s => s.id === parseInt(selectedSubject));
+  const classes = subjectObj?.classes || [];
+  const teachers = deptObj?.teachers || [];
+
+  // Reset downstream selections when a parent changes
+  const handleDeptChange = (e) => {
+    setSelectedDept(e.target.value);
+    setSelectedStream(''); setSelectedYear(''); setSelectedSubject(''); setAssignClass(''); setAssignTeacher('');
+  };
+  const handleStreamChange = (e) => {
+    setSelectedStream(e.target.value);
+    setSelectedYear(''); setSelectedSubject(''); setAssignClass('');
+  };
+  const handleYearChange = (e) => {
+    setSelectedYear(e.target.value);
+    setSelectedSubject(''); setAssignClass('');
+  };
+  const handleSubjectChange = (e) => {
+    setSelectedSubject(e.target.value);
+    setAssignClass('');
+  };
 
   const handleAssign = async () => {
     if (!assignClass || !assignTeacher) {
@@ -63,6 +114,8 @@ const TimetablePanel = ({ onBack }) => {
       setAssignMsg({ ok: true, text: 'Teacher assigned successfully!' });
       setAssignClass('');
       setAssignTeacher('');
+      fetchActivities(1);
+      setActivityPage(1);
     } catch {
       setAssignMsg({ ok: false, text: 'Assignment failed. Please try again.' });
     } finally {
@@ -78,8 +131,7 @@ const TimetablePanel = ({ onBack }) => {
   ];
 
   return (
-    <div className=" flex flex-col gap-6">
-
+    <div className="flex flex-col gap-6 pb-12">
       {/* ── Header ──────────────────────────────────────────────────────────── */}
       <div className="bg-amber-900/10 border border-amber-500/20 rounded-3xl p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
@@ -94,10 +146,7 @@ const TimetablePanel = ({ onBack }) => {
           </div>
         </div>
         {onBack && (
-          <button
-            onClick={onBack}
-            className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/15 border border-white/20 text-white/80 hover:text-white rounded-xl  text-sm font-medium shrink-0"
-          >
+          <button onClick={onBack} className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/15 border border-white/20 text-white/80 hover:text-white rounded-xl text-sm font-medium shrink-0">
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
             </svg>
@@ -121,7 +170,6 @@ const TimetablePanel = ({ onBack }) => {
 
       {/* ── Upload + Assign ─────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
         {/* Upload Card */}
         <div className="bg-slate-900/80 backdrop-blur-2xl border border-white/20 rounded-3xl p-6 shadow-2xl flex flex-col gap-4">
           <div className="flex items-center gap-3">
@@ -133,7 +181,6 @@ const TimetablePanel = ({ onBack }) => {
             <h3 className="font-bold text-white/90">Upload Timetable</h3>
           </div>
           <p className="text-sm text-white/50">Upload a new timetable file for a class (Excel / CSV).</p>
-
           <label className="border-2 border-dashed border-white/20 rounded-2xl p-8 text-center hover:border-blue-400/50 transition-colors cursor-pointer group">
             <input type="file" accept=".xlsx,.csv" className="hidden" />
             <svg className="w-10 h-10 mx-auto mb-3 text-white/30 group-hover:text-blue-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -142,8 +189,7 @@ const TimetablePanel = ({ onBack }) => {
             <p className="text-white/40 text-sm group-hover:text-white/60 transition-colors">Drag & drop or click to upload</p>
             <p className="text-white/20 text-xs mt-1">Supports .xlsx, .csv</p>
           </label>
-
-          <button className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold transition-transform transform  shadow-lg shadow-blue-500/20">
+          <button className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-bold transition-transform transform shadow-lg shadow-blue-500/20">
             Upload File
           </button>
         </div>
@@ -160,47 +206,59 @@ const TimetablePanel = ({ onBack }) => {
           </div>
           <p className="text-sm text-white/50">Link a teacher to a subject / class slot in the timetable.</p>
 
-          <div className="flex flex-col gap-3 flex-1">
+          <div className="grid grid-cols-2 gap-3 flex-1">
             <div>
-              <label className="text-xs text-white/40 mb-1.5 block uppercase tracking-wider">Select Class</label>
-              <select
-                value={assignClass}
-                onChange={e => setAssignClass(e.target.value)}
-                className="w-full bg-slate-900/60 text-white/80 rounded-xl px-4 py-2.5 border border-white/10 outline-none focus:border-emerald-500 text-sm appearance-none"
-              >
-                <option value="">— Select a class —</option>
-                {classes.map(c => (
-                  <option key={c.id} value={c.id}>{c.name}</option>
-                ))}
+              <label className="text-xs text-white/40 mb-1.5 block uppercase tracking-wider">Department</label>
+              <select value={selectedDept} onChange={handleDeptChange} className="w-full bg-slate-900/60 text-white/80 rounded-xl px-3 py-2 border border-white/10 outline-none focus:border-emerald-500 text-sm">
+                <option value="">— Select Dept —</option>
+                {filters.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
               </select>
             </div>
             <div>
-              <label className="text-xs text-white/40 mb-1.5 block uppercase tracking-wider">Select Teacher</label>
-              <select
-                value={assignTeacher}
-                onChange={e => setAssignTeacher(e.target.value)}
-                className="w-full bg-slate-900/60 text-white/80 rounded-xl px-4 py-2.5 border border-white/10 outline-none focus:border-emerald-500 text-sm appearance-none"
-              >
-                <option value="">— Select a teacher —</option>
-                {teachers.map(t => (
-                  <option key={t.id} value={t.id}>{t.name}</option>
-                ))}
+              <label className="text-xs text-white/40 mb-1.5 block uppercase tracking-wider">Stream</label>
+              <select value={selectedStream} onChange={handleStreamChange} disabled={!selectedDept} className="w-full bg-slate-900/60 text-white/80 rounded-xl px-3 py-2 border border-white/10 outline-none focus:border-emerald-500 text-sm disabled:opacity-50">
+                <option value="">— Select Stream —</option>
+                {streams.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-white/40 mb-1.5 block uppercase tracking-wider">Year</label>
+              <select value={selectedYear} onChange={handleYearChange} disabled={!selectedStream} className="w-full bg-slate-900/60 text-white/80 rounded-xl px-3 py-2 border border-white/10 outline-none focus:border-emerald-500 text-sm disabled:opacity-50">
+                <option value="">— Select Year —</option>
+                {years.map(y => <option key={y.name} value={y.name}>{y.name}</option>)}
+              </select>
+            </div>
+            <div>
+              <label className="text-xs text-white/40 mb-1.5 block uppercase tracking-wider">Subject</label>
+              <select value={selectedSubject} onChange={handleSubjectChange} disabled={!selectedYear} className="w-full bg-slate-900/60 text-white/80 rounded-xl px-3 py-2 border border-white/10 outline-none focus:border-emerald-500 text-sm disabled:opacity-50">
+                <option value="">— Select Subject —</option>
+                {subjects.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+              </select>
+            </div>
+            <div className="col-span-2">
+              <label className="text-xs text-white/40 mb-1.5 block uppercase tracking-wider">Class / Division</label>
+              <select value={assignClass} onChange={e => setAssignClass(e.target.value)} disabled={!selectedSubject} className="w-full bg-slate-900/60 text-white/80 rounded-xl px-3 py-2 border border-white/10 outline-none focus:border-emerald-500 text-sm disabled:opacity-50">
+                <option value="">— Select Class —</option>
+                {classes.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+              </select>
+            </div>
+            <div className="col-span-2">
+              <label className="text-xs text-white/40 mb-1.5 block uppercase tracking-wider">Assign Teacher</label>
+              <select value={assignTeacher} onChange={e => setAssignTeacher(e.target.value)} disabled={!selectedDept} className="w-full bg-slate-900/60 text-white/80 rounded-xl px-3 py-2 border border-white/10 outline-none focus:border-emerald-500 text-sm disabled:opacity-50">
+                <option value="">— Select Teacher —</option>
+                {teachers.map(t => <option key={t.id} value={t.id}>{t.name}</option>)}
               </select>
             </div>
           </div>
 
           {assignMsg && (
-            <p className={`text-sm font-semibold px-4 py-2 rounded-xl ${assignMsg.ok ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'}`}>
+            <p className={`text-sm font-semibold px-4 py-2 rounded-xl mt-2 ${assignMsg.ok ? 'bg-emerald-500/20 text-emerald-300' : 'bg-red-500/20 text-red-300'}`}>
               {assignMsg.text}
             </p>
           )}
 
-          <button
-            onClick={handleAssign}
-            disabled={assignLoading}
-            className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white py-3 rounded-xl font-bold transition-transform transform  shadow-lg shadow-emerald-500/20 mt-auto"
-          >
-            {assignLoading ? 'Assigning...' : 'Assign'}
+          <button onClick={handleAssign} disabled={assignLoading} className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white py-3 rounded-xl font-bold transition-transform transform shadow-lg shadow-emerald-500/20 mt-4">
+            {assignLoading ? 'Assigning...' : 'Assign Teacher'}
           </button>
         </div>
       </div>
@@ -213,17 +271,17 @@ const TimetablePanel = ({ onBack }) => {
           </svg>
           Recent Activity
         </h3>
-        {loading ? (
+        {activityLoading ? (
           <div className="flex justify-center py-8">
             <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-amber-400"></div>
           </div>
-        ) : recentActivity.length === 0 ? (
+        ) : activityData.results.length === 0 ? (
           <p className="text-center py-8 text-white/30 text-sm">
             No recent activity. Timetable uploads and assignments will appear here.
           </p>
         ) : (
           <div className="flex flex-col gap-3">
-            {recentActivity.map((r, i) => (
+            {activityData.results.map((r, i) => (
               <div key={i} className="flex items-center gap-4 p-3 bg-slate-900/40 rounded-xl border border-white/5 hover:bg-white/5 transition-colors">
                 <span className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${r.color || 'bg-amber-500'}`} />
                 <div className="flex-1">
@@ -233,6 +291,24 @@ const TimetablePanel = ({ onBack }) => {
                 <p className="text-xs text-white/30 font-mono whitespace-nowrap">{r.time}</p>
               </div>
             ))}
+            
+            <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/10">
+              <button 
+                disabled={!activityData.previous} 
+                onClick={() => setActivityPage(p => p - 1)}
+                className="px-4 py-1.5 rounded-lg text-sm font-medium bg-white/5 hover:bg-white/10 disabled:opacity-30 transition-colors text-white/70"
+              >
+                Previous
+              </button>
+              <span className="text-white/40 text-sm font-medium">Page {activityPage}</span>
+              <button 
+                disabled={!activityData.next} 
+                onClick={() => setActivityPage(p => p + 1)}
+                className="px-4 py-1.5 rounded-lg text-sm font-medium bg-white/5 hover:bg-white/10 disabled:opacity-30 transition-colors text-white/70"
+              >
+                Next
+              </button>
+            </div>
           </div>
         )}
       </div>

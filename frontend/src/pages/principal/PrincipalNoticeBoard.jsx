@@ -54,7 +54,11 @@ const PrincipalNoticeBoard = () => {
                 >
                 <div className="flex justify-between items-center">
                     <span>Inbox</span>
-                    <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">1</span>
+                    {messages.filter(m => m.type === 'inbox' && !m.read).length > 0 && (
+                      <span className="bg-blue-500 text-white text-xs px-2 py-0.5 rounded-full">
+                        {messages.filter(m => m.type === 'inbox' && !m.read).length}
+                      </span>
+                    )}
                 </div>
                 </button>
                 <button 

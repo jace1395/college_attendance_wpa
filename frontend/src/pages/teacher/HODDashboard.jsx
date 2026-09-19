@@ -1,7 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import apiClient from '../../services/apiClient';
-import PrincipalNoticeBoard from '../principal/PrincipalNoticeBoard';
 import StudentAttendanceModal from '../../components/shared/StudentAttendanceModal';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer } from 'recharts';
 
@@ -199,6 +198,18 @@ const HODDashboard = ({ onBack }) => {
     return { total, present, absent, pct: total ? ((present / total) * 100).toFixed(1) : '0' };
   }, [overviewData]);
 
+  const getAttColor = (pct) => {
+    if (pct >= 85) return 'text-emerald-400';
+    if (pct >= 75) return 'text-amber-400';
+    return 'text-rose-400';
+  };
+
+  const getBarColor = (pct) => {
+    if (pct >= 85) return 'from-emerald-500 to-green-400';
+    if (pct >= 75) return 'from-amber-500 to-yellow-400';
+    return 'from-rose-500 to-red-400';
+  };
+
   if (selectedStudent) {
     return (
       <StudentAttendanceModal 
@@ -246,7 +257,6 @@ const HODDashboard = ({ onBack }) => {
         {[
           { key: 'overview', label: 'Overview' },
           { key: 'class',    label: 'Class View' },
-          { key: 'notices',  label: 'Notices' },
         ].map(tab => (
           <button
             key={tab.key}
@@ -501,12 +511,12 @@ const HODDashboard = ({ onBack }) => {
                           <td className="px-5 py-3 text-green-400 font-bold">{s.attended}</td>
                           <td className="px-5 py-3 text-slate-600 dark:text-white/60">{s.total}</td>
                           <td className="px-5 py-3">
-                            <span className={`text-sm font-extrabold ${pct >= 75 ? 'text-green-400' : 'text-red-400'}`}>{pct}%</span>
+                            <span className={`text-sm font-extrabold ${getAttColor(pct)}`}>{pct}%</span>
                           </td>
-                          <td className="px-5 py-3">
+                          <td className="px-5 py-3 text-right">
                             <button 
                               onClick={(e) => { e.stopPropagation(); setSelectedStudent(s.id); }}
-                              className="text-xs px-4 py-1.5 bg-slate-200/50 dark:bg-white/5 hover:bg-slate-400/50 dark:bg-white/20 border border-slate-300/60 dark:border-white/10 rounded-lg font-semibold transition-colors shadow-sm"
+                              className="px-3 py-1 bg-emerald-600/20 hover:bg-emerald-600/40 text-emerald-300 hover:text-white rounded-lg text-xs font-bold border border-emerald-500/20"
                             >
                               View
                             </button>
@@ -521,10 +531,6 @@ const HODDashboard = ({ onBack }) => {
           ) : null}
         </div>
       )}
-
-      {/* ── NOTICES TAB ─────────────────────────────────────────────────────── */}
-      {activeTab === 'notices' && <PrincipalNoticeBoard />}
-
     </div>
   );
 };

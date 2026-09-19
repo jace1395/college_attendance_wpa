@@ -610,6 +610,6 @@ html.light .bg-slate-800\/90.text-white {
   }
 }
 
-. {
+.animate-fade-in-up {
   animation: fade-in-up 0.35s ease-out both;
 }

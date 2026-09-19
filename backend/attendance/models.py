@@ -131,3 +131,18 @@ class Timetable(models.Model):
 
     def __str__(self):
         return f"{self.class_batch.subject.name} - {self.day_of_week} ({self.start_time})"
+
+
+class TimetableActivityLog(models.Model):
+    objects = models.Manager()
+    
+    action = models.CharField(max_length=255)
+    detail = models.TextField()
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    color = models.CharField(max_length=50, default='bg-amber-500') # Stores the tailwind color for the timeline UI
+
+    def __str__(self):
+        return f"{self.action} by {self.user} at {self.created_at}"
+
+
