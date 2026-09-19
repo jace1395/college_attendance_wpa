@@ -13,11 +13,19 @@ const AdminDashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [auditFilter, setAuditFilter] = useState('All');
-  
+
   const [auditLogs, setAuditLogs] = useState([]);
   const [auditCurrentPage, setAuditCurrentPage] = useState(1);
   const [auditTotalPages, setAuditTotalPages] = useState(1);
   const [auditLoading, setAuditLoading] = useState(false);
+
+  const [showYearModal, setShowYearModal] = useState(false);
+  const [newYearInput, setNewYearInput] = useState('');
+  const [creatingYear, setCreatingYear] = useState(false);
+
+  const [showBackupModal, setShowBackupModal] = useState(false);
+  const [backupFormat, setBackupFormat] = useState('excel');
+  const [isDownloading, setIsDownloading] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -43,7 +51,7 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     if (!user) return;
-    
+
     const fetchAuditLogs = async () => {
       setAuditLoading(true);
       try {
@@ -56,17 +64,68 @@ const AdminDashboard = () => {
         setAuditLoading(false);
       }
     };
-    
+
     fetchAuditLogs();
   }, [user, auditCurrentPage, auditFilter]);
 
-  const handleManualBackup = () => {
-    alert(`Triggering backup for Academic Year ${academicYear} to Google Cloud Storage...`);
+  const handleDownloadBackup = async () => {
+    setIsDownloading(true);
+    try {
+      const { data, headers } = await apiClient.get(`/api/admin/backup/export/?type=${backupFormat}&academic_year=All`, {
+        responseType: 'blob'
+      });
+
+      const contentDisposition = headers['content-disposition'];
+      let filename = 'Attendance_College_Backup_All.zip';
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="?([^"]+)"?/);
+        if (match && match.length > 1) {
+          filename = match[1];
+        }
+      }
+
+      const url = window.URL.createObjectURL(new Blob([data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setShowBackupModal(false);
+
+      // Refresh dashboard stats to get updated last_backup_date
+      const dbResponse = await apiClient.get('/api/admin/dashboard/');
+      setDashboardData(dbResponse.data);
+    } catch (err) {
+      console.error(err);
+      alert("Failed to download backup: " + (err.response?.data?.detail || err.response?.data?.error || err.message));
+    } finally {
+      setIsDownloading(false);
+    }
   };
 
   const handleFilterChange = (filter) => {
     setAuditFilter(filter);
     setAuditCurrentPage(1);
+  };
+
+  const handleCreateNewYear = async () => {
+    if (!newYearInput.trim()) return;
+    setCreatingYear(true);
+    try {
+      await apiClient.post('/api/admin/dashboard/', {
+        action: 'new_academic_year',
+        year: newYearInput
+      });
+      setShowYearModal(false);
+      setNewYearInput('');
+      const { data } = await apiClient.get('/api/admin/dashboard/');
+      setDashboardData(data);
+    } catch (err) {
+      alert("Failed to create new academic year: " + (err.response?.data?.error || err.message));
+    } finally {
+      setCreatingYear(false);
+    }
   };
 
   const { admin, system_stats } = dashboardData || {};
@@ -99,11 +158,10 @@ const AdminDashboard = () => {
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-6 py-2.5 rounded-xl text-sm font-bold capitalize  whitespace-nowrap ${
-                activeTab === tab
-                  ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
-                  : 'text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5'
-              }`}
+              className={`px-6 py-2.5 rounded-xl text-sm font-bold capitalize  whitespace-nowrap ${activeTab === tab
+                ? 'bg-blue-600 text-white shadow-lg shadow-blue-500/20'
+                : 'text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5'
+                }`}
             >
               {tab === 'data-entry' ? 'Manage Data' : tab}
             </button>
@@ -155,7 +213,17 @@ const AdminDashboard = () => {
                       )}
                     </div>
                     {isText ? (
-                      <p className="text-xl font-bold text-gray-900 dark:text-white/90 mt-2">{value}</p>
+                      <div>
+                        <p className="text-xl font-bold text-gray-900 dark:text-white/90 mt-2">{value}</p>
+                        {label === 'Last Backup' && (
+                          <button
+                            onClick={() => setShowBackupModal(true)}
+                            className="mt-4 px-4 py-2 w-full bg-yellow-500/10 hover:bg-yellow-500/20 text-yellow-700 dark:text-yellow-400 font-bold text-sm rounded-xl transition-colors border border-yellow-500/20"
+                          >
+                            Download Backup
+                          </button>
+                        )}
+                      </div>
                     ) : (
                       <div className="flex items-center gap-3">
                         <p className={`text-4xl font-bold ${color === 'green' ? 'text-green-500' : 'text-gray-900 dark:text-white'}`}>{value ?? '—'}</p>
@@ -177,7 +245,7 @@ const AdminDashboard = () => {
               {/* Active Classes */}
               {system_stats?.active_class_names && system_stats.active_class_names.length > 0 && (
                 <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-white/10 rounded-3xl p-6 shadow-sm">
-                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Classes Going On Today</h3>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white mb-4">Classes Conducted Today</h3>
                   <div className="flex flex-wrap gap-2">
                     {system_stats.active_class_names.map((className, idx) => (
                       <span key={idx} className="px-3 py-1.5 bg-blue-50 dark:bg-blue-500/10 text-blue-600 dark:text-blue-300 rounded-lg text-sm font-medium border border-blue-200 dark:border-blue-500/20">
@@ -192,10 +260,10 @@ const AdminDashboard = () => {
               <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-white/10 rounded-3xl p-6 shadow-sm flex items-center justify-between flex-wrap gap-4">
                 <div>
                   <h3 className="text-xl font-bold text-gray-900 dark:text-white">Academic Year Management</h3>
-                  <p className="text-sm text-gray-500 dark:text-white/50 mt-1">Current Active Year: <span className="font-semibold text-blue-600 dark:text-blue-400">2026-2027</span></p>
+                  <p className="text-sm text-gray-500 dark:text-white/50 mt-1">Current Active Year: <span className="font-semibold text-blue-600 dark:text-blue-400">{system_stats?.current_academic_year || "2026-2027"}</span></p>
                 </div>
                 <button
-                  onClick={() => alert("Hitting endpoint to create new academic year...")}
+                  onClick={() => setShowYearModal(true)}
                   className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition-colors text-sm font-bold shadow-sm shadow-blue-500/20"
                 >
                   Create New Academic Year
@@ -211,25 +279,24 @@ const AdminDashboard = () => {
                     </div>
                     <h3 className="text-xl font-bold text-gray-900 dark:text-white">System Audit Trail</h3>
                   </div>
-                  
+
                   {/* Filter Pills */}
                   <div className="flex items-center gap-2 bg-gray-100 dark:bg-slate-900/50 p-1 rounded-xl overflow-x-auto custom-scrollbar">
                     {['All', 'Admin', 'Teacher', 'Student'].map(filter => (
                       <button
                         key={filter}
                         onClick={() => handleFilterChange(filter)}
-                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
-                          auditFilter === filter 
-                            ? 'bg-white dark:bg-slate-700 text-gray-900 dark:text-white shadow-sm' 
-                            : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
-                        }`}
+                        className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${auditFilter === filter
+                          ? 'bg-white dark:bg-slate-700 text-gray-900 dark:text-white shadow-sm'
+                          : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+                          }`}
                       >
                         {filter}
                       </button>
                     ))}
                   </div>
                 </div>
-                
+
                 <div className={`overflow-y-auto max-h-96 pr-2 space-y-3 transition-opacity duration-300 ${auditLoading ? 'opacity-50' : 'opacity-100'}`}>
                   {auditLogs && auditLogs.length > 0 ? auditLogs.map((log, idx) => (
                     <div key={idx} className="flex flex-col sm:flex-row sm:items-center justify-between p-4 bg-gray-50 dark:bg-slate-900/40 rounded-2xl border border-gray-200 dark:border-white/5 hover:bg-gray-100 dark:hover:bg-white/5 transition-colors">
@@ -266,11 +333,11 @@ const AdminDashboard = () => {
                     >
                       Previous
                     </button>
-                    
+
                     <span className="text-sm text-gray-500 dark:text-gray-400">
                       Page <span className="font-semibold text-gray-900 dark:text-white">{auditCurrentPage}</span> of <span className="font-semibold text-gray-900 dark:text-white">{auditTotalPages}</span>
                     </span>
-                    
+
                     <button
                       onClick={() => setAuditCurrentPage(prev => Math.min(auditTotalPages, prev + 1))}
                       disabled={auditCurrentPage === auditTotalPages || auditLoading}
@@ -290,6 +357,113 @@ const AdminDashboard = () => {
         {activeTab === 'reports' && <AdminReports />}
         {activeTab === 'data-entry' && <StudentDataEntry />}
       </div>
+
+      {/* Create New Academic Year Modal */}
+      {showYearModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-800 rounded-2xl w-full max-w-md p-6 shadow-2xl border border-gray-200 dark:border-white/10">
+            <h3 className="text-xl font-bold text-gray-900 dark:text-white mb-2">Create New Academic Year</h3>
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200 p-3 rounded-lg text-sm mb-4 border border-yellow-200 dark:border-yellow-700/50">
+              <span className="font-bold">Warning:</span> Creating a new academic year will archive all currently active classes and clear the active timetable to prepare for a fresh start.
+            </div>
+
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">New Academic Year</label>
+              <input
+                type="text"
+                placeholder="e.g. 2027-2028"
+                value={newYearInput}
+                onChange={(e) => setNewYearInput(e.target.value)}
+                className="w-full bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-700 rounded-xl px-4 py-2 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 transition-shadow"
+              />
+            </div>
+
+            <div className="flex gap-3 justify-end mt-6">
+              <button
+                onClick={() => setShowYearModal(false)}
+                className="px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-slate-700 dark:hover:bg-slate-600 text-gray-700 dark:text-gray-200 rounded-xl transition-colors font-medium text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCreateNewYear}
+                disabled={creatingYear || !newYearInput.trim()}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-xl transition-colors font-medium text-sm disabled:opacity-50 flex items-center gap-2"
+              >
+                {creatingYear && (
+                  <svg className="animate-spin h-4 w-4 text-white" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                )}
+                Confirm Creation
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Backup Modal */}
+      {showBackupModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl border border-gray-200 dark:border-white/10">
+            <div className="p-6 border-b border-gray-100 dark:border-white/5 flex justify-between items-center bg-gray-50/50 dark:bg-slate-800/50">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Download Backup</h3>
+              <button onClick={() => setShowBackupModal(false)} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-xl hover:bg-white dark:hover:bg-slate-800 transition-colors">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <p className="text-sm text-gray-500 dark:text-gray-400">Select the format for the full college attendance backup.</p>
+
+              <div className="space-y-3">
+                {[
+                  { id: 'excel', label: 'Excel (.xlsx)', desc: 'Grouped into sheets by Stream' },
+                  { id: 'pdf', label: 'PDF Report (.pdf)', desc: 'Formatted tabular report' },
+                  { id: 'csv', label: 'CSV (.csv)', desc: 'Raw data suitable for scripts' }
+                ].map(format => (
+                  <label key={format.id} className={`flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition-all ${backupFormat === format.id ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-500/10' : 'border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-slate-800/50'}`}>
+                    <input
+                      type="radio"
+                      name="format"
+                      className="mt-1 w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded-full"
+                      checked={backupFormat === format.id}
+                      onChange={() => setBackupFormat(format.id)}
+                    />
+                    <div>
+                      <span className={`block font-semibold text-sm ${backupFormat === format.id ? 'text-blue-700 dark:text-blue-400' : 'text-gray-900 dark:text-white'}`}>{format.label}</span>
+                      <span className="block text-xs text-gray-500 dark:text-gray-400 mt-1">{format.desc}</span>
+                    </div>
+                  </label>
+                ))}
+              </div>
+
+              <div className="pt-4 flex gap-3">
+                <button
+                  onClick={() => setShowBackupModal(false)}
+                  className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 font-semibold rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDownloadBackup}
+                  disabled={isDownloading}
+                  className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                >
+                  {isDownloading ? (
+                    <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  ) : (
+                    'Download'
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
     </Layout>
   );
 };

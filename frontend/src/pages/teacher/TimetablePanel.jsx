@@ -11,6 +11,7 @@ const TimetablePanel = ({ onBack }) => {
     active_teachers: 0,
     uploaded_timetables: 0,
     pending_assignments: 0,
+    is_frozen: false,
   });
 
   const [filters, setFilters] = useState([]);
@@ -59,6 +60,7 @@ const TimetablePanel = ({ onBack }) => {
           active_teachers: dashRes.data.active_teachers ?? 0,
           uploaded_timetables: dashRes.data.uploaded_timetables ?? 0,
           pending_assignments: dashRes.data.pending_assignments ?? 0,
+          is_frozen: dashRes.data.is_frozen ?? false,
         });
         setFilters(filterRes.data || []);
         setMonitorClasses(classesRes.data || []);
@@ -181,6 +183,20 @@ const TimetablePanel = ({ onBack }) => {
     }
   };
 
+  const [togglingFreeze, setTogglingFreeze] = useState(false);
+  const handleToggleFreeze = async () => {
+    setTogglingFreeze(true);
+    try {
+      const res = await apiClient.post('/api/timetable/freeze/', { is_frozen: !stats.is_frozen });
+      setStats(prev => ({ ...prev, is_frozen: res.data.is_frozen }));
+      fetchActivities(1);
+    } catch (err) {
+      alert("Failed to toggle freeze state.");
+    } finally {
+      setTogglingFreeze(false);
+    }
+  };
+
   const STAT_CARDS = [
     { label: 'Classes / Week', key: 'total_classes_per_week', icon: 'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z', color: 'bg-blue-500/10 border-blue-500/30', text: 'text-blue-400' },
     { label: 'Active Teachers', key: 'active_teachers', icon: 'M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z', color: 'bg-emerald-500/10 border-emerald-500/30', text: 'text-emerald-400' },
@@ -208,14 +224,33 @@ const TimetablePanel = ({ onBack }) => {
             <p className="text-amber-300/70 text-sm">Upload timetables, assign teachers, and monitor duties</p>
           </div>
         </div>
-        {onBack && (
-          <button onClick={onBack} className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/15 border border-white/20 text-white/80 hover:text-white rounded-xl text-sm font-medium shrink-0 transition-colors">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
-            </svg>
-            Back to Teacher Dashboard
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={handleToggleFreeze}
+            disabled={togglingFreeze}
+            className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition-colors border ${
+              stats.is_frozen 
+              ? "bg-red-500/20 text-red-400 border-red-500/30 hover:bg-red-500/30" 
+              : "bg-emerald-500/20 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/30"
+            }`}
+          >
+            {stats.is_frozen ? (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>
+            ) : (
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 11V7a4 4 0 118 0m-4 8v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2z"/></svg>
+            )}
+            {togglingFreeze ? "Updating..." : (stats.is_frozen ? "Timetable Frozen" : "Timetable Unfrozen")}
           </button>
-        )}
+
+          {onBack && (
+            <button onClick={onBack} className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/15 border border-white/20 text-white/80 hover:text-white rounded-xl text-sm font-medium shrink-0 transition-colors">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 19l-7-7 7-7" />
+              </svg>
+              Back to Teacher Dashboard
+            </button>
+          )}
+        </div>
       </div>
 
       {/* ── Stat Cards ──────────────────────────────────────────────────────── */}
@@ -304,8 +339,12 @@ const TimetablePanel = ({ onBack }) => {
             </p>
           )}
 
-          <button onClick={handleMonitorAssign} disabled={monitorLoading} className="w-full bg-purple-600 hover:bg-purple-500 disabled:opacity-50 text-white py-3 rounded-xl font-bold transition-colors shadow-lg shadow-purple-500/20 mt-auto">
-            {monitorLoading ? 'Assigning...' : 'Assign Duty'}
+          <button 
+            onClick={handleMonitorAssign} 
+            disabled={monitorLoading}
+            className="w-full mt-2 bg-purple-500 hover:bg-purple-600 text-white py-2.5 rounded-xl text-sm font-bold shadow-lg shadow-purple-500/30 transition-all active:scale-[0.98] disabled:opacity-50"
+          >
+            {monitorLoading ? 'Assigning...' : 'Confirm Assignment'}
           </button>
         </div>
 
@@ -395,9 +434,13 @@ const TimetablePanel = ({ onBack }) => {
               </p>
             )}
 
-            <button onClick={handleAssign} disabled={assignLoading} className="w-full bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white py-3 rounded-xl font-bold transition-colors shadow-lg shadow-emerald-500/20 mt-auto">
-              {assignLoading ? 'Assigning...' : 'Assign'}
-            </button>
+            <button
+            onClick={handleAssign}
+            disabled={assignLoading || stats.is_frozen}
+            className="w-full mt-4 bg-emerald-500 hover:bg-emerald-600 text-white py-2.5 rounded-xl font-bold shadow-lg shadow-emerald-500/30 transition-all active:scale-[0.98] disabled:opacity-50"
+          >
+            {assignLoading ? 'Assigning...' : (stats.is_frozen ? 'Timetable Frozen' : 'Finalize Timetable Assignment')}
+          </button>
           </div>
         </div>
       </div>

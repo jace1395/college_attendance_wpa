@@ -173,3 +173,6 @@ AUTHENTICATION_BACKENDS = [
     'users.backends.EmailOrRollNoBackend',
     'django.contrib.auth.backends.ModelBackend',
 ]
+
+# Default primary key field type
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

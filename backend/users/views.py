@@ -88,4 +88,19 @@ class ChangePasswordView(APIView):
         from users.services import log_audit
         log_audit(user, "Password Updated", "User completed security password change")
         
-        return Response({'success': 'Password updated successfully.'})
+        return Response({'success': 'Password updated successfully.'})
+
+from django.utils import timezone
+class UserLogoutView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        user = request.user
+        # Setting last_activity to 1 hour ago clears active session threshold immediately
+        user.last_activity = timezone.now() - timezone.timedelta(hours=1)
+        user.save(update_fields=['last_activity'])
+        
+        from users.services import log_audit
+        log_audit(user, "User Logout", "Session ended via web interface")
+        
+        return Response({'success': 'Logged out successfully.'}, status=status.HTTP_200_OK)

@@ -30,6 +30,33 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   // ---------------------------------------------------------------------------
+  // Tab Close / Navigation away — ping logout to clear active session 
+  // ---------------------------------------------------------------------------
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    
+    const handleUnload = () => {
+      const token = localStorage.getItem("access_token");
+      if (token) {
+        // keepalive: true ensures the request finishes even if the tab closes
+        fetch(`${BASE_URL}/api/auth/logout/`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+          keepalive: true
+        }).catch(() => {});
+      }
+    };
+
+    window.addEventListener('beforeunload', handleUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleUnload);
+    };
+  }, [isAuthenticated]);
+
+  // ---------------------------------------------------------------------------
   // Login — POST /api/auth/login/
   // Returns the user's role so the caller can redirect to the right dashboard.
   // ---------------------------------------------------------------------------
@@ -64,14 +91,24 @@ export const AuthProvider = ({ children }) => {
   };
 
   // ---------------------------------------------------------------------------
-  // Logout — clear all local state and storage
+  // Logout — clear all local state and storage, and clear active session
   // ---------------------------------------------------------------------------
-  const logout = () => {
-    setUser(null);
-    setIsAuthenticated(false);
-    localStorage.removeItem("access_token");
-    localStorage.removeItem("refresh_token");
-    localStorage.removeItem("user");
+  const logout = async () => {
+    try {
+      if (localStorage.getItem("access_token")) {
+        await axios.post(`${BASE_URL}/api/auth/logout/`, {}, {
+          headers: { Authorization: `Bearer ${localStorage.getItem("access_token")}` }
+        });
+      }
+    } catch (e) {
+      console.warn("Logout request failed, proceeding to clear local session", e);
+    } finally {
+      setUser(null);
+      setIsAuthenticated(false);
+      localStorage.removeItem("access_token");
+      localStorage.removeItem("refresh_token");
+      localStorage.removeItem("user");
+    }
   };
 
   return (

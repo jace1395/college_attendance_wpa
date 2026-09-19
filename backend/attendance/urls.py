@@ -31,6 +31,7 @@ from .views import (
     MonitorClassesView,
     FreeTeachersView,
     MonitoringUnlockRequestView,
+    TimetableFreezeView,
     
     # Admin Views
     AdminDashboardView,
@@ -96,6 +97,7 @@ urlpatterns = [
     path('api/timetable/free-teachers/', FreeTeachersView.as_view(), name='timetable-free-teachers'),
     path('api/teacher/monitoring/duties/', TeacherMonitoringDutyView.as_view(), name='teacher-monitoring-duties'),
     path('api/teacher/monitoring/unlock-request/', MonitoringUnlockRequestView.as_view(), name='monitoring-unlock-request'),
+    path('api/timetable/freeze/', TimetableFreezeView.as_view(), name='timetable-freeze'),
 
     # --------------------------------------------------------------------------
     # 5. Admin Console

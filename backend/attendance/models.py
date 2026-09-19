@@ -152,4 +152,12 @@ class TimetableActivityLog(models.Model):
     def __str__(self):
         return f"{self.action} by {self.user} at {self.created_at}"
 
+class SystemSettings(models.Model):
+    current_academic_year = models.CharField(max_length=20, default="2026-2027")
+    is_timetable_frozen = models.BooleanField(default=False)
+    last_backup_date = models.DateTimeField(null=True, blank=True)
+
+    def __str__(self):
+        return f"System Settings - {self.current_academic_year}"
+
 
