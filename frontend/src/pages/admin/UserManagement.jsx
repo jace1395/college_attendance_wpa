@@ -236,14 +236,14 @@ const UserManagement = () => {
         </div>
       )}
 
-      <div className="flex flex-col lg:flex-row gap-6">
+      <div className="flex flex-col lg:flex-row gap-6 items-start">
         {/* Drag & Drop Zone */}
-        <div className="lg:w-1/3 shrink-0">
+        <div className="lg:w-1/3 shrink-0 w-full lg:sticky lg:top-6">
           <div
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
             onDrop={handleDrop}
-            className={`h-full min-h-50 border-2 border-dashed rounded-3xl flex flex-col items-center justify-center p-8 text-center  ${
+            className={`min-h-[250px] border-2 border-dashed rounded-3xl flex flex-col items-center justify-center p-8 text-center transition-all ${
               isDragOver ? 'border-blue-400 bg-blue-500/10 ' : 'border-white/20 bg-white/5 hover:border-white/40'
             }`}
           >
@@ -290,8 +290,10 @@ const UserManagement = () => {
                     <td className="p-4 text-sm text-white/60">{user.email}</td>
                     {showYearStreamFilters && (
                       <td className="p-4 text-sm text-white/50">
-                        {user.year && <span className="mr-2 text-xs bg-white/10 px-2 py-0.5 rounded-md font-mono">{user.year}</span>}
-                        {user.stream && <span className="text-xs bg-blue-500/15 text-blue-300 px-2 py-0.5 rounded-md">{user.stream}</span>}
+                        <div className="flex flex-wrap gap-2 items-center">
+                          {user.year && <span className="text-xs bg-white/10 px-2 py-0.5 rounded-md font-mono whitespace-nowrap">{user.year}</span>}
+                          {user.stream && <span className="text-xs bg-blue-500/15 text-blue-300 px-2 py-0.5 rounded-md whitespace-nowrap">{user.stream}</span>}
+                        </div>
                       </td>
                     )}
                     <td className="p-4 text-center">
