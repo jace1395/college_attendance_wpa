@@ -76,7 +76,7 @@ const AdminDashboard = () => {
       });
 
       const contentDisposition = headers['content-disposition'];
-      let filename = 'Attendance_College_Backup_All.zip';
+      let filename = `College_Backup_All.${backupFormat === 'excel' ? 'xlsx' : backupFormat}`;
       if (contentDisposition) {
         const match = contentDisposition.match(/filename="?([^"]+)"?/);
         if (match && match.length > 1) {

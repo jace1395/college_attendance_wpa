@@ -2,18 +2,7 @@ import os
 import io
 import datetime
 from datetime import date, timedelta
-from collections import defaultdict
 from django.utils import timezone
-import zipfile
-import csv
-import re
-from io import StringIO
-from openpyxl import Workbook
-from openpyxl.styles import PatternFill
-from reportlab.platypus import PageBreak, BaseDocTemplate, PageTemplate, Frame, Paragraph, Spacer, Table, TableStyle
-from reportlab.lib.pagesizes import letter, landscape
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.lib import colors
 from django.db.models import Count, Q, Avg
 from django.contrib.auth import get_user_model
 from django.core.validators import FileExtensionValidator
@@ -1129,7 +1118,7 @@ class TimetableActivityLogView(APIView):
                 "id": log.id,
                 "action": log.action,
                 "detail": log.detail,
-                "time": timezone.localtime(log.created_at).strftime('%Y-%m-%d %I:%M %p'),
+                "time": log.created_at.strftime('%Y-%m-%d %I:%M %p'),
                 "color": log.color
             }
             for log in paginated_logs
@@ -1312,7 +1301,7 @@ class TeacherMonitoringDutyView(APIView):
     def get(self, request):
         user = get_target_user(request)
         # Fetch all duties for this teacher so frontend can separate active and archived
-        duties = MonitoringDuty.objects.filter(teacher=user).exclude(class_batch__academic_year='Archived').select_related('class_batch__subject').order_by('-date', 'time_slot')
+        duties = MonitoringDuty.objects.filter(teacher=user).select_related('class_batch__subject').order_by('-date', 'time_slot')
         
         data = []
         for d in duties:
@@ -1713,207 +1702,117 @@ class AdminBackupExportView(APIView):
         academic_year = request.query_params.get('academic_year', 'All')
 
         qs = Attendance.objects.select_related(
-            'student', 'student__stream', 'student__department', 'class_batch__subject', 'class_batch__teacher'
+            'student', 'student__stream', 'student__department', 'class_batch__subject'
         )
         if academic_year != 'All':
             qs = qs.filter(class_batch__academic_year=academic_year)
             
-        # For all exports (Excel, PDF, CSV), we want the full history.
-        qs = qs.order_by('-date')
+        if export_type == 'pdf':
+            # User specifically requested full history, removing limits
+            qs = qs.order_by('-date')
 
         # Update last backup date
         settings_obj, _ = SystemSettings.objects.get_or_create(id=1)
         settings_obj.last_backup_date = timezone.now()
-        settings_obj.save()
+        settings_obj.save(update_fields=['last_backup_date'])
 
-        grouped_records = defaultdict(lambda: defaultdict(list))
-        for attendance in qs:
-            stream_name = attendance.student.stream.name if attendance.student.stream else "Unassigned"
-            subject_name = attendance.class_batch.subject.name if attendance.class_batch and attendance.class_batch.subject else "Unknown Subject"
-            grouped_records[stream_name][subject_name].append(attendance)
+        import io
+        if not qs.exists():
+            data = [{"Message": "No attendance records found"}]
+        else:
+            # First, aggregate stats per student per subject
+            from collections import defaultdict
+            stats = defaultdict(lambda: {'total': 0, 'attended': 0})
+            for a in qs:
+                subject_name = a.class_batch.subject.name if a.class_batch.subject else "N/A"
+                key = (a.student.id, subject_name)
+                stats[key]['total'] += 1
+                if a.status == 'Present':
+                    stats[key]['attended'] += 1
+
+            data = []
+            for a in qs:
+                stream_name = a.student.stream.name if getattr(a.student, 'stream', None) else "General"
+                dept_name = a.student.department.name if getattr(a.student, 'department', None) else "N/A"
+                subject_name = a.class_batch.subject.name if a.class_batch.subject else "N/A"
+                
+                s = stats[(a.student.id, subject_name)]
+                total = s['total']
+                attended = s['attended']
+                percentage = round((attended / total) * 100, 2) if total > 0 else 0.0
+
+                data.append({
+                    "Stream": stream_name,
+                    "Department": dept_name,
+                    "Date": str(a.date),
+                    "Student_Roll": a.student.roll_no or str(a.student.id),
+                    "Student_Name": a.student.name or a.student.email,
+                    "Subject": subject_name,
+                    "Status": a.status,
+                    "Time_Slot": a.time_slot,
+                    "Total Classes": total,
+                    "Classes Attended": attended,
+                    "Attendance (%)": percentage
+                })
+
+        import io
+        import zipfile
+        from collections import defaultdict
+        import datetime
+        import csv
+        from io import StringIO
+        import openpyxl
+        from openpyxl.styles import PatternFill
+        from reportlab.lib import colors
+        from reportlab.lib.pagesizes import letter, landscape
+        from reportlab.platypus import SimpleDocTemplate, Table, TableStyle, Paragraph, Spacer
+        from reportlab.lib.styles import getSampleStyleSheet
+
+        def get_path(subject):
+            if not subject:
+                return "Uncategorized/Unknown/Unknown", "Unknown"
+            
+            stream = subject.stream
+            if stream in ['BCA', 'BVoc']:
+                dept = 'Computer Science'
+            elif stream in ['BBA', 'BCOM', 'BBA(FS)']:
+                dept = 'Finance'
+            else:
+                dept = 'Other'
+                
+            sem = subject.semester
+            if sem in ['Sem 1', 'Sem 2']:
+                year = 'FY'
+            elif sem in ['Sem 3', 'Sem 4']:
+                year = 'SY'
+            elif sem in ['Sem 5', 'Sem 6']:
+                year = 'TY'
+            else:
+                year = 'Other'
+                
+            safe_subj = subject.name.replace('/', '_').replace('\\', '_')
+            return f"{dept}/{year}/{stream}", safe_subj
 
         zip_buffer = io.BytesIO()
-        with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
-            if export_type == 'pdf':
-                file_buffer = io.BytesIO()
-                # Use landscape and smaller margins for wide tables
-                doc = BaseDocTemplate(file_buffer, pagesize=landscape(letter),
-                                      rightMargin=30, leftMargin=30, topMargin=30, bottomMargin=30)
-                frame = Frame(doc.leftMargin, doc.bottomMargin, doc.width, doc.height, id='normal')
-                template = PageTemplate(id='test', frames=frame)
-                doc.addPageTemplates([template])
-                
-                elements = []
-                styles = getSampleStyleSheet()
-                title_style = styles['Heading1']
-                title_style.alignment = 1
-                
-                elements.append(Paragraph(f"College Backup ({academic_year})", title_style))
-                elements.append(Spacer(1, 12))
-                elements.append(Paragraph("Table of Contents", styles['Heading2']))
-                elements.append(Spacer(1, 12))
-                
-                # Build TOC
-                for stream_name, subjects in sorted(grouped_records.items()):
-                    elements.append(Paragraph(f"<b>{stream_name}</b>", styles['Heading3']))
-                    for subject_name, records in sorted(subjects.items()):
-                        # Try to find teacher
-                        teacher_name = "Unknown Teacher"
-                        for r in records:
-                            if r.class_batch and r.class_batch.teacher:
-                                teacher_name = r.class_batch.teacher.name or r.class_batch.teacher.email
-                                break
-                        
-                        anchor_name = f"{stream_name}_{subject_name}".replace(' ', '_').replace('/', '_')
-                        link = f'<a href="#{anchor_name}" color="blue">{subject_name} ({teacher_name})</a>'
-                        elements.append(Paragraph(f"&nbsp;&nbsp;&nbsp;&nbsp;&bull; {link}", styles['Normal']))
-                
-                elements.append(PageBreak())
-                
-                # Build Pages for each subject
-                for stream_name, subjects in sorted(grouped_records.items()):
-                    for subject_name, records in sorted(subjects.items()):
-                        teacher_name = "Unknown Teacher"
-                        for r in records:
-                            if r.class_batch and r.class_batch.teacher:
-                                teacher_name = r.class_batch.teacher.name or r.class_batch.teacher.email
-                                break
-                                
-                        anchor_name = f"{stream_name}_{subject_name}".replace(' ', '_').replace('/', '_')
-                        elements.append(Paragraph(f'<a name="{anchor_name}"/><b>{stream_name} - {subject_name}</b> (Teacher: {teacher_name})', styles['Heading2']))
-                        elements.append(Spacer(1, 12))
-                        
-                        unique_dates = sorted(list(set(a.date for a in records)))
-                        unique_weeks = sorted(list(set((d.isocalendar()[0], d.isocalendar()[1]) for d in unique_dates)))
-                        unique_months = sorted(list(set((d.year, d.month) for d in unique_dates)))
-                        
-                        dynamic_headers = []
-                        for d in unique_dates:
-                            dynamic_headers.append(d.strftime('%d-%b'))
-                        for yr, wk in unique_weeks:
-                            dynamic_headers.append(f"Wk {wk}")
-                        for yr, mo in unique_months:
-                            dynamic_headers.append(f"{datetime.date(yr, mo, 1).strftime('%b')}")
-                        dynamic_headers.extend(["Tot", "Att", "Overall%"])
-                        
-                        student_records = defaultdict(list)
-                        for a in records:
-                            student_records[a.student].append(a)
-                            
-                        student_data = []
-                        sorted_students = sorted(student_records.items(), key=lambda x: str(x[0].roll_no or x[0].id))
-                        for student, s_records in sorted_students:
-                            base_row = [student.roll_no or str(student.id), student.name or student.email]
-                            dyn_row = []
-                            dyn_styles = [] # (index in dyn_row, color)
-                            
-                            date_map = {a.date: a.status for a in s_records}
-                            for d in unique_dates:
-                                status = date_map.get(d, '')
-                                if status == "Present":
-                                    dyn_row.append("P")
-                                    dyn_styles.append((len(dyn_row)-1, colors.green))
-                                elif status == "Absent":
-                                    dyn_row.append("A")
-                                    dyn_styles.append((len(dyn_row)-1, colors.red))
-                                else:
-                                    dyn_row.append("-")
-                                
-                            for yr, wk in unique_weeks:
-                                week_records = [a for a in s_records if a.date.isocalendar()[0] == yr and a.date.isocalendar()[1] == wk]
-                                total = len(week_records)
-                                attended = sum(1 for a in week_records if a.status == 'Present')
-                                pct = round((attended/total)*100, 1) if total > 0 else 0
-                                dyn_row.append(f"{pct}%")
-                                dyn_styles.append((len(dyn_row)-1, colors.red if pct < 75 else colors.green))
-                                
-                            for yr, mo in unique_months:
-                                month_records = [a for a in s_records if a.date.year == yr and a.date.month == mo]
-                                total = len(month_records)
-                                attended = sum(1 for a in month_records if a.status == 'Present')
-                                pct = round((attended/total)*100, 1) if total > 0 else 0
-                                dyn_row.append(f"{pct}%")
-                                dyn_styles.append((len(dyn_row)-1, colors.red if pct < 75 else colors.green))
-                                
-                            total = len(s_records)
-                            attended = sum(1 for a in s_records if a.status == 'Present')
-                            pct = round((attended/total)*100, 1) if total > 0 else 0
-                            
-                            dyn_row.extend([str(total), str(attended), f"{pct}%"])
-                            dyn_styles.append((len(dyn_row)-1, colors.red if pct < 75 else colors.green))
-                            
-                            student_data.append((base_row, dyn_row, dyn_styles))
-                            
-                        # Chunking rows and columns to keep students together
-                        ROW_CHUNK_SIZE = 35
-                        COL_CHUNK_SIZE = 15
-                        
-                        for r_idx in range(0, len(student_data), ROW_CHUNK_SIZE):
-                            student_chunk = student_data[r_idx:r_idx+ROW_CHUNK_SIZE]
-                            for c_idx in range(0, len(dynamic_headers), COL_CHUNK_SIZE):
-                                chunk_headers = ["Roll No", "Name"] + dynamic_headers[c_idx:c_idx+COL_CHUNK_SIZE]
-                                table_data = [chunk_headers]
-                                
-                                table_styles = [
-                                    ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
-                                    ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
-                                    ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-                                    ('FONTNAME', (0, 0), (-1, -1), 'Helvetica'),
-                                    ('FONTSIZE', (0, 0), (-1, -1), 6),
-                                    ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
-                                    ('TOPPADDING', (0, 0), (-1, -1), 4),
-                                    ('GRID', (0, 0), (-1, -1), 0.5, colors.black),
-                                ]
-                                
-                                for base_row, dyn_row, dyn_styles in student_chunk:
-                                    row_idx = len(table_data)
-                                    row = list(base_row) + dyn_row[c_idx:c_idx+COL_CHUNK_SIZE]
-                                    table_data.append(row)
-                                    
-                                    for dyn_idx, c in dyn_styles:
-                                        if c_idx <= dyn_idx < c_idx + COL_CHUNK_SIZE:
-                                            col_idx = 2 + (dyn_idx - c_idx)
-                                            table_styles.append(('BACKGROUND', (col_idx, row_idx), (col_idx, row_idx), c))
-                                            
-                                t = Table(table_data, repeatRows=1)
-                                t.setStyle(TableStyle(table_styles))
-                                elements.append(t)
-                                if c_idx + COL_CHUNK_SIZE < len(dynamic_headers):
-                                    elements.append(Spacer(1, 15))
-                                    
-                            elements.append(PageBreak())
-                        
-                doc.build(elements)
-                zf.writestr(f"College_Backup_{academic_year}.pdf", file_buffer.getvalue())
+        
+        if not qs.exists():
+            with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
+                zf.writestr("Message.txt", "No attendance records found.")
+        else:
+            grouped_records = defaultdict(list)
+            for a in qs:
+                folder_path, file_name = get_path(a.class_batch.subject)
+                grouped_records[(folder_path, file_name)].append(a)
 
-            elif export_type == 'excel':
-                wb = Workbook()
-                wb.remove(wb.active) # Remove default sheet
-                
-                green_fill = PatternFill(start_color='00FF00', end_color='00FF00', fill_type='solid')
-                red_fill = PatternFill(start_color='FF0000', end_color='FF0000', fill_type='solid')
-                
-                # Generate unique tab colors for each stream
-                stream_colors = {}
-                color_palette = ['FF9999', '99FF99', '9999FF', 'FFFF99', 'FF99FF', '99FFFF', 'FFCC99', 'CC99FF']
-                color_idx = 0
-                
-                for stream_name, subjects in grouped_records.items():
-                    if stream_name not in stream_colors:
-                        stream_colors[stream_name] = color_palette[color_idx % len(color_palette)]
-                        color_idx += 1
-                        
-                    for subject_name, records in subjects.items():
-                        base_title = re.sub(r'[\\*?:/\[\]]', '_', f"{stream_name[:10]}_{subject_name[:15]}")
-                        sheet_title = base_title
-                        counter = 1
-                        while sheet_title in wb.sheetnames:
-                            suffix = f"_{counter}"
-                            sheet_title = f"{base_title[:31-len(suffix)]}{suffix}"
-                            counter += 1
-                        
-                        ws = wb.create_sheet(title=sheet_title)
-                        ws.sheet_properties.tabColor = stream_colors[stream_name]
+            green_fill = PatternFill(start_color="C6EFCE", end_color="C6EFCE", fill_type="solid")
+            red_fill = PatternFill(start_color="FFC7CE", end_color="FFC7CE", fill_type="solid")
+
+            with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zf:
+                for (folder_path, file_name), records in grouped_records.items():
+                    if export_type == 'excel':
+                        wb = openpyxl.Workbook()
+                        ws = wb.active
+                        ws.title = file_name[:31] # Excel sheet name limit
                         
                         unique_dates = sorted(list(set(a.date for a in records)))
                         unique_weeks = sorted(list(set((d.isocalendar()[0], d.isocalendar()[1]) for d in unique_dates)))
@@ -1934,8 +1833,7 @@ class AdminBackupExportView(APIView):
                         for a in records:
                             student_records[a.student].append(a)
                             
-                        sorted_students = sorted(student_records.items(), key=lambda x: str(x[0].roll_no or x[0].id))
-                        for student, s_records in sorted_students:
+                        for student, s_records in student_records.items():
                             row = [student.roll_no or str(student.id), student.name or student.email]
                             
                             date_map = {a.date: a.status for a in s_records}
@@ -1965,89 +1863,93 @@ class AdminBackupExportView(APIView):
                             ws.append(row)
                             
                             current_row = ws.max_row
-                            
-                            total_col = len(row) - 2
-                            attended_col = len(row) - 1
-                            
-                            for col_idx, val in enumerate(row, start=1):
+                            for idx, d in enumerate(unique_dates):
+                                col_idx = 3 + idx
+                                val = row[2 + idx]
                                 if val == "P":
                                     ws.cell(row=current_row, column=col_idx).fill = green_fill
                                 elif val == "A":
                                     ws.cell(row=current_row, column=col_idx).fill = red_fill
-                                elif isinstance(val, (int, float)) and col_idx not in (total_col, attended_col):
-                                    if val < 75:
-                                        ws.cell(row=current_row, column=col_idx).fill = red_fill
-                                    else:
-                                        ws.cell(row=current_row, column=col_idx).fill = green_fill
-                                
-                file_buffer = io.BytesIO()
-                wb.save(file_buffer)
-                zf.writestr(f"College_Backup_{academic_year}.xlsx", file_buffer.getvalue())
+                                    
+                        file_buffer = io.BytesIO()
+                        wb.save(file_buffer)
+                        zf.writestr(f"{folder_path}/{file_name}.xlsx", file_buffer.getvalue())
 
-            else:
-                # CSV
-                for stream_name, subjects in grouped_records.items():
-                    for subject_name, records in subjects.items():
-                        text_buffer = StringIO()
-                        writer = csv.writer(text_buffer)
-                        
-                        unique_dates = sorted(list(set(a.date for a in records)))
-                        unique_weeks = sorted(list(set((d.isocalendar()[0], d.isocalendar()[1]) for d in unique_dates)))
-                        unique_months = sorted(list(set((d.year, d.month) for d in unique_dates)))
-                        
-                        headers = ["Roll Number", "Name"]
-                        for d in unique_dates:
-                            headers.append(d.strftime('%d-%b'))
-                        for yr, wk in unique_weeks:
-                            headers.append(f"Wk {wk} (%)")
-                        for yr, mo in unique_months:
-                            headers.append(f"{datetime.date(yr, mo, 1).strftime('%b')} (%)")
-                        headers.extend(["Total Classes", "Classes Attended", "Overall (%)"])
-                        
-                        writer.writerow(headers)
+                    elif export_type == 'pdf':
+                        # Simple PDF Table
+                        file_buffer = io.BytesIO()
+                        doc = SimpleDocTemplate(file_buffer, pagesize=landscape(letter))
+                        elements = []
+                        styles = getSampleStyleSheet()
+                        elements.append(Paragraph(f"{file_name} - {folder_path.replace('/', ' ')}", styles['Title']))
+                        elements.append(Spacer(1, 12))
                         
                         student_records = defaultdict(list)
                         for a in records:
                             student_records[a.student].append(a)
                             
-                        sorted_students = sorted(student_records.items(), key=lambda x: str(x[0].roll_no or x[0].id))
-                        for student, s_records in sorted_students:
-                            row = [student.roll_no or str(student.id), student.name or student.email]
-                            
-                            date_map = {a.date: a.status for a in s_records}
-                            for d in unique_dates:
-                                status = date_map.get(d, '')
-                                row.append("P" if status == "Present" else "A" if status == "Absent" else "-")
-                                
-                            for yr, wk in unique_weeks:
-                                week_records = [a for a in s_records if a.date.isocalendar()[0] == yr and a.date.isocalendar()[1] == wk]
-                                total = len(week_records)
-                                attended = sum(1 for a in week_records if a.status == 'Present')
-                                pct = round((attended/total)*100, 1) if total > 0 else 0
-                                row.append(pct)
-                                
-                            for yr, mo in unique_months:
-                                month_records = [a for a in s_records if a.date.year == yr and a.date.month == mo]
-                                total = len(month_records)
-                                attended = sum(1 for a in month_records if a.status == 'Present')
-                                pct = round((attended/total)*100, 1) if total > 0 else 0
-                                row.append(pct)
-                                
+                        # Basic headers
+                        headers = ["Roll Number", "Name", "Total", "Attended", "Overall (%)"]
+                        table_data = [headers]
+                        
+                        for student, s_records in student_records.items():
                             total = len(s_records)
                             attended = sum(1 for a in s_records if a.status == 'Present')
                             pct = round((attended/total)*100, 1) if total > 0 else 0
-                            row.extend([total, attended, pct])
+                            table_data.append([
+                                student.roll_no or str(student.id),
+                                student.name or student.email,
+                                str(total),
+                                str(attended),
+                                f"{pct}%"
+                            ])
                             
-                            writer.writerow(row)
+                        t = Table(table_data)
+                        t.setStyle(TableStyle([
+                            ('BACKGROUND', (0, 0), (-1, 0), colors.grey),
+                            ('TEXTCOLOR', (0, 0), (-1, 0), colors.whitesmoke),
+                            ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+                            ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                            ('BOTTOMPADDING', (0, 0), (-1, 0), 12),
+                            ('BACKGROUND', (0, 1), (-1, -1), colors.beige),
+                            ('GRID', (0, 0), (-1, -1), 1, colors.black),
+                        ]))
+                        elements.append(t)
+                        doc.multiBuild(elements)
+                        zf.writestr(f"{folder_path}/{file_name}.pdf", file_buffer.getvalue())
+
+                    else:
+                        # CSV
+                        text_buffer = StringIO()
+                        writer = csv.writer(text_buffer)
+                        
+                        student_records = defaultdict(list)
+                        for a in records:
+                            student_records[a.student].append(a)
                             
-                        safe_stream = stream_name.replace('/', '_').replace('\\', '_')
-                        safe_subject = subject_name.replace('/', '_').replace('\\', '_')
-                        zf.writestr(f"{safe_stream}/{safe_subject}.csv", text_buffer.getvalue().encode('utf-8'))
+                        headers = ["Roll Number", "Name", "Total", "Attended", "Overall (%)"]
+                        writer.writerow(headers)
+                        for student, s_records in student_records.items():
+                            total = len(s_records)
+                            attended = sum(1 for a in s_records if a.status == 'Present')
+                            pct = round((attended/total)*100, 1) if total > 0 else 0
+                            writer.writerow([
+                                student.roll_no or str(student.id),
+                                student.name or student.email,
+                                total,
+                                attended,
+                                pct
+                            ])
+                            
+                        zf.writestr(f"{folder_path}/{file_name}.csv", text_buffer.getvalue().encode('utf-8'))
 
         zip_buffer.seek(0)
         return FileResponse(zip_buffer, as_attachment=True, filename=f"College_Backup_{academic_year}.zip", content_type='application/zip')
 
 
+
+# ==============================================================================
+# 6. Principal Views
 # ==============================================================================
 
 class PrincipalDashboardView(APIView):
