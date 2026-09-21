@@ -34,9 +34,11 @@ from .views import (
     TimetableFreezeView,
     
     # Admin Views
+    AdminPrincipalManagementView,
     AdminDashboardView,
     AdminUsersListView,
     AdminDeactivateUserView,
+    AdminResetPasswordView,
     AdminUnlockRequestsView,
     AdminApproveUnlockView,
     AdminDenyUnlockView,
@@ -46,6 +48,9 @@ from .views import (
     
     # Principal Views
     PrincipalDashboardView,
+    PrincipalFilterOptionsView,
+    PrincipalAdvancedGraphView,
+    PrincipalMonitoringDutiesView,
     PrincipalStreamView,
     PrincipalClassDetailView,
     
@@ -54,7 +59,14 @@ from .views import (
     FileUploadAPIView,
     AttendanceTicketCreateView,
     StudentReportAPIView,
-    TeacherReportAPIView
+    TeacherReportAPIView,
+    
+    # Admin Hierarchy Views
+    AdminFilterOptionsView,
+    AdminStudentHierarchyView,
+    AdminTeacherHierarchyView,
+    AdminHODHierarchyView,
+    AdminMentorHierarchyView
 )
 
 urlpatterns = [
@@ -102,9 +114,16 @@ urlpatterns = [
     # --------------------------------------------------------------------------
     # 5. Admin Console
     # --------------------------------------------------------------------------
+    path('api/admin/principal-management/', AdminPrincipalManagementView.as_view(), name='admin-principal-management'),
     path('api/admin/dashboard/', AdminDashboardView.as_view(), name='admin-dashboard'),
     path('api/admin/users/', AdminUsersListView.as_view(), name='admin-users-list'),
+    path('api/admin/hierarchy/filters/', AdminFilterOptionsView.as_view(), name='admin-hierarchy-filters'),
+    path('api/admin/hierarchy/students/', AdminStudentHierarchyView.as_view(), name='admin-hierarchy-students'),
+    path('api/admin/hierarchy/teachers/', AdminTeacherHierarchyView.as_view(), name='admin-hierarchy-teachers'),
+    path('api/admin/hierarchy/hods/', AdminHODHierarchyView.as_view(), name='admin-hierarchy-hods'),
+    path('api/admin/hierarchy/mentors/', AdminMentorHierarchyView.as_view(), name='admin-hierarchy-mentors'),
     path('api/admin/users/<int:user_id>/deactivate/', AdminDeactivateUserView.as_view(), name='admin-user-deactivate'),
+    path('api/admin/users/<int:user_id>/reset-password/', AdminResetPasswordView.as_view(), name='admin-user-reset-password'),
     path('api/admin/unlock-requests/', AdminUnlockRequestsView.as_view(), name='admin-unlock-requests'),
     path('api/admin/unlock-requests/<int:request_id>/approve/', AdminApproveUnlockView.as_view(), name='admin-approve-unlock'),
     path('api/admin/unlock-requests/<int:request_id>/deny/', AdminDenyUnlockView.as_view(), name='admin-deny-unlock'),
@@ -117,6 +136,9 @@ urlpatterns = [
     # 6. Principal Oversight
     # --------------------------------------------------------------------------
     path('api/principal/dashboard/', PrincipalDashboardView.as_view(), name='principal-dashboard'),
+    path('api/principal/filters/', PrincipalFilterOptionsView.as_view(), name='principal-filters'),
+    path('api/principal/advanced-graph/', PrincipalAdvancedGraphView.as_view(), name='principal-advanced-graph'),
+    path('api/principal/monitoring-duties/', PrincipalMonitoringDutiesView.as_view(), name='principal-monitoring-duties'),
     path('api/principal/stream-view/', PrincipalStreamView.as_view(), name='principal-stream-view'),
     path('api/principal/class-detail/', PrincipalClassDetailView.as_view(), name='principal-class-detail'),
     

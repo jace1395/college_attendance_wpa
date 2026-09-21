@@ -1,9 +1,12 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import apiClient from '../../services/apiClient';
 
-const YEARS   = ['FY', 'SY', 'TY'];
-const STREAMS = ['BVoc', 'BCA', 'BBA', 'BCom', 'BBA(FS)'];
-const DEPTS   = ['Computer Science', 'Finance'];
+// Import sub-components
+import ManageStudentsView from './hierarchy/ManageStudentsView';
+import ManageTeachersView from './hierarchy/ManageTeachersView';
+import ManageHODsView from './hierarchy/ManageHODsView';
+import ManageMentorsView from './hierarchy/ManageMentorsView';
+import ManagePrincipalView from './hierarchy/ManagePrincipalView';
 
 const UserManagement = () => {
   const [activeSubTab, setActiveSubTab] = useState('students');
@@ -29,45 +32,27 @@ const UserManagement = () => {
   const [isResetting, setIsResetting] = useState(false);
   const [resetError, setResetError] = useState('');
 
-  // Empty state — will be populated from API
-  const [users, setUsers] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  // Filters
-  const [yearFilter,   setYearFilter]   = useState('All');
-  const [streamFilter, setStreamFilter] = useState('All');
-  const [searchQuery,  setSearchQuery]  = useState('');
+  // Global Hierarchy Filters
+  const [filtersLoading, setFiltersLoading] = useState(true);
+  const [departments, setDepartments] = useState([]);
+  const [streams, setStreams] = useState([]);
+  const [classes, setClasses] = useState([]);
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      setLoading(true);
+    const fetchFilters = async () => {
       try {
-        const params = {};
-        params.role = activeSubTab === 'students' ? 'student' : activeSubTab === 'teachers' ? 'teacher' : 'admin';
-        if (yearFilter   !== 'All') params.year   = yearFilter;
-        if (streamFilter !== 'All') params.stream = streamFilter;
-        const { data } = await apiClient.get('/api/admin/users/', { params });
-        setUsers(data.users || []);
-      } catch {
-        setUsers([]);
+        const { data } = await apiClient.get('/api/admin/hierarchy/filters/');
+        setDepartments(data.departments);
+        setStreams(data.streams);
+        setClasses(data.classes);
+      } catch (err) {
+        console.error("Failed to fetch hierarchy filters:", err);
       } finally {
-        setLoading(false);
+        setFiltersLoading(false);
       }
     };
-    fetchUsers();
-  }, [activeSubTab, yearFilter, streamFilter]);
-
-  const filteredUsers = useMemo(() => {
-    if (!searchQuery) return users;
-    const q = searchQuery.toLowerCase();
-    return users.filter(u =>
-      u.name?.toLowerCase().includes(q) ||
-      u.email?.toLowerCase().includes(q) ||
-      u.id?.toString().toLowerCase().includes(q)
-    );
-  }, [users, searchQuery]);
-
-  const showYearStreamFilters = activeSubTab === 'students' || activeSubTab === 'teachers';
+    fetchFilters();
+  }, []);
 
   // Drag and Drop Handlers
   const handleDragOver  = (e) => { e.preventDefault(); setIsDragOver(true); };
@@ -96,6 +81,7 @@ const UserManagement = () => {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       setUploadStatus({ type: 'success', msg: 'CSV Processed! Users added successfully.' });
+      setTimeout(() => window.location.reload(), 2000); // Reload to fetch fresh data
     } catch (err) {
       const msg = err.response?.data?.error || 'Upload failed. Please check the file format.';
       setUploadStatus({ type: 'error', msg });
@@ -108,7 +94,8 @@ const UserManagement = () => {
     if (window.confirm(`Are you sure you want to deactivate user ${id}?`)) {
       try {
         await apiClient.patch(`/api/admin/users/${id}/deactivate/`);
-        setUsers(users.map(u => u.id === id ? { ...u, status: 'inactive' } : u));
+        alert("User deactivated successfully!");
+        window.location.reload();
       } catch (err) {
         alert(err.response?.data?.error || 'Failed to deactivate user.');
       }
@@ -123,7 +110,8 @@ const UserManagement = () => {
       await apiClient.post(`/api/admin/users/${resetModalUser.id}/reset-password/`, {
         admin_password: adminPassword,
       });
-      alert(`Password for ${resetModalUser.name} has been reset successfully!`);
+      const year = new Date().getFullYear();
+      alert(`Password reset to default (Sdcce@${year})`);
       setResetModalUser(null);
     } catch (err) {
       const msg = err.response?.data?.detail || 'Invalid admin password or request failed';
@@ -141,7 +129,6 @@ const UserManagement = () => {
       alert('User added successfully!');
       setIsAddModalOpen(false);
       setNewUser({ name: '', email: '', role: 'student', stream: '', department: '', year: '', roll_no: '' });
-      // Refresh the list by triggering a re-fetch, simple hack is to change subtab back and forth or just reload window
       window.location.reload(); 
     } catch (err) {
       alert(err.response?.data?.error || 'Failed to create user');
@@ -151,7 +138,7 @@ const UserManagement = () => {
   };
 
   return (
-    <div className=" flex flex-col gap-6">
+    <div className="flex flex-col gap-6">
 
       {/* Top Action Bar */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-4 shadow-lg">
@@ -161,10 +148,11 @@ const UserManagement = () => {
             { key: 'teachers', label: 'Manage Teachers' },
             { key: 'hods',     label: 'Manage HODs' },
             { key: 'mentors',  label: 'Manage Mentors' },
+            { key: 'principal',label: 'Manage Principal' },
           ].map(tab => (
             <button
               key={tab.key}
-              onClick={() => { setActiveSubTab(tab.key); setYearFilter('All'); setStreamFilter('All'); }}
+              onClick={() => setActiveSubTab(tab.key)}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${activeSubTab === tab.key ? 'bg-blue-600 text-white' : 'text-white/60 hover:text-white'}`}
             >
               {tab.label}
@@ -175,7 +163,7 @@ const UserManagement = () => {
         <div className="flex gap-3 w-full lg:w-auto">
           <button
             onClick={() => setIsAddModalOpen(true)}
-            className="flex-1 lg:flex-none bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg transition-transform transform  flex items-center justify-center gap-2"
+            className="flex-1 lg:flex-none bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-xl text-sm font-bold shadow-lg transition-transform transform flex items-center justify-center gap-2"
           >
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4"></path></svg>
             Add User
@@ -183,159 +171,83 @@ const UserManagement = () => {
         </div>
       </div>
 
-      {/* Filters Bar (Year + Stream + Search) */}
-      {showYearStreamFilters && (
-        <div className="flex flex-wrap items-center gap-3 bg-white/5 border border-white/10 rounded-2xl px-4 py-3">
-          <span className="text-xs text-white/40 font-semibold uppercase tracking-wider">Filter:</span>
-
-          {/* Search */}
-          <div className="relative">
-            <svg className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-white/30" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
-            <input
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Search name / email / ID..."
-              className="bg-slate-900/60 text-white/80 rounded-xl pl-9 pr-4 py-2 text-xs border border-white/10 focus:border-blue-500 outline-none w-48 transition-colors"
-            />
+      {/* Bulk Upload CSV - Horizontal Compact Banner */}
+      <div
+        onDragOver={handleDragOver}
+        onDragLeave={handleDragLeave}
+        onDrop={handleDrop}
+        className={`w-full border-2 border-dashed rounded-3xl flex flex-col sm:flex-row items-center justify-center p-6 gap-4 text-center sm:text-left transition-all shadow-sm ${
+          isDragOver ? 'border-blue-400 bg-blue-500/10' : 'border-white/20 bg-white/5 hover:border-white/40'
+        }`}
+      >
+        {uploadStatus ? (
+          <div className={`flex items-center gap-3 ${uploadStatus.type === 'error' ? 'text-red-400' : uploadStatus.type === 'success' ? 'text-green-400' : 'text-blue-400'}`}>
+            {uploadStatus.type === 'loading' && <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-blue-400"></div>}
+            {uploadStatus.type === 'success' && <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>}
+            {uploadStatus.type === 'error'   && <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>}
+            <p className="font-semibold">{uploadStatus.msg}</p>
           </div>
-
-          {/* Year filter */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-white/40">Year:</span>
-            <div className="flex bg-slate-900/60 p-0.5 rounded-lg border border-white/10">
-              {['All', ...YEARS].map(y => (
-                <button key={y} onClick={() => setYearFilter(y)}
-                  className={`px-3 py-1 rounded-md text-xs font-bold  ${yearFilter === y ? 'bg-blue-600 text-white' : 'text-white/50 hover:text-white'}`}>
-                  {y}
-                </button>
-              ))}
+        ) : (
+          <>
+            <div className={`p-3 rounded-full ${isDragOver ? 'bg-blue-500/20 text-blue-400' : 'bg-white/10 text-white/40'}`}>
+              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
             </div>
-          </div>
-
-          {/* Stream filter */}
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-white/40">Stream:</span>
-            <select
-              value={streamFilter}
-              onChange={e => setStreamFilter(e.target.value)}
-              className="bg-slate-900/60 text-white/80 rounded-xl px-3 py-2 text-xs border border-white/10 focus:border-blue-500 outline-none appearance-none cursor-pointer"
-            >
-              <option value="All">All Streams</option>
-              {STREAMS.map(s => <option key={s} value={s}>{s}</option>)}
-            </select>
-          </div>
-
-          {(yearFilter !== 'All' || streamFilter !== 'All' || searchQuery) && (
-            <button
-              onClick={() => { setYearFilter('All'); setStreamFilter('All'); setSearchQuery(''); }}
-              className="text-xs text-red-400 hover:text-red-300 border border-red-500/20 px-3 py-1.5 rounded-lg transition-colors"
-            >
-              Clear Filters
+            <div>
+              <h3 className="font-bold text-white text-lg">Bulk Upload Users</h3>
+              <p className="text-sm text-white/50">Drag and drop a .csv file here to add multiple users at once.</p>
+            </div>
+            <button className="hidden sm:block ml-auto px-4 py-2 bg-white/10 hover:bg-white/20 text-white text-sm font-semibold rounded-lg transition-colors border border-white/10">
+              Browse File
             </button>
+          </>
+        )}
+      </div>
+
+      <div className="flex flex-col gap-6 items-start">
+        {/* Main Content Area */}
+        <div className="flex-1 w-full">
+          {filtersLoading ? (
+             <div className="flex justify-center p-12">
+               <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-400"></div>
+             </div>
+          ) : (
+            <>
+              {activeSubTab === 'students' && (
+                <ManageStudentsView 
+                  departments={departments} 
+                  streams={streams} 
+                  classes={classes} 
+                  setResetModalUser={setResetModalUser} 
+                  handleDelete={handleDelete}
+                />
+              )}
+              {activeSubTab === 'teachers' && (
+                <ManageTeachersView 
+                  departments={departments} 
+                  setResetModalUser={setResetModalUser} 
+                  handleDelete={handleDelete}
+                />
+              )}
+              {activeSubTab === 'hods' && (
+                <ManageHODsView 
+                  departments={departments} 
+                  setResetModalUser={setResetModalUser} 
+                  handleDelete={handleDelete}
+                />
+              )}
+              {activeSubTab === 'mentors' && (
+                <ManageMentorsView 
+                  departments={departments} 
+                  classes={classes} 
+                  setResetModalUser={setResetModalUser} 
+                  handleDelete={handleDelete}
+                />
+              )}
+              {activeSubTab === 'principal' && (
+                <ManagePrincipalView />
+              )}
+            </>
           )}
-        </div>
-      )}
-
-      <div className="flex flex-col lg:flex-row gap-6 items-start">
-        {/* Drag & Drop Zone */}
-        <div className="lg:w-1/3 shrink-0 w-full lg:sticky lg:top-6">
-          <div
-            onDragOver={handleDragOver}
-            onDragLeave={handleDragLeave}
-            onDrop={handleDrop}
-            className={`min-h-[250px] border-2 border-dashed rounded-3xl flex flex-col items-center justify-center p-8 text-center transition-all ${
-              isDragOver ? 'border-blue-400 bg-blue-500/10 ' : 'border-white/20 bg-white/5 hover:border-white/40'
-            }`}
-          >
-            {uploadStatus ? (
-              <div className={` flex flex-col items-center gap-3 ${uploadStatus.type === 'error' ? 'text-red-400' : uploadStatus.type === 'success' ? 'text-green-400' : 'text-blue-400'}`}>
-                {uploadStatus.type === 'loading' && <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-400"></div>}
-                {uploadStatus.type === 'success' && <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>}
-                {uploadStatus.type === 'error'   && <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>}
-                <p className="font-semibold">{uploadStatus.msg}</p>
-              </div>
-            ) : (
-              <>
-                <svg className={`w-12 h-12 mb-4 transition-colors ${isDragOver ? 'text-blue-400' : 'text-white/40'}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
-                <h3 className="font-bold text-lg mb-1">Bulk Upload CSV</h3>
-                <p className="text-sm text-white/50">Drag and drop your user data file here.</p>
-              </>
-            )}
-          </div>
-        </div>
-
-        {/* Data Table */}
-        <div className="flex-1 bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse">
-              <thead>
-                <tr className="bg-slate-900/50 border-b border-white/10 text-white/50 text-sm">
-                  <th className="p-4 font-medium">ID</th>
-                  <th className="p-4 font-medium">Name</th>
-                  <th className="p-4 font-medium">Email</th>
-                  {showYearStreamFilters && <th className="p-4 font-medium">Year / Stream</th>}
-                  <th className="p-4 font-medium text-center">Status</th>
-                  <th className="p-4 font-medium text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr><td colSpan="6" className="p-12 text-center">
-                    <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-400 mx-auto"></div>
-                  </td></tr>
-                ) : filteredUsers.length > 0 ? filteredUsers.map(user => (
-                  <tr key={user.id} className="border-b border-white/5 hover:bg-white/10 transition-colors">
-                    <td className="p-4 font-mono text-sm text-white/80">{user.id}</td>
-                    <td className="p-4 font-bold">{user.name}</td>
-                    <td className="p-4 text-sm text-white/60">{user.email}</td>
-                    {showYearStreamFilters && (
-                      <td className="p-4 text-sm text-white/50">
-                        <div className="flex flex-wrap gap-2 items-center">
-                          {user.year && <span className="text-xs bg-white/10 px-2 py-0.5 rounded-md font-mono whitespace-nowrap">{user.year}</span>}
-                          {user.stream && <span className="text-xs bg-blue-500/15 text-blue-300 px-2 py-0.5 rounded-md whitespace-nowrap">{user.stream}</span>}
-                        </div>
-                      </td>
-                    )}
-                    <td className="p-4 text-center">
-                      <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${user.status === 'active' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                        {user.status}
-                      </span>
-                    </td>
-                    <td className="p-4 text-right">
-                      <div className="flex justify-end gap-2">
-                        <button className="p-2 bg-blue-500/10 text-blue-400 rounded hover:bg-blue-500/20 transition-colors" title="Edit">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                        </button>
-                        <button
-                          onClick={() => { setResetModalUser(user); setAdminPassword(''); setResetError(''); }}
-                          className="p-2 bg-yellow-500/10 text-yellow-400 rounded hover:bg-yellow-500/20 transition-colors"
-                          title="Reset Password"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
-                        </button>
-                        {user.role !== 'student' && (
-                          <button
-                            onClick={() => handleDelete(user.id)}
-                            disabled={user.status === 'inactive'}
-                            className="p-2 bg-red-500/10 text-red-400 rounded hover:bg-red-500/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-                            title="Deactivate"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                )) : (
-                  <tr>
-                    <td colSpan="6" className="p-12 text-center text-white/40">
-                      {loading ? '' : 'No users found. Data will appear after API integration.'}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
         </div>
       </div>
 
@@ -344,7 +256,7 @@ const UserManagement = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => setIsAddModalOpen(false)}></div>
 
-          <div className="bg-slate-800 border border-slate-600 w-full max-w-md rounded-2xl shadow-2xl relative z-10 flex flex-col overflow-hidden ">
+          <div className="bg-slate-800 border border-slate-600 w-full max-w-md rounded-2xl shadow-2xl relative z-10 flex flex-col overflow-hidden">
             <div className="bg-slate-900 px-6 py-4 flex justify-between items-center border-b border-slate-700">
               <h3 className="font-bold text-lg text-white">Create New User</h3>
               <button onClick={() => setIsAddModalOpen(false)} className="text-slate-400 hover:text-white">
@@ -372,33 +284,35 @@ const UserManagement = () => {
                     <select value={newUser.role} onChange={e => setNewUser({...newUser, role: e.target.value})} className="w-full bg-slate-900/50 text-white rounded-xl px-4 py-2.5 outline-none border border-slate-600 focus:border-blue-500 appearance-none">
                       <option value="student">Student</option>
                       <option value="teacher">Teacher</option>
-                      <option value="principal">Principal</option>
+                      <option value="hod">HOD</option>
                     </select>
                   </div>
                   <div>
                     <label className="block text-sm text-white/60 mb-1 ml-1">Department</label>
                     <select value={newUser.department} onChange={e => setNewUser({...newUser, department: e.target.value})} className="w-full bg-slate-900/50 text-white rounded-xl px-4 py-2.5 outline-none border border-slate-600 focus:border-blue-500 appearance-none">
                       <option value="">—</option>
-                      {DEPTS.map(d => <option key={d} value={d}>{d}</option>)}
+                      {departments.map(d => <option key={d.id} value={d.name}>{d.name}</option>)}
                     </select>
                   </div>
                 </div>
-                <div className="grid grid-cols-2 gap-4">
+                <div className="flex flex-col sm:flex-row gap-4">
                   {newUser.role === 'student' && (
-                    <div>
+                    <div className="flex-1">
                       <label className="block text-sm text-white/60 mb-1 ml-1">Stream</label>
                       <select value={newUser.stream} onChange={e => setNewUser({...newUser, stream: e.target.value})} className="w-full bg-slate-900/50 text-white rounded-xl px-4 py-2.5 outline-none border border-slate-600 focus:border-blue-500 appearance-none">
                         <option value="">—</option>
-                        {STREAMS.map(s => <option key={s} value={s}>{s}</option>)}
+                        {streams.map(s => <option key={s.id} value={s.name}>{s.name}</option>)}
                       </select>
                     </div>
                   )}
                   {newUser.role === 'student' && (
-                    <div>
+                    <div className="flex-1">
                       <label className="block text-sm text-white/60 mb-1 ml-1">Year</label>
                       <select value={newUser.year} onChange={e => setNewUser({...newUser, year: e.target.value})} className="w-full bg-slate-900/50 text-white rounded-xl px-4 py-2.5 outline-none border border-slate-600 focus:border-blue-500 appearance-none">
                         <option value="">—</option>
-                        {YEARS.map(y => <option key={y} value={y}>{y}</option>)}
+                        <option value="FY">FY</option>
+                        <option value="SY">SY</option>
+                        <option value="TY">TY</option>
                       </select>
                     </div>
                   )}
@@ -427,7 +341,7 @@ const UserManagement = () => {
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => !isResetting && setResetModalUser(null)}></div>
 
-          <div className="bg-slate-800 border border-slate-600 w-full max-w-md rounded-2xl shadow-2xl relative z-10 flex flex-col overflow-hidden ">
+          <div className="bg-slate-800 border border-slate-600 w-full max-w-md rounded-2xl shadow-2xl relative z-10 flex flex-col overflow-hidden">
             <div className="bg-slate-900 px-6 py-4 flex justify-between items-center border-b border-slate-700">
               <h3 className="font-bold text-lg text-white">Reset Password</h3>
               <button onClick={() => !isResetting && setResetModalUser(null)} className="text-slate-400 hover:text-white" disabled={isResetting}>
@@ -465,7 +379,7 @@ const UserManagement = () => {
                 <button
                   type="submit"
                   disabled={isResetting || !adminPassword}
-                  className="bg-red-600 hover:bg-red-500 text-white px-6 py-2 rounded-xl font-bold shadow-lg transition-transform transform  disabled:opacity-50"
+                  className="bg-red-600 hover:bg-red-500 text-white px-6 py-2 rounded-xl font-bold shadow-lg transition-transform transform disabled:opacity-50"
                 >
                   {isResetting ? 'Resetting...' : 'Confirm Reset'}
                 </button>

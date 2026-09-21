@@ -5,6 +5,8 @@ import PrincipalSearch from './PrincipalSearch';
 import PrincipalViewTab from './PrincipalViewTab';
 import apiClient from '../../services/apiClient';
 import Layout from '../../components/shared/Layout';
+import PrincipalMonitoringTab from './PrincipalMonitoringTab';
+import PrincipalAdvancedGraph from './PrincipalAdvancedGraph';
 
 const PrincipalDashboard = () => {
   const { user } = useAuth();
@@ -43,52 +45,59 @@ const PrincipalDashboard = () => {
     fetchDashboard();
   }, [user]);
 
-  const { principal, college_stats_today, streams_available } = dashboardData || {};
+  const { principal, college_stats_today, streams_available, stream_stats, class_stats } = dashboardData || {};
+
+  const getBarColor = (percentage) => {
+    if (percentage >= 75) return '#22c55e'; // green-500
+    if (percentage >= 50) return '#eab308'; // yellow-500
+    return '#ef4444'; // red-500
+  };
 
   return (
     <Layout>
-      {/* Principal-specific sub-header: Live Clock + Date Picker */}
-      <div className="flex flex-wrap justify-between items-center mb-6 gap-4 bg-white dark:bg-slate-800/80 border border-gray-200 dark:border-white/10 rounded-2xl p-4 shadow-sm">
-        <div>
-          <p className="text-xs text-gray-500 dark:text-white/40 uppercase tracking-wider mb-0.5">Live Time</p>
-          <h2 className="text-2xl font-bold tracking-wider font-mono text-purple-600 dark:text-purple-300 flex items-center gap-2">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
-            {liveTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-          </h2>
-        </div>
-        <div className="bg-gray-50 dark:bg-slate-900/50 rounded-xl px-4 py-2 border border-gray-200 dark:border-white/10 flex items-center gap-2">
-          <svg className="w-5 h-5 text-purple-500 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-          <input
-            type="date"
-            value={globalDate}
-            onChange={(e) => setGlobalDate(e.target.value)}
-            className="bg-transparent outline-none text-sm text-gray-800 dark:text-white"
-          />
-        </div>
-      </div>
-
       {/* Navigation Tabs & Profile Info */}
-      <div className="flex flex-col md:flex-row justify-between items-center gap-4 mb-8">
-        <div className="text-center md:text-left">
-          {principal ? (
-            <>
-              <h3 className="text-2xl font-bold text-gray-900 dark:text-white/90">{principal.name}</h3>
-              <p className="text-purple-600 dark:text-purple-300 font-medium">Principal, Shree Damodar College</p>
-            </>
-          ) : (
-            !loading && <p className="text-gray-400 dark:text-white/30">Principal data unavailable</p>
-          )}
+      <div className="flex flex-col xl:flex-row justify-between items-center gap-6 mb-10 pb-6 border-b border-gray-200 dark:border-white/10">
+        <div className="text-center xl:text-left flex flex-col sm:flex-row items-center gap-6 xl:gap-8">
+          <div>
+            {principal ? (
+              <>
+                <h3 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">{principal.name}</h3>
+                <p className="text-purple-600 dark:text-purple-400 font-semibold tracking-wide">Principal, Shree Damodar College</p>
+              </>
+            ) : (
+              !loading && <p className="text-gray-400 dark:text-white/30">Principal data unavailable</p>
+            )}
+          </div>
+          
+          <div className="h-14 w-px bg-gray-200 dark:bg-white/10 hidden sm:block"></div>
+          
+          {/* Live Date/Time Integrated */}
+          <div className="flex flex-col sm:flex-row items-center gap-4 bg-gray-50 dark:bg-slate-900/50 rounded-2xl px-6 py-3 border border-gray-200 dark:border-white/10 shadow-sm">
+            <h2 className="text-xl font-bold tracking-wider font-mono text-purple-600 dark:text-purple-400 flex items-center gap-2 sm:border-r border-gray-200 dark:border-white/10 sm:pr-4">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+              {liveTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
+            </h2>
+            <div className="flex items-center gap-2">
+              <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+              <input
+                type="date"
+                value={globalDate}
+                onChange={(e) => setGlobalDate(e.target.value)}
+                className="bg-transparent outline-none text-base text-gray-700 dark:text-white/90 font-medium cursor-pointer"
+              />
+            </div>
+          </div>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2 p-2 bg-gray-100/80 dark:bg-slate-800/60 border border-gray-200 dark:border-slate-700 rounded-xl w-fit">
-          {['dashboard', 'view', 'reports', 'search'].map(tab => (
+        <div className="flex flex-wrap justify-center items-center gap-2 p-2 bg-gray-100 dark:bg-slate-800/80 border border-gray-200 dark:border-white/10 rounded-2xl w-full xl:w-auto shadow-sm">
+          {['dashboard', 'view', 'monitoring', 'reports', 'search'].map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-6 py-2.5 rounded-xl text-sm font-bold capitalize  whitespace-nowrap ${
+              className={`flex-1 xl:flex-none px-6 py-3 rounded-xl text-sm font-bold capitalize transition-all duration-200 ${
                 activeTab === tab
-                  ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/20'
-                  : 'text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-white/5'
+                  ? 'bg-purple-600 text-white shadow-lg shadow-purple-500/30 transform scale-[1.02]'
+                  : 'text-gray-600 dark:text-white/60 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-white/10'
               }`}
             >
               {tab}
@@ -134,17 +143,9 @@ const PrincipalDashboard = () => {
                 ))}
               </div>
 
-              {/* Info Banner */}
-              <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-white/10 rounded-3xl p-6 shadow-sm flex items-center gap-4">
-                <div className="p-3 bg-blue-50 dark:bg-blue-500/20 rounded-xl text-blue-600 dark:text-blue-400 shrink-0">
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                </div>
-                <div>
-                  <p className="font-semibold text-gray-900 dark:text-white/90">Attendance Unlock Requests</p>
-                  <p className="text-sm text-gray-500 dark:text-white/50 mt-0.5">
-                    Unlock requests from teachers are managed in the <span className="text-blue-600 dark:text-blue-300 font-medium">Admin Console → System Overrides</span>.
-                  </p>
-                </div>
+              {/* Interactive Graphs */}
+              <div className="mt-8">
+                <PrincipalAdvancedGraph streams={streams_available} />
               </div>
             </div>
           )
@@ -152,6 +153,7 @@ const PrincipalDashboard = () => {
 
         {activeTab === 'reports' && <PrincipalReportsHub streams={streams_available} onNavigateToView={() => setActiveTab('view')} />}
         {activeTab === 'view' && <PrincipalViewTab streams={streams_available} />}
+        {activeTab === 'monitoring' && <PrincipalMonitoringTab />}
         {activeTab === 'search' && <PrincipalSearch />}
       </div>
     </Layout>

@@ -45,6 +45,7 @@ class User(AbstractBaseUser, PermissionsMixin):
     name = models.CharField(max_length=255, null=True, blank=True)
 
     email = models.EmailField(unique=True, null=True, blank=True)
+    recovery_email = models.EmailField(null=True, blank=True)
     roll_no = models.CharField(max_length=20, unique=True, null=True, blank=True)
     role = models.CharField(max_length=20, choices=RoleChoices.choices)
 
