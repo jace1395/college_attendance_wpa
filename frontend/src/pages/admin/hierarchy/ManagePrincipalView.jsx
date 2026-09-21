@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import apiClient from '../../../../services/apiClient';
+import apiClient from '../../../services/apiClient';
 
 const ManagePrincipalView = () => {
   const [principal, setPrincipal] = useState(null);
