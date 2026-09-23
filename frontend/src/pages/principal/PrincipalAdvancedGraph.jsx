@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { ComposedChart, Area, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import apiClient from '../../services/apiClient';
 
-const PrincipalAdvancedGraph = () => {
+const PrincipalAdvancedGraph = ({ streams, onGraphClick }) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   
@@ -17,6 +17,7 @@ const PrincipalAdvancedGraph = () => {
   const [selectedStreams, setSelectedStreams] = useState([]);
   const [selectedYears, setSelectedYears] = useState([]);
   const [selectedClasses, setSelectedClasses] = useState([]);
+  const [openDropdown, setOpenDropdown] = useState(null);
   
   // Fetch filter options on mount
   useEffect(() => {
@@ -61,7 +62,7 @@ const PrincipalAdvancedGraph = () => {
       selectedYears.forEach(y => params.append('years[]', y));
       selectedClasses.forEach(c => params.append('classes[]', c));
       
-      const { data: resData } = await apiClient.get(`/api/principal/advanced-graph/?${params.toString()}`);
+      const { data: resData } = await apiClient.get(`/api/reports/principal/aggregate/?${params.toString()}`);
       setData(resData);
     } catch (error) {
       console.error("Failed to fetch graph data", error);
@@ -91,12 +92,15 @@ const PrincipalAdvancedGraph = () => {
         
         <div className="flex flex-wrap gap-4 items-center">
           {/* Stream Filter */}
-          <div className="relative group">
-            <button className="px-5 py-2.5 bg-gray-50 hover:bg-gray-100 dark:bg-slate-900/50 dark:hover:bg-slate-900/80 border border-gray-200 dark:border-white/10 rounded-xl text-sm font-bold text-gray-700 dark:text-white/90 flex items-center gap-2 transition-colors shadow-sm">
+          <div className="relative">
+            <button 
+              onClick={() => setOpenDropdown(openDropdown === 'streams' ? null : 'streams')}
+              className="px-5 py-2.5 bg-gray-50 hover:bg-gray-100 dark:bg-slate-900/50 dark:hover:bg-slate-900/80 border border-gray-200 dark:border-white/10 rounded-xl text-sm font-bold text-gray-700 dark:text-white/90 flex items-center gap-2 transition-colors shadow-sm"
+            >
               Streams <span className="bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded-lg text-xs">{selectedStreams.length === 0 ? 'All' : selectedStreams.length}</span>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
             </button>
-            <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 border border-gray-200 dark:border-white/10 rounded-2xl shadow-2xl p-2 hidden group-hover:block z-30">
+            <div className={`absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 border border-gray-200 dark:border-white/10 rounded-2xl shadow-2xl p-2 z-30 ${openDropdown === 'streams' ? 'block' : 'hidden'}`}>
               {filterOptions.streams.map(stream => (
                 <label key={stream} className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 dark:hover:bg-white/5 rounded-xl cursor-pointer">
                   <input 
@@ -112,12 +116,15 @@ const PrincipalAdvancedGraph = () => {
           </div>
           
           {/* Year Filter */}
-          <div className="relative group">
-            <button className="px-5 py-2.5 bg-gray-50 hover:bg-gray-100 dark:bg-slate-900/50 dark:hover:bg-slate-900/80 border border-gray-200 dark:border-white/10 rounded-xl text-sm font-bold text-gray-700 dark:text-white/90 flex items-center gap-2 transition-colors shadow-sm">
+          <div className="relative">
+            <button 
+              onClick={() => setOpenDropdown(openDropdown === 'years' ? null : 'years')}
+              className="px-5 py-2.5 bg-gray-50 hover:bg-gray-100 dark:bg-slate-900/50 dark:hover:bg-slate-900/80 border border-gray-200 dark:border-white/10 rounded-xl text-sm font-bold text-gray-700 dark:text-white/90 flex items-center gap-2 transition-colors shadow-sm"
+            >
               Years <span className="bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded-lg text-xs">{selectedYears.length === 0 ? 'All' : selectedYears.length}</span>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
             </button>
-            <div className="absolute right-0 mt-2 w-36 bg-white dark:bg-slate-800 border border-gray-200 dark:border-white/10 rounded-2xl shadow-2xl p-2 hidden group-hover:block z-30">
+            <div className={`absolute right-0 mt-2 w-36 bg-white dark:bg-slate-800 border border-gray-200 dark:border-white/10 rounded-2xl shadow-2xl p-2 z-30 ${openDropdown === 'years' ? 'block' : 'hidden'}`}>
               {filterOptions.years.map(year => (
                 <label key={year} className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 dark:hover:bg-white/5 rounded-xl cursor-pointer">
                   <input 
@@ -133,12 +140,15 @@ const PrincipalAdvancedGraph = () => {
           </div>
 
           {/* Classes Filter */}
-          <div className="relative group">
-            <button className="px-5 py-2.5 bg-gray-50 hover:bg-gray-100 dark:bg-slate-900/50 dark:hover:bg-slate-900/80 border border-gray-200 dark:border-white/10 rounded-xl text-sm font-bold text-gray-700 dark:text-white/90 flex items-center gap-2 transition-colors shadow-sm">
+          <div className="relative">
+            <button 
+              onClick={() => setOpenDropdown(openDropdown === 'classes' ? null : 'classes')}
+              className="px-5 py-2.5 bg-gray-50 hover:bg-gray-100 dark:bg-slate-900/50 dark:hover:bg-slate-900/80 border border-gray-200 dark:border-white/10 rounded-xl text-sm font-bold text-gray-700 dark:text-white/90 flex items-center gap-2 transition-colors shadow-sm"
+            >
               Classes <span className="bg-purple-100 dark:bg-purple-900/50 text-purple-700 dark:text-purple-300 px-2 py-0.5 rounded-lg text-xs">{selectedClasses.length === 0 ? 'All' : selectedClasses.length}</span>
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path></svg>
             </button>
-            <div className="absolute right-0 mt-2 w-64 max-h-[300px] overflow-y-auto bg-white dark:bg-slate-800 border border-gray-200 dark:border-white/10 rounded-2xl shadow-2xl p-2 hidden group-hover:block z-30">
+            <div className={`absolute right-0 mt-2 w-64 max-h-[300px] overflow-y-auto bg-white dark:bg-slate-800 border border-gray-200 dark:border-white/10 rounded-2xl shadow-2xl p-2 z-30 ${openDropdown === 'classes' ? 'block' : 'hidden'}`}>
               {availableClasses.map(cls => (
                 <label key={cls.id} className="flex items-start gap-3 px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 rounded-xl cursor-pointer">
                   <input 
@@ -170,8 +180,8 @@ const PrincipalAdvancedGraph = () => {
         )}
         
         {data.length > 0 ? (
-          <ResponsiveContainer width="100%" height="100%">
-            <ComposedChart data={data} margin={{ top: 20, right: 30, left: 0, bottom: 0 }}>
+          <ResponsiveContainer width="100%" height="100%" className="cursor-pointer" onClick={onGraphClick}>
+            <ComposedChart data={data} margin={{ top: 20, right: 30, left: 0, bottom: 25 }}>
               <defs>
                 <linearGradient id="colorPct" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#9333ea" stopOpacity={0.6}/>
@@ -182,8 +192,8 @@ const PrincipalAdvancedGraph = () => {
                 </filter>
               </defs>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(148, 163, 184, 0.1)" />
-              <XAxis dataKey="date" tick={{fill: '#64748b', fontSize: 13, fontWeight: 500}} axisLine={false} tickLine={false} dy={15} />
-              <YAxis tick={{fill: '#64748b', fontSize: 13, fontWeight: 500}} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} domain={[0, 100]} dx={-15} />
+              <XAxis dataKey="date" tick={{fill: '#94a3b8', fontSize: 12, fontWeight: 600}} axisLine={false} tickLine={false} dy={15} minTickGap={40} />
+              <YAxis tick={{fill: '#94a3b8', fontSize: 13, fontWeight: 600}} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} domain={[0, 100]} dx={-15} />
               <Tooltip 
                 contentStyle={{backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', color: '#fff', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.5)', padding: '12px 16px'}}
                 itemStyle={{color: '#fff', fontWeight: 'bold', fontSize: '15px'}}
@@ -195,6 +205,7 @@ const PrincipalAdvancedGraph = () => {
                 dataKey="percentage" 
                 fill="url(#colorPct)" 
                 stroke="none"
+                isAnimationActive={false}
               />
               <Line
                 type="monotone"
@@ -204,6 +215,7 @@ const PrincipalAdvancedGraph = () => {
                 dot={false}
                 activeDot={{r: 8, strokeWidth: 0, fill: '#d8b4fe', style: {filter: 'url(#drop-shadow)'}}}
                 style={{filter: 'url(#drop-shadow)'}}
+                isAnimationActive={false}
               />
             </ComposedChart>
           </ResponsiveContainer>

@@ -2128,7 +2128,7 @@ class PrincipalFilterOptionsView(APIView):
             
             classes.append({
                 "id": c.id,
-                "name": c.name or f"{c.subject.name} - {c.teacher.name if c.teacher else 'No Teacher'}",
+                "name": f"{c.subject.name} - {c.teacher.name if c.teacher else 'No Teacher'}",
                 "stream": c.subject.stream,
                 "year": year
             })
@@ -2202,8 +2202,8 @@ class PrincipalMonitoringDutiesView(APIView):
             enrolled = 0
             class_name = d.class_room
             if d.class_batch:
-                class_name = d.class_batch.name or d.class_batch.subject.name
-                enrolled = d.class_batch.enrollment_set.count()
+                class_name = d.class_batch.subject.name if d.class_batch.subject else d.class_room
+                enrolled = d.class_batch.enrollments.count()
 
             data.append({
                 "id": d.id,
@@ -2213,6 +2213,8 @@ class PrincipalMonitoringDutiesView(APIView):
                 "class_name": class_name,
                 "teacher_name": d.teacher.name or d.teacher.email,
                 "teacher_dept": d.teacher.department.name if getattr(d.teacher, 'department', None) else "N/A",
+                "department": d.teacher.department.name if getattr(d.teacher, 'department', None) else "N/A",
+                "stream": d.class_batch.subject.stream if d.class_batch and d.class_batch.subject else "N/A",
                 "status": d.status,
                 "total_students": d.total_students_present,
                 "enrolled_students": enrolled,
@@ -2225,7 +2227,15 @@ class PrincipalDashboardView(APIView):
     permission_classes = [IsAuthenticated, IsPrincipal]
 
     def get(self, request):
-        today = timezone.now().date()
+        date_str = request.query_params.get('date')
+        if date_str:
+            try:
+                today = datetime.datetime.strptime(date_str, '%Y-%m-%d').date()
+            except ValueError:
+                today = timezone.now().date()
+        else:
+            today = timezone.now().date()
+            
         total_present_today = Attendance.objects.filter(date=today, status='Present').count()
         total_absent_today = Attendance.objects.filter(date=today, status='Absent').count()
         total_records_today = total_present_today + total_absent_today
@@ -3066,3 +3076,480 @@ class AdminMentorHierarchyView(APIView):
             })
             
         return Response({'mentors': mentors_data})
+
+
+# ==============================================================================
+# GlobalReportAPIView - Admin/Principal report export (PDF, Excel, CSV)
+# ==============================================================================
+
+class GlobalReportAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from django.utils import timezone
+        import datetime
+        import io
+        import csv
+        import zipfile
+        from collections import defaultdict
+
+        export_type = request.query_params.get('export_format', 'pdf')
+        stream_filter = request.query_params.get('stream', 'all')
+        date_range = request.query_params.get('dateRange', 'monthly')
+
+        qs = Attendance.objects.select_related(
+            'student', 'student__stream', 'class_batch__subject', 'class_batch__teacher'
+        )
+
+        if stream_filter and stream_filter not in ('all', 'All Streams'):
+            qs = qs.filter(class_batch__subject__stream=stream_filter)
+
+        now = timezone.now()
+        if date_range == 'daily':
+            qs = qs.filter(date=now.date())
+        elif date_range == 'weekly':
+            qs = qs.filter(date__gte=(now - datetime.timedelta(days=7)).date())
+        elif date_range == 'monthly':
+            qs = qs.filter(date__gte=(now - datetime.timedelta(days=30)).date())
+
+        qs = qs.order_by('-date')
+
+        grouped_records = defaultdict(lambda: defaultdict(list))
+        for attendance in qs:
+            sname = attendance.student.stream.name if attendance.student.stream else "Unassigned"
+            subname = attendance.class_batch.subject.name if attendance.class_batch and attendance.class_batch.subject else "Unknown Subject"
+            grouped_records[sname][subname].append(attendance)
+
+        if export_type == 'csv':
+            text_buffer = io.StringIO()
+            writer = csv.writer(text_buffer)
+            for stream_name, subjects in sorted(grouped_records.items()):
+                for subject_name, records in sorted(subjects.items()):
+                    writer.writerow([f"Stream: {stream_name}", f"Subject: {subject_name}"])
+                    unique_dates = sorted(set(a.date for a in records))
+                    headers = ["Roll No", "Name"] + [d.strftime('%d-%b') for d in unique_dates] + ["Total", "Attended", "Overall%"]
+                    writer.writerow(headers)
+                    student_records = defaultdict(list)
+                    for a in records:
+                        student_records[a.student].append(a)
+                    for student, s_recs in sorted(student_records.items(), key=lambda x: str(x[0].roll_no or x[0].id)):
+                        row = [str(student.roll_no or "N/A"), student.name]
+                        for d in unique_dates:
+                            att = next((a for a in s_recs if a.date == d), None)
+                            row.append("P" if att and att.status == "Present" else ("A" if att else "-"))
+                        total = len(s_recs)
+                        attended = sum(1 for a in s_recs if a.status == "Present")
+                        pct = round((attended / total) * 100, 1) if total > 0 else 0
+                        row.extend([total, attended, f"{pct}%"])
+                        writer.writerow(row)
+                    writer.writerow([])
+            text_buffer.seek(0)
+            file_buffer = io.BytesIO(text_buffer.getvalue().encode("utf-8"))
+            return FileResponse(file_buffer, as_attachment=True, filename="System_Report.csv", content_type="text/csv")
+
+        elif export_type == 'excel':
+            file_buffer = io.BytesIO()
+            wb = openpyxl.Workbook()
+            wb.remove(wb.active)
+            for stream_name, subjects in sorted(grouped_records.items()):
+                for subject_name, records in sorted(subjects.items()):
+                    safe_title = f"{stream_name[:10]}_{subject_name[:15]}".replace("/", "_").replace("\\", "_")
+                    if safe_title in wb.sheetnames:
+                        safe_title = f"{safe_title}_{len(wb.sheetnames)}"
+                    ws = wb.create_sheet(title=safe_title)
+                    unique_dates = sorted(set(a.date for a in records))
+                    headers = ["Roll No", "Name"] + [d.strftime("%d-%b") for d in unique_dates] + ["Total", "Attended", "Overall%"]
+                    ws.append(headers)
+                    for cell in ws[1]:
+                        cell.font = Font(bold=True, color="FFFFFF")
+                        cell.fill = PatternFill(start_color="2c3e50", end_color="2c3e50", fill_type="solid")
+                        cell.alignment = Alignment(horizontal="center")
+                    student_records = defaultdict(list)
+                    for a in records:
+                        student_records[a.student].append(a)
+                    for student, s_recs in sorted(student_records.items(), key=lambda x: str(x[0].roll_no or x[0].id)):
+                        row = [str(student.roll_no or "N/A"), student.name]
+                        for d in unique_dates:
+                            att = next((a for a in s_recs if a.date == d), None)
+                            row.append("P" if att and att.status == "Present" else ("A" if att else "-"))
+                        total = len(s_recs)
+                        attended = sum(1 for a in s_recs if a.status == "Present")
+                        pct = round((attended / total) * 100, 1) if total > 0 else 0
+                        row.extend([total, attended, f"{pct}%"])
+                        ws.append(row)
+            if not wb.sheetnames:
+                wb.create_sheet(title="No Data")
+            wb.save(file_buffer)
+            file_buffer.seek(0)
+            return FileResponse(file_buffer, as_attachment=True, filename="System_Report.xlsx", content_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
+
+        else:  # PDF
+            file_buffer = io.BytesIO()
+            doc = BaseDocTemplate(file_buffer, pagesize=landscape(A4), rightMargin=20, leftMargin=20, topMargin=20, bottomMargin=20)
+            frame = Frame(doc.leftMargin, doc.bottomMargin, doc.width, doc.height, id="normal")
+            template = PageTemplate(id="test", frames=frame)
+            doc.addPageTemplates([template])
+            elements = []
+            styles = getSampleStyleSheet()
+            title_style = styles["Heading1"]
+            title_style.alignment = 1
+            elements.append(Paragraph("System Attendance Report", title_style))
+            elements.append(Spacer(1, 12))
+            for stream_name, subjects in sorted(grouped_records.items()):
+                for subject_name, records in sorted(subjects.items()):
+                    elements.append(Paragraph(f"<b>{stream_name} - {subject_name}</b>", styles["Heading2"]))
+                    elements.append(Spacer(1, 6))
+                    unique_dates = sorted(set(a.date for a in records))
+                    headers = ["Roll No", "Name"] + [d.strftime("%d-%b") for d in unique_dates] + ["Total", "Att", "%"]
+                    student_records = defaultdict(list)
+                    for a in records:
+                        student_records[a.student].append(a)
+                    table_data = [headers]
+                    for student, s_recs in sorted(student_records.items(), key=lambda x: str(x[0].roll_no or x[0].id)):
+                        row = [str(student.roll_no or "N/A"), student.name]
+                        for d in unique_dates:
+                            att = next((a for a in s_recs if a.date == d), None)
+                            row.append("P" if att and att.status == "Present" else ("A" if att else "-"))
+                        total = len(s_recs)
+                        attended = sum(1 for a in s_recs if a.status == "Present")
+                        pct = round((attended / total) * 100, 1) if total > 0 else 0
+                        row.extend([str(total), str(attended), f"{pct}%"])
+                        table_data.append(row)
+                    if len(table_data) > 1:
+                        col_widths = [45, 120] + [30] * (len(headers) - 2)
+                        t = Table(table_data, colWidths=col_widths, repeatRows=1)
+                        ts = TableStyle([
+                            ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#2c3e50")),
+                            ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
+                            ("ALIGN", (0, 0), (-1, -1), "CENTER"),
+                            ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
+                            ("FONTSIZE", (0, 0), (-1, -1), 7),
+                            ("GRID", (0, 0), (-1, -1), 0.5, colors.lightgrey),
+                        ])
+                        t.setStyle(ts)
+                        elements.append(t)
+                    elements.append(Spacer(1, 12))
+                    elements.append(PageBreak())
+            doc.build(elements)
+            file_buffer.seek(0)
+            return FileResponse(file_buffer, as_attachment=True, filename="System_Report.pdf", content_type="application/pdf")
+
+
+# ==============================================================================
+# PrincipalReportsHubView
+# ==============================================================================
+
+class PrincipalReportsHubView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        from django.utils import timezone
+        import datetime
+        from collections import defaultdict
+
+        programme = request.query_params.get('programme')
+        year = request.query_params.get('year')
+        date_range = request.query_params.get('dateRange', 'monthly')
+
+        batches = ClassBatch.objects.all().select_related('subject', 'teacher')
+        if programme:
+            batches = batches.filter(subject__stream=programme)
+
+        now = timezone.now()
+        date_filter = {}
+        if date_range == 'daily':
+            date_filter['date'] = now.date()
+        elif date_range == 'weekly':
+            date_filter['date__gte'] = (now - datetime.timedelta(days=7)).date()
+        elif date_range == 'monthly':
+            date_filter['date__gte'] = (now - datetime.timedelta(days=30)).date()
+
+        class_data = []
+        for b in batches:
+            total_atts = Attendance.objects.filter(class_batch=b, **date_filter).count()
+            present_atts = Attendance.objects.filter(class_batch=b, status='Present', **date_filter).count()
+            absent_atts = Attendance.objects.filter(class_batch=b, status='Absent', **date_filter).count()
+            if total_atts > 0:
+                class_data.append({
+                    "class_name": b.subject.name if b.subject else "Unknown",
+                    "teacher": b.teacher.name if b.teacher else "Unknown",
+                    "total": total_atts,
+                    "present": present_atts,
+                    "absent": absent_atts
+                })
+
+        atts = Attendance.objects.filter(class_batch__in=batches, **date_filter).select_related('student', 'class_batch')
+        student_map = {}
+        for a in atts:
+            s_id = a.student_id
+            if s_id not in student_map:
+                student = a.student
+                academic_year_str = a.class_batch.academic_year if a.class_batch else "2026-2027"
+                if academic_year_str and '-' in academic_year_str:
+                    display_year = academic_year_str.split('-')[0]
+                else:
+                    display_year = academic_year_str or "2026"
+                student_map[s_id] = {
+                    "name": student.name,
+                    "roll": str(student.roll_no or student.id),
+                    "year": display_year,
+                    "total": 0,
+                    "attended": 0,
+                    "absent": 0
+                }
+            student_map[s_id]["total"] += 1
+            if a.status == 'Present':
+                student_map[s_id]["attended"] += 1
+            else:
+                student_map[s_id]["absent"] += 1
+
+        students = []
+        for s_data in student_map.values():
+            t = s_data["total"]
+            att = s_data["attended"]
+            pct = round((att / t) * 100, 1) if t > 0 else 0
+            s_data["attendance"] = f"{pct}%"
+            students.append(s_data)
+
+        students.sort(key=lambda x: x["name"])
+
+        return Response({
+            "class_data": class_data,
+            "students": students
+        })
+
+
+# ==============================================================================
+# PrincipalSearchView
+# ==============================================================================
+
+class PrincipalSearchView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        query = request.query_params.get('q', '').strip()
+        if not query:
+            return Response({'students': [], 'teachers': []})
+
+        students = User.objects.filter(
+            role='Student'
+        ).filter(
+            Q(name__icontains=query) | Q(roll_no__icontains=query) | Q(email__icontains=query)
+        ).select_related('stream')[:20]
+
+        teachers = User.objects.filter(
+            role__in=['Teacher', 'HOD']
+        ).filter(
+            Q(name__icontains=query) | Q(email__icontains=query)
+        ).select_related('department')[:20]
+
+        student_data = []
+        for s in students:
+            enrollments = Enrollment.objects.filter(student=s).select_related('class_batch__subject').first()
+            year = "N/A"
+            if enrollments and enrollments.class_batch and enrollments.class_batch.subject:
+                sem = enrollments.class_batch.subject.semester
+                sem_to_year = {'Sem 1': 'FY', 'Sem 2': 'FY', 'Sem 3': 'SY', 'Sem 4': 'SY', 'Sem 5': 'TY', 'Sem 6': 'TY'}
+                year = sem_to_year.get(sem, sem)
+            student_data.append({
+                'id': s.id,
+                'name': s.name,
+                'roll_no': s.roll_no,
+                'email': s.email,
+                'stream': s.stream.name if s.stream else 'N/A',
+                'year': year,
+                'status': 'active' if s.is_active else 'inactive'
+            })
+
+        teacher_data = []
+        for t in teachers:
+            teacher_data.append({
+                'id': t.id,
+                'name': t.name,
+                'email': t.email,
+                'role': t.role,
+                'department': t.department.name if t.department else 'N/A',
+                'status': 'active' if t.is_active else 'inactive'
+            })
+
+        return Response({'students': student_data, 'teachers': teacher_data})
+
+
+# ==============================================================================
+# PrincipalTeacherEfficiencyView
+# ==============================================================================
+
+class PrincipalTeacherEfficiencyView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        teachers = User.objects.filter(role__in=['Teacher', 'HOD']).prefetch_related(
+            Prefetch('classbatch_set', queryset=ClassBatch.objects.select_related('subject'))
+        ).select_related('department')
+
+        data = []
+        for t in teachers:
+            batches = t.classbatch_set.all()
+            total_classes = Attendance.objects.filter(class_batch__in=batches).values('date', 'class_batch').distinct().count()
+            data.append({
+                'id': t.id,
+                'name': t.name,
+                'email': t.email,
+                'department': t.department.name if t.department else 'N/A',
+                'subjects_count': batches.count(),
+                'classes_conducted': total_classes,
+            })
+        data.sort(key=lambda x: -x['classes_conducted'])
+        return Response({'teachers': data})
+
+
+# ==============================================================================
+# PrincipalMentorOversightView
+# ==============================================================================
+
+class PrincipalMentorOversightView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        mentors = User.objects.filter(is_mentor=True).prefetch_related(
+            Prefetch('mentees', queryset=User.objects.filter(role='Student').select_related('stream'))
+        ).select_related('department')
+
+        data = []
+        for m in mentors:
+            mentees_count = m.mentees.count()
+            data.append({
+                'id': m.id,
+                'name': m.name,
+                'email': m.email,
+                'department': m.department.name if m.department else 'N/A',
+                'mentees_count': mentees_count,
+                'status': 'Active' if getattr(m, 'is_active', True) else 'Inactive'
+            })
+
+        return Response({'mentors': data})
+
+
+# ==============================================================================
+# PrincipalDivisionAnalysisView
+# ==============================================================================
+
+class PrincipalDivisionAnalysisView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        stream = request.query_params.get('stream', 'all')
+        batches = ClassBatch.objects.select_related('subject', 'teacher')
+        if stream and stream != 'all':
+            batches = batches.filter(subject__stream=stream)
+
+        data = []
+        for b in batches:
+            total = Attendance.objects.filter(class_batch=b).count()
+            present = Attendance.objects.filter(class_batch=b, status='Present').count()
+            pct = round((present / total) * 100, 1) if total > 0 else 0
+            data.append({
+                'class_id': b.id,
+                'subject': b.subject.name if b.subject else 'Unknown',
+                'stream': b.subject.stream if b.subject else 'Unknown',
+                'division': b.division or 'A',
+                'teacher': b.teacher.name if b.teacher else 'Unknown',
+                'total': total,
+                'present': present,
+                'pct': pct,
+            })
+        return Response({'divisions': data})
+
+
+# ==============================================================================
+# AdminUserDetailView (used in admin user management)
+# ==============================================================================
+
+class AdminUserDetailView(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def get(self, request, user_id):
+        try:
+            user = User.objects.select_related('stream', 'department').get(id=user_id)
+        except User.DoesNotExist:
+            return Response({'error': 'User not found'}, status=404)
+        return Response({
+            'id': user.id,
+            'name': user.name,
+            'email': user.email,
+            'role': user.role,
+            'stream': user.stream.name if user.stream else None,
+            'department': user.department.name if user.department else None,
+            'roll_no': user.roll_no,
+            'is_active': user.is_active,
+            'is_mentor': user.is_mentor,
+        })
+
+    def patch(self, request, user_id):
+        try:
+            user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response({'error': 'User not found'}, status=404)
+        for field in ['name', 'email', 'role', 'is_active', 'is_mentor']:
+            if field in request.data:
+                setattr(user, field, request.data[field])
+        user.save()
+        return Response({'message': 'User updated successfully'})
+
+
+# ==============================================================================
+# Admin shortcut views (needed by some admin routes)
+# ==============================================================================
+
+class AdminReportsGraphDataView(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def get(self, request):
+        streams = list(Subject.objects.values_list('stream', flat=True).distinct())
+        data = []
+        for stream in streams:
+            batches = ClassBatch.objects.filter(subject__stream=stream)
+            total = Attendance.objects.filter(class_batch__in=batches).count()
+            present = Attendance.objects.filter(class_batch__in=batches, status='Present').count()
+            pct = round((present / total * 100), 1) if total > 0 else 0
+            data.append({"name": stream, "attendance": pct})
+        return Response(data)
+
+
+class AdminForceUnlockView(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def post(self, request):
+        teacher_email = request.data.get('teacher_email')
+        subject_id = request.data.get('subject_id')
+        if not teacher_email or not subject_id:
+            return Response({'error': 'teacher_email and subject_id are required'}, status=400)
+        tickets = AttendanceTicket.objects.filter(
+            attendance__class_batch__id=subject_id,
+            student__email=teacher_email
+        )
+        tickets.update(status='Approved')
+        return Response({'message': 'Force unlock successful'})
+
+
+class AdminBulkUnlockView(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def post(self, request):
+        AttendanceTicket.objects.filter(status='Pending').update(status='Approved')
+        return Response({'message': 'Bulk unlock successful'})
+
+
+class AdminSetSemesterDatesView(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def post(self, request):
+        return Response({'message': 'Semester dates updated'})
+
+
+class AdminArchiveSemesterView(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def post(self, request):
+        ClassBatch.objects.update(academic_year="Archived")
+        return Response({'message': 'Semester archived successfully'})

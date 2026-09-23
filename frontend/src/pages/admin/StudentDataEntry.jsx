@@ -1,9 +1,9 @@
-﻿import React, { useState } from "react";
-
+import React, { useState, useEffect } from "react";
+import apiClient from "../../services/apiClient";
 const PROGRAMMES = ["BCom", "BCA", "BVoc", "BBA", "BBA(FS)"];
 const YEARS = ["First Year (FY)", "Second Year (SY)", "Third Year (TY)"];
 const GENDERS = ["Male", "Female", "Other"];
-const DEPTS = ["Commerce", "Computer Science", "Vocational Studies", "Business Administration", "Financial Services"];
+const DEPTS = ["Computer Science", "Finance"];
 
 const inp = "w-full bg-slate-900/70 text-white/90 rounded-xl px-4 py-2.5 border border-white/10 focus:border-blue-500/70 outline-none text-sm transition-colors placeholder-white/25";
 const sel = inp + " appearance-none cursor-pointer";
@@ -18,10 +18,21 @@ const StudentForm = () => {
   const [form, setForm]       = useState(empty);
   const [errors, setErrors]   = useState({});
   const [success, setSuccess] = useState(false);
-  const [records, setRecords] = useState([
-    { name: "Aarav Sharma",   rollNo: "BC011", programme: "BCom",    year: "FY", email: "aarav@college.edu" },
-    { name: "Nikhil Parab",   rollNo: "CA009", programme: "BCA",     year: "SY", email: "nikhil@college.edu" },
-  ]);
+  const [records, setRecords] = useState([]);
+
+  useEffect(() => {
+    const fetchStudents = async () => {
+      try {
+        const { data } = await apiClient.get('/api/admin/users/?role=Student&limit=5');
+        setRecords(data.users.map(u => ({
+          name: u.name, rollNo: u.roll_no, programme: u.stream, year: u.year, email: u.email
+        })));
+      } catch (err) {
+        console.error("Failed to load recent students");
+      }
+    };
+    fetchStudents();
+  }, []);
 
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
 
@@ -37,15 +48,27 @@ const StudentForm = () => {
     return e;
   };
 
-  const handleSubmit = e => {
+  const handleSubmit = async e => {
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length) { setErrors(errs); return; }
-    setRecords(prev => [{ name: form.name, rollNo: form.rollNo, programme: form.programme, year: form.year.split(" ")[0], email: form.email }, ...prev]);
-    setForm(empty);
-    setErrors({});
-    setSuccess(true);
-    setTimeout(() => setSuccess(false), 3500);
+    
+    try {
+      await apiClient.post('/api/admin/users/', {
+        name: form.name,
+        roll_no: form.rollNo,
+        email: form.email,
+        role: 'Student',
+        stream: form.programme
+      });
+      setRecords(prev => [{ name: form.name, rollNo: form.rollNo, programme: form.programme, year: form.year.split(" ")[0], email: form.email }, ...prev]);
+      setForm(empty);
+      setErrors({});
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3500);
+    } catch (err) {
+      alert(err.response?.data?.error || "Failed to add student.");
+    }
   };
 
   return (
@@ -133,10 +156,22 @@ const StaffForm = () => {
   const [form, setForm]       = useState(empty);
   const [errors, setErrors]   = useState({});
   const [success, setSuccess] = useState(false);
-  const [records, setRecords] = useState([
-    { name: "Prof. Anita Kamat",  staffId: "T101", role: "Teacher", dept: "Commerce",           email: "anita@college.edu" },
-    { name: "Prof. Rajan Shenvi", staffId: "T102", role: "HOD",     dept: "Computer Science",   email: "rajan@college.edu" },
-  ]);
+  const [records, setRecords] = useState([]);
+
+  useEffect(() => {
+    const fetchStaff = async () => {
+      try {
+        const { data } = await apiClient.get('/api/admin/users/?limit=20');
+        const staff = data.users.filter(u => u.role !== 'Student').slice(0, 5);
+        setRecords(staff.map(u => ({
+          name: u.name, staffId: u.roll_no || u.id, role: u.role, dept: u.department, email: u.email
+        })));
+      } catch (err) {
+        console.error("Failed to load recent staff");
+      }
+    };
+    fetchStaff();
+  }, []);
 
   const set = k => e => setForm(f => ({ ...f, [k]: e.target.value }));
 
@@ -150,14 +185,26 @@ const StaffForm = () => {
     return e;
   };
 
-  const handleSubmit = e => {
+  const handleSubmit = async e => {
     e.preventDefault();
     const errs = validate();
     if (Object.keys(errs).length) { setErrors(errs); return; }
-    setRecords(prev => [{ name: form.name, staffId: form.staffId, role: form.role, dept: form.dept, email: form.email }, ...prev]);
-    setForm(empty); setErrors({});
-    setSuccess(true);
-    setTimeout(() => setSuccess(false), 3500);
+    
+    try {
+      await apiClient.post('/api/admin/users/', {
+        name: form.name,
+        roll_no: form.staffId,
+        email: form.email,
+        role: form.role,
+        department: form.dept
+      });
+      setRecords(prev => [{ name: form.name, staffId: form.staffId, role: form.role, dept: form.dept, email: form.email }, ...prev]);
+      setForm(empty); setErrors({});
+      setSuccess(true);
+      setTimeout(() => setSuccess(false), 3500);
+    } catch (err) {
+      alert(err.response?.data?.error || "Failed to add staff.");
+    }
   };
 
   return (

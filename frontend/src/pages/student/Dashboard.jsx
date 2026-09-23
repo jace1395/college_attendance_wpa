@@ -132,30 +132,40 @@ const StudentDashboard = () => {
                 </div>
 
                 {/* Right: Circular Progress Widget */}
-                <div className="bg-gray-50 dark:bg-slate-700/50 border border-gray-200 dark:border-slate-600 rounded-xl p-4 flex items-center gap-6 w-full md:w-auto justify-center">
+                <div className="bg-gray-50 dark:bg-slate-700/50 border border-gray-200 dark:border-slate-600 rounded-xl p-4 flex items-center gap-4 w-full md:w-auto justify-center">
                   <div className="text-right">
                     <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Overall Attendance</p>
                     <p className={`text-2xl font-bold ${getAttendanceTextColor(student.overall_attendance)}`}>
                       {student.overall_attendance}%
                     </p>
                   </div>
-                  <div className="relative w-20 h-20 md:w-24 md:h-24">
-                    <svg className="w-20 h-20 md:w-24 md:h-24 transform -rotate-90">
-                      <circle className="text-gray-200 dark:text-white/10" strokeWidth="8" stroke="currentColor" fill="transparent" r={radius} cx="50%" cy="50%" />
-                      <circle className=" 0 ease-in-out" strokeWidth="8" strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} strokeLinecap="round" stroke={getProgressStrokeColor(student.overall_attendance)} fill="transparent" r={radius} cx="50%" cy="50%" />
+                  <div className="relative w-16 h-16 md:w-20 md:h-20">
+                    <svg className="w-16 h-16 md:w-20 md:h-20 transform -rotate-90">
+                      <circle className="text-gray-200 dark:text-white/10" strokeWidth="6" stroke="currentColor" fill="transparent" r={radius} cx="50%" cy="50%" />
+                      <circle className="transition-all duration-1000 ease-in-out" strokeWidth="6" strokeDasharray={circumference} strokeDashoffset={strokeDashoffset} strokeLinecap="round" stroke={getProgressStrokeColor(student.overall_attendance)} fill="transparent" r={radius} cx="50%" cy="50%" />
                     </svg>
-                    <div className="absolute inset-0 flex items-center justify-center text-sm font-bold text-gray-900 dark:text-white">
+                    <div className="absolute inset-0 flex items-center justify-center text-xs font-bold text-gray-900 dark:text-white">
                       {student.overall_attendance}%
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Bottom: Quick Nav */}
+              {/* Bottom: Tab Navigation */}
               <div className="flex justify-center w-full">
-                <div className="flex flex-wrap items-center justify-center gap-1 p-1 bg-gray-100 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl">
-                  <Link to="/student/timetable" className="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700/50">Timetable</Link>
-                  <Link to="/student/notifications" className="px-4 py-2 rounded-lg text-sm font-medium transition-colors text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white hover:bg-white dark:hover:bg-slate-700/50">Notifications</Link>
+                <div className="flex flex-wrap items-center justify-center gap-2 p-1 bg-gray-100 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl">
+                  {['Dashboard', 'My Timetable', 'Attendance Reports'].map((tab) => (
+                    <button
+                      key={tab}
+                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        tab === 'Dashboard' 
+                          ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm border border-gray-200 dark:border-slate-700' 
+                          : 'text-gray-600 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-slate-800/50'
+                      }`}
+                    >
+                      {tab}
+                    </button>
+                  ))}
                 </div>
               </div>
             </div>

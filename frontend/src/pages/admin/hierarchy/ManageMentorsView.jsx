@@ -112,7 +112,9 @@ const ManageMentorsView = ({ departments, setResetModalUser }) => {
                                 <tr key={mentee.id} className="border-b border-slate-700/50 hover:bg-slate-800/50 transition-colors">
                                   <td className="py-2 text-slate-300 font-mono">{mentee.roll_no}</td>
                                   <td className="py-2 text-white font-medium">{mentee.name}</td>
-                                  <td className="py-2 text-slate-400">{mentee.stream || '-'}</td>
+                                  <td className="py-2 text-slate-400">
+                                    {[mentee.stream, mentee.year, mentee.division ? `Div ${mentee.division}` : ''].filter(Boolean).join(' ') || '-'}
+                                  </td>
                                   <td className="py-2">
                                     <span className={`w-2 h-2 inline-block rounded-full mr-2 ${mentee.status === 'active' ? 'bg-green-500' : 'bg-red-500'}`}></span>
                                     <span className="text-slate-400 text-xs capitalize">{mentee.status}</span>

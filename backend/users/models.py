@@ -85,7 +85,11 @@ class User(AbstractBaseUser, PermissionsMixin):
 
 class Department(models.Model):
     objects = models.Manager()
-    name = models.CharField(max_length=255)
+    DEPT_CHOICES = [
+        ('Computer Science', 'Computer Science'),
+        ('Finance', 'Finance'),
+    ]
+    name = models.CharField(max_length=255, choices=DEPT_CHOICES)
     code = models.CharField(max_length=50)
 
     def __str__(self):

@@ -9,6 +9,28 @@ const ManageStudentsView = ({ departments, streams, classes, setResetModalUser, 
   const [classData, setClassData] = useState(null);
   const [students, setStudents] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [editingUserId, setEditingUserId] = useState(null);
+  const [editForm, setEditForm] = useState({});
+
+  const handleEditClick = (student) => {
+    setEditingUserId(student.id);
+    setEditForm({ name: student.name, email: student.email, roll_no: student.roll_no, status: student.status });
+  };
+
+  const handleEditSave = async (userId) => {
+    try {
+      await apiClient.patch(`/api/admin/users/${userId}/`, {
+        name: editForm.name,
+        email: editForm.email,
+        roll_no: editForm.roll_no,
+        is_active: editForm.status === 'active'
+      });
+      setStudents(students.map(s => s.id === userId ? { ...s, ...editForm } : s));
+      setEditingUserId(null);
+    } catch (err) {
+      alert(err.response?.data?.error || "Failed to update student");
+    }
+  };
 
   // Derived filtered options
   const filteredStreams = selectedDept === 'all' 
@@ -145,32 +167,66 @@ const ManageStudentsView = ({ departments, streams, classes, setResetModalUser, 
                 </tr>
               </thead>
               <tbody>
-                {students.length > 0 ? students.map(student => (
+                {students.length > 0 ? students.map(student => {
+                  const isEditing = editingUserId === student.id;
+                  return (
                   <tr key={student.id} className="border-b border-white/5 hover:bg-white/10 transition-colors">
-                    <td className="p-4 font-mono text-sm text-white/80">{student.roll_no || student.id}</td>
-                    <td className="p-4 font-bold">{student.name}</td>
-                    <td className="p-4 text-sm text-white/60">{student.email}</td>
+                    <td className="p-4 font-mono text-sm text-white/80">
+                      {isEditing ? (
+                        <input type="text" value={editForm.roll_no} onChange={(e) => setEditForm({...editForm, roll_no: e.target.value})} className="bg-slate-900 border border-slate-700 rounded px-2 py-1 w-full text-white" />
+                      ) : (student.roll_no || student.id)}
+                    </td>
+                    <td className="p-4 font-bold">
+                      {isEditing ? (
+                        <input type="text" value={editForm.name} onChange={(e) => setEditForm({...editForm, name: e.target.value})} className="bg-slate-900 border border-slate-700 rounded px-2 py-1 w-full text-white" />
+                      ) : student.name}
+                    </td>
+                    <td className="p-4 text-sm text-white/60">
+                      {isEditing ? (
+                        <input type="email" value={editForm.email} onChange={(e) => setEditForm({...editForm, email: e.target.value})} className="bg-slate-900 border border-slate-700 rounded px-2 py-1 w-full text-white" />
+                      ) : student.email}
+                    </td>
                     <td className="p-4 text-center">
-                      <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${student.status === 'active' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
-                        {student.status}
-                      </span>
+                      {isEditing ? (
+                        <select value={editForm.status} onChange={(e) => setEditForm({...editForm, status: e.target.value})} className="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white text-xs">
+                          <option value="active">Active</option>
+                          <option value="inactive">Inactive</option>
+                        </select>
+                      ) : (
+                        <span className={`px-2 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${student.status === 'active' ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}>
+                          {student.status}
+                        </span>
+                      )}
                     </td>
                     <td className="p-4 text-right">
                       <div className="flex justify-end gap-2">
-                        <button className="p-2 bg-blue-500/10 text-blue-400 rounded hover:bg-blue-500/20 transition-colors" title="Edit">
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
-                        </button>
-                        <button
-                          onClick={() => setResetModalUser(student)}
-                          className="p-2 bg-yellow-500/10 text-yellow-400 rounded hover:bg-yellow-500/20 transition-colors"
-                          title="Reset Password"
-                        >
-                          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
-                        </button>
+                        {isEditing ? (
+                          <>
+                            <button onClick={() => handleEditSave(student.id)} className="p-2 bg-green-500/10 text-green-400 rounded hover:bg-green-500/20 transition-colors" title="Save">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
+                            </button>
+                            <button onClick={() => setEditingUserId(null)} className="p-2 bg-red-500/10 text-red-400 rounded hover:bg-red-500/20 transition-colors" title="Cancel">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <button onClick={() => handleEditClick(student)} className="p-2 bg-blue-500/10 text-blue-400 rounded hover:bg-blue-500/20 transition-colors" title="Edit">
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>
+                            </button>
+                            <button
+                              onClick={() => setResetModalUser(student)}
+                              className="p-2 bg-yellow-500/10 text-yellow-400 rounded hover:bg-yellow-500/20 transition-colors"
+                              title="Reset Password"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+                            </button>
+                          </>
+                        )}
                       </div>
                     </td>
                   </tr>
-                )) : (
+                )}) : (
                   <tr>
                     <td colSpan="5" className="p-12 text-center text-white/40">
                       No students enrolled in this class.

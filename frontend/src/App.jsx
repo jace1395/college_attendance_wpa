@@ -4,6 +4,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import RouteGuard from "./components/RouteGuard";
 import OfflineBanner from "./components/shared/OfflineBanner";
+import ErrorBoundary from "./components/shared/ErrorBoundary";
 
 // Auth
 import Login from "./pages/auth/Login";
@@ -38,9 +39,10 @@ function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <Router>
-          <OfflineBanner />
-          <Suspense fallback={<div className="flex h-screen items-center justify-center bg-slate-900 text-white">Loading...</div>}>
+        <ErrorBoundary>
+          <Router>
+            <OfflineBanner />
+            <Suspense fallback={<div className="flex h-screen items-center justify-center bg-slate-900 text-white">Loading...</div>}>
             <Routes>
               {/* Public */}
               <Route path="/login" element={<Login />} />
@@ -100,6 +102,7 @@ function App() {
             </Routes>
           </Suspense>
         </Router>
+        </ErrorBoundary>
       </AuthProvider>
     </ThemeProvider>
   );

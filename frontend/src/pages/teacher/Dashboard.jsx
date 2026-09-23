@@ -81,7 +81,6 @@ const TeacherDashboard = () => {
         </div>
       ) : (
         <>
-          {/* Profile Card & Navigation Tabs */}
           {teacher && (
             <div className="bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-2xl p-6 shadow-sm flex flex-col gap-6 mb-8">
 
@@ -89,12 +88,12 @@ const TeacherDashboard = () => {
               <div className="flex flex-col md:flex-row justify-between items-center md:items-start gap-6">
 
                 {/* Left: Profile Info */}
-                <div className="flex flex-col gap-1 text-center md:text-left w-full md:w-auto">
-                  <h2 className="text-3xl font-bold text-gray-900 dark:text-white">{teacher.name}</h2>
+                <div className="flex flex-col gap-2 text-center md:text-left w-full md:w-auto">
+                  <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">{teacher.name}</h2>
                   <p className="text-gray-600 dark:text-gray-400 text-lg mb-2">{teacher.department} Department</p>
                   
                   {/* Stream/Subject/Class Selector */}
-                  <div className="relative">
+                  <div className="flex items-center justify-center md:justify-start gap-2 text-gray-600 dark:text-gray-400">
                     <select 
                       value=""
                       onChange={(e) => {
@@ -102,7 +101,7 @@ const TeacherDashboard = () => {
                           navigate(`/teacher/class/${e.target.value}`);
                         }
                       }}
-                      className="appearance-none w-full bg-gray-50 dark:bg-slate-900/60 border border-gray-300 dark:border-white/20 text-gray-900 dark:text-white rounded-xl px-4 py-2.5 pr-10 focus:outline-none focus:border-blue-500 hover:border-gray-400 dark:hover:border-white/40 transition-colors shadow-inner"
+                      className="bg-gray-50 dark:bg-slate-700 text-gray-900 dark:text-white text-sm rounded-lg px-2 py-1 outline-none border border-gray-200 dark:border-slate-600 focus:ring-1 focus:ring-blue-500 cursor-pointer"
                     >
                       <option value="" disabled>Select Stream / Subject / Class</option>
                       {assigned_classes?.map(cls => (
@@ -115,12 +114,12 @@ const TeacherDashboard = () => {
                 </div>
 
                 {/* Right: Stats Widget */}
-                <div className="bg-gray-50 dark:bg-slate-700/50 border border-gray-200 dark:border-slate-600 rounded-xl p-4 flex items-center gap-6 w-full md:w-auto justify-center">
+                <div className="bg-gray-50 dark:bg-slate-700/50 border border-gray-200 dark:border-slate-600 rounded-xl p-4 flex items-center gap-4 w-full md:w-auto justify-center">
                   <div className="text-center">
                     <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Classes</p>
                     <p className="text-2xl font-bold text-gray-900 dark:text-white">{assigned_classes?.length || 0}</p>
                   </div>
-                  <div className="w-px h-10 bg-gray-300 dark:bg-white/10"></div>
+                  <div className="w-px h-10 bg-gray-300 dark:bg-white/10 mx-2"></div>
                   <div className="text-center">
                     <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">Monitoring</p>
                     <p className="text-2xl font-bold text-gray-900 dark:text-white">{monitoring_duties?.length || 0}</p>
@@ -130,11 +129,10 @@ const TeacherDashboard = () => {
 
               {/* Bottom: Tab Navigation */}
               <div className="flex justify-center w-full">
-                <div className="flex flex-wrap items-center justify-center gap-1 p-1 bg-gray-100 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl">
+                <div className="flex flex-wrap items-center justify-center gap-2 p-1 bg-gray-100 dark:bg-slate-900/50 border border-gray-200 dark:border-slate-700 rounded-xl">
                   {[
                     { key: 'dashboard', label: 'Dashboard', always: true },
                     { key: 'monitoring', label: 'Monitoring', always: true },
-
                     { key: 'reports', label: 'Reports', always: true },
                     { key: 'my_timetable', label: 'Timetable', always: true },
                     { key: 'mentor', label: '★ Mentor', show: Boolean(teacher?.isMentor || user?.is_mentor) },

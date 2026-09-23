@@ -10,7 +10,7 @@ from .views import (
     TeacherDashboardView,
     AttendanceGridView,
     AttendanceUnlockRequestView,
-    MarkAttendanceView,  # The one we added for saving attendance!
+    MarkAttendanceView,
     
     # HOD & Mentor Views
     HODInfoView,
@@ -66,7 +66,25 @@ from .views import (
     AdminStudentHierarchyView,
     AdminTeacherHierarchyView,
     AdminHODHierarchyView,
-    AdminMentorHierarchyView
+    AdminMentorHierarchyView,
+    
+    # Report Views
+    GlobalReportAPIView,
+
+    # More Principal Views
+    PrincipalReportsHubView,
+    PrincipalSearchView,
+    PrincipalTeacherEfficiencyView,
+    PrincipalMentorOversightView,
+    PrincipalDivisionAnalysisView,
+
+    # More Admin Views
+    AdminUserDetailView,
+    AdminReportsGraphDataView,
+    AdminForceUnlockView,
+    AdminBulkUnlockView,
+    AdminSetSemesterDatesView,
+    AdminArchiveSemesterView,
 )
 
 urlpatterns = [
@@ -117,6 +135,7 @@ urlpatterns = [
     path('api/admin/principal-management/', AdminPrincipalManagementView.as_view(), name='admin-principal-management'),
     path('api/admin/dashboard/', AdminDashboardView.as_view(), name='admin-dashboard'),
     path('api/admin/users/', AdminUsersListView.as_view(), name='admin-users-list'),
+    path('api/admin/users/<int:user_id>/', AdminUserDetailView.as_view(), name='admin-user-detail'),
     path('api/admin/hierarchy/filters/', AdminFilterOptionsView.as_view(), name='admin-hierarchy-filters'),
     path('api/admin/hierarchy/students/', AdminStudentHierarchyView.as_view(), name='admin-hierarchy-students'),
     path('api/admin/hierarchy/teachers/', AdminTeacherHierarchyView.as_view(), name='admin-hierarchy-teachers'),
@@ -130,6 +149,11 @@ urlpatterns = [
     path('api/admin/teacher-subjects/', AdminTeacherSubjectsView.as_view(), name='admin-teacher-subjects'),
     path('api/admin/backup/export/', AdminBackupExportView.as_view(), name='admin-backup-export'),
     path('api/admin/audit-logs/', AuditLogPaginationView.as_view(), name='admin-audit-logs'),
+    path('api/admin/force-unlock/', AdminForceUnlockView.as_view(), name='admin-force-unlock'),
+    path('api/admin/bulk-unlock/', AdminBulkUnlockView.as_view(), name='admin-bulk-unlock'),
+    path('api/admin/reports/graph-data/', AdminReportsGraphDataView.as_view(), name='admin-reports-graph-data'),
+    path('api/admin/set-semester-dates/', AdminSetSemesterDatesView.as_view(), name='admin-set-semester-dates'),
+    path('api/admin/archive-semester/', AdminArchiveSemesterView.as_view(), name='admin-archive-semester'),
     path('api/upload/', FileUploadAPIView.as_view(), name='file-upload'),
 
     # --------------------------------------------------------------------------
@@ -137,15 +161,21 @@ urlpatterns = [
     # --------------------------------------------------------------------------
     path('api/principal/dashboard/', PrincipalDashboardView.as_view(), name='principal-dashboard'),
     path('api/principal/filters/', PrincipalFilterOptionsView.as_view(), name='principal-filters'),
-    path('api/principal/advanced-graph/', PrincipalAdvancedGraphView.as_view(), name='principal-advanced-graph'),
+    path('api/reports/principal/aggregate/', PrincipalAdvancedGraphView.as_view(), name='principal-advanced-graph'),
     path('api/principal/monitoring-duties/', PrincipalMonitoringDutiesView.as_view(), name='principal-monitoring-duties'),
+    path('api/principal/reports-hub/', PrincipalReportsHubView.as_view(), name='principal-reports-hub'),
     path('api/principal/stream-view/', PrincipalStreamView.as_view(), name='principal-stream-view'),
     path('api/principal/class-detail/', PrincipalClassDetailView.as_view(), name='principal-class-detail'),
+    path('api/principal/search/', PrincipalSearchView.as_view(), name='principal-search'),
+    path('api/principal/teacher-efficiency/', PrincipalTeacherEfficiencyView.as_view(), name='principal-teacher-efficiency'),
+    path('api/principal/mentor-oversight/', PrincipalMentorOversightView.as_view(), name='principal-mentor-oversight'),
+    path('api/reports/principal/division-analysis/', PrincipalDivisionAnalysisView.as_view(), name='principal-division-analysis'),
     
     # --------------------------------------------------------------------------
     # 7. General Reports
     # --------------------------------------------------------------------------
     path('api/reports/', ReportAPIView.as_view(), name='reports'),
+    path('api/reports/global/', GlobalReportAPIView.as_view(), name='global-reports'),
     path('api/attendance/tickets/', AttendanceTicketCreateView.as_view(), name='attendance-tickets'),
     path('api/reports/student/me/', StudentReportAPIView.as_view(), name='student-report'),
     path('api/reports/teacher/classes/', TeacherReportAPIView.as_view(), name='teacher-report'),

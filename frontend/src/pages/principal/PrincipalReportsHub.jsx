@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from "react";
+import React, { useState, useEffect, useMemo } from "react";
+import apiClient from '../../services/apiClient';
 
 const getCurrentSemester = () => {
   const month = new Date().getMonth() + 1;
@@ -35,12 +36,6 @@ const PROGRAMME_COLORS = {
   "BBA(FS)": { tab: "from-rose-600 to-pink-600",       pill: "bg-rose-500/20 border-rose-500/40 text-rose-300",      accent: "#f43f5e" },
 };
 
-// Student data is loaded from API — empty state ready for Axios integration
-const STUDENTS_BY_PROGRAMME = {};
-
-// Class data is loaded from API — empty state ready for Axios integration
-const CLASS_DATA_BY_PROGRAMME = {};
-
 const ChevronDown = () => (
   <svg className="w-4 h-4 text-white/30 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
@@ -74,6 +69,31 @@ const PrincipalReportsHub = ({ streams, onNavigateToView }) => {
   const [customEnd, setCustomEnd]     = useState("");
   const [isExporting, setIsExporting] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [showBackupModal, setShowBackupModal] = useState(false);
+  const [backupFormat, setBackupFormat] = useState('excel');
+
+  const [hubData, setHubData] = useState({ class_data: [], students: [] });
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchHubData = async () => {
+      setLoading(true);
+      try {
+        const queryParams = new URLSearchParams();
+        if (activeProg) queryParams.append('programme', activeProg);
+        if (year) queryParams.append('year', year);
+        if (dateRange) queryParams.append('dateRange', dateRange);
+        
+        const { data } = await apiClient.get(`/api/principal/reports-hub/?${queryParams.toString()}`);
+        setHubData(data);
+      } catch (err) {
+        console.error("Failed to load reports hub data", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchHubData();
+  }, [activeProg, year, dateRange, customStart, customEnd]);
 
   const yearsOptions = ["First Year", "Second Year", "Third Year"];
 
@@ -91,23 +111,19 @@ const PrincipalReportsHub = ({ streams, onNavigateToView }) => {
     setSearchQuery("");
   };
 
-  const allStudents    = STUDENTS_BY_PROGRAMME[activeProg] || [];
+  const allStudents    = hubData.students || [];
   const totalEnrolled  = allStudents.length;
 
   const filteredStudents = useMemo(() => {
     let list = allStudents;
-    if (year) {
-      const abbr = { "First Year": "FY", "Second Year": "SY", "Third Year": "TY" }[year] || "";
-      if (abbr) list = list.filter(s => s.year === abbr);
-    }
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase();
       list = list.filter(s => s.name.toLowerCase().includes(q) || s.roll.toLowerCase().includes(q));
     }
     return list;
-  }, [allStudents, year, searchQuery]);
+  }, [allStudents, searchQuery]);
 
-  const classData = CLASS_DATA_BY_PROGRAMME[activeProg] || [];
+  const classData = hubData.class_data || [];
 
   const summary = useMemo(() => {
     const total   = filteredStudents.reduce((s, d) => s + d.total, 0);
@@ -121,20 +137,27 @@ const PrincipalReportsHub = ({ streams, onNavigateToView }) => {
   const pctBar     = summary.total ? ((summary.present / summary.total) * 100) : 0;
   const pctGood    = parseFloat(summary.pct) >= 75;
 
-  const handleExport = (format) => {
+  const handleExport = async (format) => {
     setIsExporting(true);
-    setIsExporting(true);
-    // Removed 1.5s delay
-    const blob = new Blob(["Mock " + format.toUpperCase() + " data for " + activeProg], { type: "text/plain" });
-    const url  = window.URL.createObjectURL(blob);
-    const a    = document.createElement("a");
-    a.href     = url;
-    a.download = "attendance_report_" + activeProg + "_" + new Date().getTime() + "." + format;
-    document.body.appendChild(a); 
-    a.click();
-    window.URL.revokeObjectURL(url); 
-    document.body.removeChild(a);
-    setIsExporting(false);
+    try {
+      const response = await apiClient.get('/api/reports/global/', { 
+        params: { stream: activeProg, dateRange, export_format: format },
+        responseType: 'blob' 
+      });
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `principal_report_${activeProg}_${new Date().getTime()}.${format === 'excel' ? 'xlsx' : format}`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (err) {
+      console.error('Failed to download report', err);
+    } finally {
+      setIsExporting(false);
+      setShowBackupModal(false);
+    }
   };
 
   return (
@@ -147,7 +170,6 @@ const PrincipalReportsHub = ({ streams, onNavigateToView }) => {
           {programmes.map(prog => {
             const col = PROGRAMME_COLORS[prog] || PROGRAMME_COLORS["BCom"];
             const isActive = activeProg === prog;
-            const count = (STUDENTS_BY_PROGRAMME[prog] || []).length;
             return (
               <button
                 key={prog}
@@ -159,9 +181,6 @@ const PrincipalReportsHub = ({ streams, onNavigateToView }) => {
                 )}
               >
                 <span className="text-sm font-extrabold tracking-wide">{prog}</span>
-                <span className={"text-xs font-medium " + (isActive ? "text-white/80" : "text-white/30")}>
-                  {count} students
-                </span>
                 {isActive && (
                   <span className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-6 h-1 rounded-full bg-white/70" />
                 )}
@@ -356,24 +375,12 @@ const PrincipalReportsHub = ({ streams, onNavigateToView }) => {
               />
             </div>
             <button
-              onClick={() => handleExport("pdf")}
+              onClick={() => setShowBackupModal(true)}
               disabled={isExporting}
-              className="flex items-center gap-1.5 bg-red-500/15 text-red-300 border border-red-500/30 hover:bg-red-500/25 px-3.5 py-2 rounded-xl font-semibold text-xs  disabled:opacity-40 whitespace-nowrap"
+              className="flex items-center gap-1.5 bg-blue-500/20 text-blue-300 border border-blue-500/30 hover:bg-blue-500/30 px-4 py-2 rounded-xl font-semibold text-xs disabled:opacity-40 whitespace-nowrap"
             >
-              <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"/>
-              </svg>
-              {isExporting ? "Exporting..." : "Export PDF"}
-            </button>
-            <button
-              onClick={() => handleExport("xlsx")}
-              disabled={isExporting}
-              className="flex items-center gap-1.5 bg-green-500/15 text-green-300 border border-green-500/30 hover:bg-green-500/25 px-3.5 py-2 rounded-xl font-semibold text-xs  disabled:opacity-40 whitespace-nowrap"
-            >
-              <svg className="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M13,3.5L18.5,9H13V3.5M8,11H11V13H8V11M8,15H11V17H8V15M12,11H16V13H12V11M12,15H16V17H12V15Z"/>
-              </svg>
-              {isExporting ? "Exporting..." : "Export Excel"}
+              <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+              {isExporting ? "Generating..." : "Download Report"}
             </button>
           </div>
         </div>
@@ -457,6 +464,67 @@ const PrincipalReportsHub = ({ streams, onNavigateToView }) => {
         </div>
       </div>
 
+      {/* Backup Modal */}
+      {showBackupModal && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl w-full max-w-md overflow-hidden shadow-2xl border border-gray-200 dark:border-white/10">
+            <div className="p-6 border-b border-gray-100 dark:border-white/5 flex justify-between items-center bg-gray-50/50 dark:bg-slate-800/50">
+              <h3 className="text-xl font-bold text-gray-900 dark:text-white">Download Report</h3>
+              <button onClick={() => setShowBackupModal(false)} className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-xl hover:bg-white dark:hover:bg-slate-800 transition-colors">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <p className="text-sm text-gray-500 dark:text-gray-400">Select the format for the system report.</p>
+
+              <div className="space-y-3">
+                {[
+                  { id: 'excel', label: 'Excel (.xlsx)', desc: 'Grouped into sheets by Stream' },
+                  { id: 'pdf', label: 'PDF Report (.pdf)', desc: 'Formatted tabular report' },
+                  { id: 'csv', label: 'CSV (.csv)', desc: 'Raw data suitable for scripts' }
+                ].map(format => (
+                  <label key={format.id} className={`flex items-start gap-3 p-4 rounded-xl border cursor-pointer transition-all ${backupFormat === format.id ? 'border-blue-500 bg-blue-50/50 dark:bg-blue-500/10' : 'border-gray-200 dark:border-white/10 hover:bg-gray-50 dark:hover:bg-slate-800/50'}`}>
+                    <input
+                      type="radio"
+                      name="format"
+                      className="mt-1 w-4 h-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded-full"
+                      checked={backupFormat === format.id}
+                      onChange={() => setBackupFormat(format.id)}
+                    />
+                    <div>
+                      <span className={`block font-semibold text-sm ${backupFormat === format.id ? 'text-blue-700 dark:text-blue-400' : 'text-gray-900 dark:text-white'}`}>{format.label}</span>
+                      <span className="block text-xs text-gray-500 dark:text-gray-400 mt-1">{format.desc}</span>
+                    </div>
+                  </label>
+                ))}
+              </div>
+
+              <div className="pt-4 flex gap-3">
+                <button
+                  onClick={() => setShowBackupModal(false)}
+                  className="flex-1 px-4 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-gray-700 dark:text-gray-300 font-semibold rounded-xl transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={() => handleExport(backupFormat === 'excel' ? 'xlsx' : backupFormat)}
+                  disabled={isExporting}
+                  className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-xl shadow-sm transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                >
+                  {isExporting ? (
+                    <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                  ) : (
+                    "Download"
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

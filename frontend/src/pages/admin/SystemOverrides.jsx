@@ -92,17 +92,26 @@ const SystemOverrides = () => {
     }
   };
 
-  const handleInitSemester = async () => {
-    if (!window.confirm('WARNING: This will archive all current attendance data and initialize a new semester. This action is irreversible. Proceed?')) return;
-    setIsArchiving(true);
+  const handleSetDates = async () => {
     try {
-      await apiClient.post('/api/admin/init-semester/', {
+      await apiClient.post('/api/admin/set-semester-dates/', {
         start_date: semStart,
         end_date: semEnd,
       });
-      alert(`New Semester Initialized. Range: ${semStart} to ${semEnd}. Past data securely compressed and archived.`);
+      alert(`Semester dates updated successfully: ${semStart} to ${semEnd}.`);
     } catch (err) {
-      alert(err.response?.data?.error || 'Failed to initialize semester.');
+      alert(err.response?.data?.error || 'Failed to update semester dates.');
+    }
+  };
+
+  const handleArchiveSemester = async () => {
+    if (!window.confirm('WARNING: This will archive all current attendance data for the semester. This action is irreversible. Proceed?')) return;
+    setIsArchiving(true);
+    try {
+      await apiClient.post('/api/admin/archive-semester/');
+      alert('Semester archived successfully.');
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to archive semester.');
     } finally {
       setIsArchiving(false);
     }
@@ -296,18 +305,26 @@ const SystemOverrides = () => {
             </div>
           </div>
 
-          <button
-            onClick={handleInitSemester}
-            disabled={isArchiving}
-            className="w-full md:w-auto bg-slate-800 hover:bg-slate-700 text-red-400 border border-red-500/30 px-8 py-3 rounded-xl font-bold transition-colors mt-6 md:mt-0 disabled:opacity-50 flex items-center justify-center gap-2"
-          >
-            {isArchiving ? (
-              <>
-                <svg className="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-                Compressing & Archiving...
-              </>
-            ) : 'Initialize & Archive Semester'}
-          </button>
+          <div className="flex flex-col gap-4 w-full md:w-auto mt-6 md:mt-0">
+            <button
+              onClick={handleSetDates}
+              className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-xl font-bold transition-colors w-full"
+            >
+              Set Semester Dates
+            </button>
+            <button
+              onClick={handleArchiveSemester}
+              disabled={isArchiving}
+              className="bg-red-900/40 hover:bg-red-800 text-red-200 border border-red-500/30 px-8 py-3 rounded-xl font-bold transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              {isArchiving ? (
+                <>
+                  <svg className="w-5 h-5 animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                  Archiving...
+                </>
+              ) : 'Archive Semester'}
+            </button>
+          </div>
         </div>
       </div>
 

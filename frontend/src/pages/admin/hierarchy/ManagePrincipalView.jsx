@@ -115,8 +115,9 @@ const ManagePrincipalView = () => {
                 required
                 value={email}
                 onChange={e => setEmail(e.target.value)}
-                className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-purple-500 transition-colors"
+                className="w-full bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-white/50 focus:outline-none focus:border-purple-500 transition-colors cursor-not-allowed"
                 placeholder="principal@college.edu"
+                disabled
               />
             </div>
           </div>

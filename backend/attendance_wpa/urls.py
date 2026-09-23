@@ -16,10 +16,16 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include
+from users.views import MentorMenteesListAPIView, UserSearchView, UserMeView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/auth/', include('users.urls')),
+    
+    # Mount api/users/ routes correctly
+    path('api/users/me/', UserMeView.as_view(), name='user_me'),
+    path('api/users/mentees/', MentorMenteesListAPIView.as_view(), name='mentor-mentees-list'),
+    path('api/users/search/', UserSearchView.as_view(), name='user-search'),
     
     # ADD THIS LINE: This unlocks all the Student, Teacher, and Admin dashboards!
     path('', include('attendance.urls')), 

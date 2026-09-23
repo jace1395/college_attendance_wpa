@@ -27,16 +27,20 @@ apiClient.interceptors.request.use(
     }
 
     if (config.method === 'get') {
-      const cached = cache.get(config.url);
-      if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-        config.adapter = () => Promise.resolve({
-          data: cached.data,
-          status: 200,
-          statusText: 'OK',
-          headers: {},
-          config,
-          request: {}
-        });
+      // Do not use cache for binary downloads
+      if (config.responseType !== 'blob' && config.responseType !== 'arraybuffer') {
+        const cacheKey = config.url + (config.params ? '?' + new URLSearchParams(config.params).toString() : '');
+        const cached = cache.get(cacheKey);
+        if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+          config.adapter = () => Promise.resolve({
+            data: cached.data,
+            status: 200,
+            statusText: 'OK',
+            headers: {},
+            config,
+            request: {}
+          });
+        }
       }
     }
 
@@ -65,10 +69,14 @@ const processQueue = (error, token = null) => {
 apiClient.interceptors.response.use(
   (response) => {
     if (response.config.method === 'get') {
-      cache.set(response.config.url, {
-        data: response.data,
-        timestamp: Date.now()
-      });
+      // Do not cache binary downloads (blob, arraybuffer)
+      if (response.config.responseType !== 'blob' && response.config.responseType !== 'arraybuffer') {
+        const cacheKey = response.config.url + (response.config.params ? '?' + new URLSearchParams(response.config.params).toString() : '');
+        cache.set(cacheKey, {
+          data: response.data,
+          timestamp: Date.now()
+        });
+      }
     } else if (['post', 'put', 'patch', 'delete'].includes(response.config.method?.toLowerCase())) {
       // Invalidate all cache on mutations for full state consistency
       cache.clear();

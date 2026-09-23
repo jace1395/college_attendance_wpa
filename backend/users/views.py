@@ -103,4 +103,86 @@ class UserLogoutView(APIView):
         from users.services import log_audit
         log_audit(user, "User Logout", "Session ended via web interface")
         
-        return Response({'success': 'Logged out successfully.'}, status=status.HTTP_200_OK)
+        return Response({'success': 'Logged out successfully.'}, status=status.HTTP_200_OK)
+
+class AdminUserDetailView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, user_id):
+        # We assume the user has admin role checked in the frontend or we can enforce it here
+        if request.user.role not in ['Admin', 'Principal'] and not request.user.is_superuser:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+            
+        from users.models import User
+        from users.services import log_audit
+        user = User.objects.filter(id=user_id).first()
+        if not user:
+            return Response({'error': 'User not found'}, status=status.HTTP_404_NOT_FOUND)
+            
+        data = request.data
+        if 'name' in data:
+            user.name = data['name']
+        if 'email' in data:
+            user.email = data['email']
+        if 'roll_no' in data:
+            user.roll_no = data['roll_no']
+        if 'role' in data:
+            user.role = data['role']
+        if 'department_id' in data:
+            user.department_id = data['department_id']
+        if 'stream_id' in data:
+            user.stream_id = data['stream_id']
+        if 'is_active' in data:
+            user.is_active = data['is_active']
+            
+        user.save()
+        log_audit(request.user, "User Updated", f"Updated details for user {user.email}")
+        return Response({'message': 'User updated successfully'})
+
+class MentorMenteesListAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        mentor_id = request.query_params.get('mentor_id')
+        if not mentor_id:
+            return Response({'error': 'mentor_id is required'}, status=400)
+            
+        from users.models import User
+        mentees = User.objects.select_related('stream').filter(mentor_id=mentor_id, role='Student', is_active=True).order_by('roll_no')
+        data = [{
+            'id': m.id,
+            'name': m.name,
+            'roll_no': m.roll_no,
+            'stream': m.stream.name if m.stream else 'N/A'
+        } for m in mentees]
+        return Response({'mentees': data})
+
+class UserSearchView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role not in ['Admin', 'Principal'] and not request.user.is_superuser:
+            return Response({'error': 'Unauthorized'}, status=status.HTTP_403_FORBIDDEN)
+            
+        query = request.query_params.get('q', '')
+        if not query:
+            return Response([])
+            
+        from django.db.models import Q
+        from users.models import User
+        users = User.objects.filter(
+            Q(name__icontains=query) | 
+            Q(email__icontains=query) | 
+            Q(roll_no__icontains=query)
+        )[:50]
+        
+        data = [{
+            'id': u.id,
+            'name': u.name,
+            'email': u.email,
+            'roll_no': u.roll_no,
+            'role': u.role,
+            'department': u.department.name if u.department else 'N/A'
+        } for u in users]
+        
+        return Response(data)
