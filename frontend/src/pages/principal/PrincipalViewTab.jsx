@@ -8,11 +8,16 @@ import apiClient from '../../services/apiClient';
 const COLORS_PRESENT = '#a855f7';
 const COLORS_ABSENT  = '#ef4444';
 
-const PrincipalViewTab = ({ streams, defaultSubTab }) => {
+const PrincipalViewTab = ({ streams, defaultSubTab, defaultParams }) => {
   const [subTab, setSubTab] = useState(defaultSubTab || 'Trends');
   
   // States for Trends
-  const [selectedStream, setSelectedStream] = useState(streams?.[0] || 'BCA');
+  // Initialize stream from graph click if provided
+  const initialStream = (defaultParams?.streams?.length > 0) ? defaultParams.streams[0] : (streams?.[0] || 'BCA');
+  const [selectedStream, setSelectedStream] = useState(initialStream);
+
+  // Auto-open class if requested from graph click
+  const [autoOpenClassId, setAutoOpenClassId] = useState(defaultParams?.classes?.length === 1 ? defaultParams.classes[0] : null);
   const [streamData, setStreamData] = useState([]);
   const [loading, setLoading] = useState(true);
   
@@ -38,7 +43,17 @@ const PrincipalViewTab = ({ streams, defaultSubTab }) => {
         setLoading(true);
         try {
           const { data } = await apiClient.get(`/api/principal/stream-view/?stream=${selectedStream}`);
-          setStreamData(data.classes || []);
+          const fetchedClasses = data.classes || [];
+          setStreamData(fetchedClasses);
+
+          // If a class was clicked on the graph, auto open its deep dive modal once
+          if (autoOpenClassId) {
+             const clsToOpen = fetchedClasses.find(c => String(c.class_id) === String(autoOpenClassId));
+             if (clsToOpen) {
+                 openDeepDive(clsToOpen);
+             }
+             setAutoOpenClassId(null); // Clear it so it doesn't repeatedly open
+          }
         } catch {
           setStreamData([]);
         } finally {

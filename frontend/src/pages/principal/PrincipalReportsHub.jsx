@@ -319,6 +319,7 @@ const PrincipalReportsHub = ({ streams, onNavigateToView }) => {
               <tr className="bg-white/5 text-white/40 text-xs uppercase tracking-wider">
                 <th className="px-4 py-3 font-semibold">Class</th>
                 <th className="px-4 py-3 font-semibold">Subject</th>
+                <th className="px-4 py-3 font-semibold">Teacher</th>
                 <th className="px-4 py-3 font-semibold text-white/60">Total</th>
                 <th className="px-4 py-3 font-semibold text-green-400">Present</th>
                 <th className="px-4 py-3 font-semibold text-red-400">Absent</th>
@@ -330,9 +331,10 @@ const PrincipalReportsHub = ({ streams, onNavigateToView }) => {
                 const pct = ((d.present / d.total) * 100).toFixed(1);
                 const good = parseFloat(pct) >= 75;
                 return (
-                  <tr key={d.id} className="border-t border-white/5 hover:bg-white/5 transition-colors">
-                    <td className="px-4 py-3 font-semibold text-white/90">{d.class}</td>
-                    <td className="px-4 py-3 text-white/60">{d.subject}</td>
+                  <tr key={d.id || idx} className="border-t border-white/5 hover:bg-white/5 transition-colors">
+                    <td className="px-4 py-3 font-semibold text-white/90">{d.class_label || "N/A"}</td>
+                    <td className="px-4 py-3 text-white/60">{d.subject_name || "N/A"}</td>
+                    <td className="px-4 py-3 text-white/60">{d.teacher || "N/A"}</td>
                     <td className="px-4 py-3 text-white/60 font-bold">{d.total}</td>
                     <td className="px-4 py-3 text-green-400 font-bold">{d.present}</td>
                     <td className="px-4 py-3 text-red-400 font-bold">{d.absent}</td>

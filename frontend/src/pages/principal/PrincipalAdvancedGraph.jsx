@@ -180,8 +180,25 @@ const PrincipalAdvancedGraph = ({ streams, onGraphClick }) => {
         )}
         
         {data.length > 0 ? (
-          <ResponsiveContainer width="100%" height="100%" className="cursor-pointer" onClick={onGraphClick}>
-            <ComposedChart data={data} margin={{ top: 20, right: 30, left: 0, bottom: 25 }}>
+          <ResponsiveContainer width="100%" height="100%" className="cursor-pointer">
+            <ComposedChart 
+              data={data} 
+              margin={{ top: 20, right: 30, left: 0, bottom: 25 }}
+              onClick={(e) => {
+                let clickedDate = null;
+                if (e && e.activePayload && e.activePayload.length > 0) {
+                  clickedDate = e.activePayload[0].payload.date;
+                }
+                if (onGraphClick) {
+                  onGraphClick({
+                    date: clickedDate,
+                    streams: selectedStreams,
+                    years: selectedYears,
+                    classes: selectedClasses
+                  });
+                }
+              }}
+            >
               <defs>
                 <linearGradient id="colorPct" x1="0" y1="0" x2="0" y2="1">
                   <stop offset="5%" stopColor="#9333ea" stopOpacity={0.6}/>

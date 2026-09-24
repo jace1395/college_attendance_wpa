@@ -12,6 +12,7 @@ const PrincipalDashboard = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('dashboard');
   const [viewTabDefaultFilter, setViewTabDefaultFilter] = useState('Trends');
+  const [viewTabParams, setViewTabParams] = useState(null);
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [globalDate, setGlobalDate] = useState(new Date().toISOString().split('T')[0]);
@@ -50,6 +51,7 @@ const PrincipalDashboard = () => {
   const handleMetricCardClick = () => {
     setActiveTab('view');
     setViewTabDefaultFilter('Trends');
+    setViewTabParams(null);
   };
 
   return (
@@ -140,14 +142,36 @@ const PrincipalDashboard = () => {
 
               {/* Interactive Graphs */}
               <div className="mt-8">
-                <PrincipalAdvancedGraph streams={streams_available} onGraphClick={() => { setActiveTab('view'); setViewTabDefaultFilter('Trends'); }} />
+                <PrincipalAdvancedGraph 
+                  streams={streams_available} 
+                  onGraphClick={(params) => { 
+                    setActiveTab('view'); 
+                    setViewTabDefaultFilter('Trends');
+                    setViewTabParams(params);
+                    
+                    if (params?.date) {
+                      // Attempt to parse the date to YYYY-MM-DD
+                      try {
+                        const parsed = new Date(params.date);
+                        if (!isNaN(parsed)) {
+                          const yyyy = parsed.getFullYear();
+                          const mm = String(parsed.getMonth() + 1).padStart(2, '0');
+                          const dd = String(parsed.getDate()).padStart(2, '0');
+                          setGlobalDate(`${yyyy}-${mm}-${dd}`);
+                        }
+                      } catch (e) {
+                        // ignore parse errors
+                      }
+                    }
+                  }} 
+                />
               </div>
             </div>
           )
         )}
 
-        {activeTab === 'reports' && <PrincipalReportsHub streams={streams_available} onNavigateToView={() => { setActiveTab('view'); setViewTabDefaultFilter('Trends'); }} />}
-        {activeTab === 'view' && <PrincipalViewTab streams={streams_available} defaultSubTab={viewTabDefaultFilter} />}
+        {activeTab === 'reports' && <PrincipalReportsHub streams={streams_available} onNavigateToView={() => { setActiveTab('view'); setViewTabDefaultFilter('Trends'); setViewTabParams(null); }} />}
+        {activeTab === 'view' && <PrincipalViewTab streams={streams_available} defaultSubTab={viewTabDefaultFilter} defaultParams={viewTabParams} />}
         {activeTab === 'monitoring' && <PrincipalMonitoringTab />}
         {activeTab === 'search' && <PrincipalSearch />}
       </div>

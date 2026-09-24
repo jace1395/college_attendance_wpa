@@ -2118,7 +2118,7 @@ class PrincipalFilterOptionsView(APIView):
         streams = list(Subject.objects.values_list('stream', flat=True).distinct().exclude(stream__isnull=True).exclude(stream=''))
         
         # Determine year based on semester
-        classes_qs = ClassBatch.objects.select_related('subject').all()
+        classes_qs = ClassBatch.objects.select_related('subject', 'teacher').all()
         classes = []
         for c in classes_qs:
             year = "FY"
@@ -2326,6 +2326,9 @@ class PrincipalStreamView(APIView):
             batches_qs = ClassBatch.objects.filter(subject__stream=stream, subject__semester__in=sems)
             batches_list = list(batches_qs.values_list('id', flat=True))
             
+            if not batches_list:
+                continue
+                
             total_students = Enrollment.objects.filter(class_batch_id__in=batches_list).values('student').distinct().count()
 
             att_aggs = Attendance.objects.filter(class_batch_id__in=batches_list).aggregate(
@@ -2350,7 +2353,7 @@ class PrincipalClassDetailView(APIView):
 
     def get(self, request):
         class_id = request.query_params.get('class_id')
-        batch = ClassBatch.objects.filter(id=class_id).select_related('subject').first()
+        batch = ClassBatch.objects.filter(id=class_id).select_related('subject', 'teacher').first()
 
         if not batch:
             return Response({
@@ -2408,8 +2411,16 @@ class PrincipalClassDetailView(APIView):
             w_pct = round((w_pres / w_total * 100), 1) if w_total > 0 else 0.0
             weekly_trend.append({"week": f"Wk {5 - w}", "pct": w_pct})
 
+        # Fetch mentor name from the first student in the batch
+        first_enrollment = batch.enrollments.select_related('student__mentor').first()
+        mentor_name = "Unassigned"
+        if first_enrollment and getattr(first_enrollment.student, 'mentor', None):
+            mentor_name = first_enrollment.student.mentor.name or first_enrollment.student.mentor.email
+
         return Response({
             "class_name": f"{batch.subject.name} ({batch.subject.stream} {batch.subject.semester})",
+            "teacher_name": (batch.teacher.name or batch.teacher.email) if batch.teacher else "Unassigned",
+            "mentor_name": mentor_name,
             "total": total_students,
             "present": present,
             "absent": absent,
@@ -3157,6 +3168,12 @@ class GlobalReportAPIView(APIView):
                     if safe_title in wb.sheetnames:
                         safe_title = f"{safe_title}_{len(wb.sheetnames)}"
                     ws = wb.create_sheet(title=safe_title)
+                    
+                    # Fit to one page horizontally
+                    ws.page_setup.fitToPage = True
+                    ws.page_setup.fitToWidth = 1
+                    ws.page_setup.fitToHeight = False
+
                     unique_dates = sorted(set(a.date for a in records))
                     headers = ["Roll No", "Name"] + [d.strftime("%d-%b") for d in unique_dates] + ["Total", "Attended", "Overall%"]
                     ws.append(headers)
@@ -3164,6 +3181,10 @@ class GlobalReportAPIView(APIView):
                         cell.font = Font(bold=True, color="FFFFFF")
                         cell.fill = PatternFill(start_color="2c3e50", end_color="2c3e50", fill_type="solid")
                         cell.alignment = Alignment(horizontal="center")
+                    
+                    green_fill = PatternFill(start_color="c8e6c9", end_color="c8e6c9", fill_type="solid")
+                    red_fill = PatternFill(start_color="ffcdd2", end_color="ffcdd2", fill_type="solid")
+
                     student_records = defaultdict(list)
                     for a in records:
                         student_records[a.student].append(a)
@@ -3177,6 +3198,17 @@ class GlobalReportAPIView(APIView):
                         pct = round((attended / total) * 100, 1) if total > 0 else 0
                         row.extend([total, attended, f"{pct}%"])
                         ws.append(row)
+
+                        # Colorize 'P' and 'A' cells in the newly appended row
+                        current_row = ws[ws.max_row]
+                        # Dates start from column 3 (0-indexed list -> 2)
+                        for col_idx in range(3, 3 + len(unique_dates)):
+                            cell = current_row[col_idx - 1]
+                            if cell.value == "P":
+                                cell.fill = green_fill
+                            elif cell.value == "A":
+                                cell.fill = red_fill
+
             if not wb.sheetnames:
                 wb.create_sheet(title="No Data")
             wb.save(file_buffer)
@@ -3217,15 +3249,34 @@ class GlobalReportAPIView(APIView):
                         table_data.append(row)
                     if len(table_data) > 1:
                         col_widths = [45, 120] + [30] * (len(headers) - 2)
+                        
+                        # Scale columns to fit the document width to prevent overflow
+                        total_w = sum(col_widths)
+                        if total_w > doc.width:
+                            scale = doc.width / total_w
+                            col_widths = [w * scale for w in col_widths]
+
                         t = Table(table_data, colWidths=col_widths, repeatRows=1)
-                        ts = TableStyle([
+                        
+                        style_cmds = [
                             ("BACKGROUND", (0, 0), (-1, 0), colors.HexColor("#2c3e50")),
                             ("TEXTCOLOR", (0, 0), (-1, 0), colors.whitesmoke),
                             ("ALIGN", (0, 0), (-1, -1), "CENTER"),
                             ("FONTNAME", (0, 0), (-1, 0), "Helvetica-Bold"),
                             ("FONTSIZE", (0, 0), (-1, -1), 7),
                             ("GRID", (0, 0), (-1, -1), 0.5, colors.lightgrey),
-                        ])
+                        ]
+
+                        # Add dynamic color styling for Present (P) and Absent (A)
+                        for row_idx, row_data in enumerate(table_data):
+                            if row_idx == 0: continue
+                            for col_idx, cell_val in enumerate(row_data):
+                                if cell_val == "P":
+                                    style_cmds.append(("BACKGROUND", (col_idx, row_idx), (col_idx, row_idx), colors.HexColor("#c8e6c9")))
+                                elif cell_val == "A":
+                                    style_cmds.append(("BACKGROUND", (col_idx, row_idx), (col_idx, row_idx), colors.HexColor("#ffcdd2")))
+
+                        ts = TableStyle(style_cmds)
                         t.setStyle(ts)
                         elements.append(t)
                     elements.append(Spacer(1, 12))
@@ -3264,18 +3315,33 @@ class PrincipalReportsHubView(APIView):
         elif date_range == 'monthly':
             date_filter['date__gte'] = (now - datetime.timedelta(days=30)).date()
 
+        from django.db.models import Count, Q
+
+        class_aggs = Attendance.objects.filter(class_batch__in=batches, **date_filter).values('class_batch').annotate(
+            total=Count('id'),
+            present=Count('id', filter=Q(status='Present')),
+            absent=Count('id', filter=Q(status='Absent'))
+        )
+        agg_map = {item['class_batch']: item for item in class_aggs}
+
         class_data = []
         for b in batches:
-            total_atts = Attendance.objects.filter(class_batch=b, **date_filter).count()
-            present_atts = Attendance.objects.filter(class_batch=b, status='Present', **date_filter).count()
-            absent_atts = Attendance.objects.filter(class_batch=b, status='Absent', **date_filter).count()
-            if total_atts > 0:
+            agg = agg_map.get(b.id)
+            if agg and agg['total'] > 0:
+                year_label = "FY"
+                if b.subject and b.subject.semester in ['Sem 3', 'Sem 4']: year_label = "SY"
+                elif b.subject and b.subject.semester in ['Sem 5', 'Sem 6']: year_label = "TY"
+                
+                stream = b.subject.stream if b.subject else ""
+                
                 class_data.append({
-                    "class_name": b.subject.name if b.subject else "Unknown",
+                    "id": b.id,
+                    "class_label": f"{year_label} {stream}".strip(),
+                    "subject_name": b.subject.name if b.subject else "Unknown",
                     "teacher": b.teacher.name if b.teacher else "Unknown",
-                    "total": total_atts,
-                    "present": present_atts,
-                    "absent": absent_atts
+                    "total": agg['total'],
+                    "present": agg['present'],
+                    "absent": agg['absent']
                 })
 
         atts = Attendance.objects.filter(class_batch__in=batches, **date_filter).select_related('student', 'class_batch')
@@ -3328,20 +3394,50 @@ class PrincipalSearchView(APIView):
 
     def get(self, request):
         query = request.query_params.get('q', '').strip()
-        if not query:
+        stream = request.query_params.get('stream', '').strip()
+        div = request.query_params.get('div', '').strip()
+        year = request.query_params.get('year', '').strip()
+
+        if not any([query, stream, div, year]):
             return Response({'students': [], 'teachers': []})
 
-        students = User.objects.filter(
-            role='Student'
-        ).filter(
-            Q(name__icontains=query) | Q(roll_no__icontains=query) | Q(email__icontains=query)
-        ).select_related('stream')[:20]
+        students = User.objects.filter(role='Student')
+        if query:
+            students = students.filter(Q(name__icontains=query) | Q(roll_no__icontains=query) | Q(email__icontains=query))
+        if stream:
+            students = students.filter(stream__name__iexact=stream)
+        if div:
+            students = students.filter(enrollment__class_batch__division=div)
+        if year:
+            semesters = []
+            if year.lower() == 'fy': semesters = ['Sem 1', 'Sem 2']
+            elif year.lower() == 'sy': semesters = ['Sem 3', 'Sem 4']
+            elif year.lower() == 'ty': semesters = ['Sem 5', 'Sem 6']
+            if semesters:
+                students = students.filter(enrollment__class_batch__subject__semester__in=semesters)
+                
+        students = students.distinct().select_related('stream')[:50]
 
-        teachers = User.objects.filter(
-            role__in=['Teacher', 'HOD']
-        ).filter(
-            Q(name__icontains=query) | Q(email__icontains=query)
-        ).select_related('department')[:20]
+        teachers = User.objects.filter(role__in=['Teacher', 'HOD'])
+        if query:
+            teachers = teachers.filter(Q(name__icontains=query) | Q(email__icontains=query))
+            
+        if stream or div or year:
+            t_filters = Q()
+            if stream:
+                t_filters &= Q(classbatch__subject__stream__iexact=stream)
+            if div:
+                t_filters &= Q(classbatch__division=div)
+            if year:
+                semesters = []
+                if year.lower() == 'fy': semesters = ['Sem 1', 'Sem 2']
+                elif year.lower() == 'sy': semesters = ['Sem 3', 'Sem 4']
+                elif year.lower() == 'ty': semesters = ['Sem 5', 'Sem 6']
+                if semesters:
+                    t_filters &= Q(classbatch__subject__semester__in=semesters)
+            teachers = teachers.filter(t_filters)
+            
+        teachers = teachers.distinct().select_related('department')[:50]
 
         student_data = []
         for s in students:

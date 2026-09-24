@@ -4,6 +4,8 @@ import apiClient from '../../services/apiClient';
 const PrincipalSearch = () => {
   const [query, setQuery] = useState('');
   const [stream, setStream] = useState('');
+  const [div, setDiv] = useState('');
+  const [year, setYear] = useState('');
   const [students, setStudents] = useState([]);
   const [teachers, setTeachers] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -15,14 +17,14 @@ const PrincipalSearch = () => {
   useEffect(() => {
     const timer = setTimeout(() => {
       const fetchResults = async () => {
-        if (!query && !stream) {
+        if (!query && !stream && !div && !year) {
           setStudents([]);
           setTeachers([]);
           return;
         }
         setLoading(true);
         try {
-          const { data } = await apiClient.get(`/api/principal/search/?q=${encodeURIComponent(query)}&stream=${stream}`);
+          const { data } = await apiClient.get(`/api/principal/search/?q=${encodeURIComponent(query)}&stream=${encodeURIComponent(stream)}&div=${encodeURIComponent(div)}&year=${encodeURIComponent(year)}`);
           setStudents(data.students || []);
           setTeachers(data.teachers || []);
         } catch (error) {
@@ -34,10 +36,10 @@ const PrincipalSearch = () => {
       fetchResults();
     }, 300);
     return () => clearTimeout(timer);
-  }, [query, stream]);
+  }, [query, stream, div, year]);
 
   const totalResults = students.length + teachers.length;
-  const hasQuery = query || stream;
+  const hasQuery = query || stream || div || year;
 
   const openModal = (result, type) => {
     setSelectedResult(result);
@@ -67,23 +69,57 @@ const PrincipalSearch = () => {
           )}
         </div>
 
-        {/* Stream Filter */}
-        <div className="flex flex-wrap gap-2 mt-4 px-2">
-          <button
-            onClick={() => setStream('')}
-            className={`px-4 py-2 rounded-full text-sm font-semibold border transition-all ${stream === '' ? 'bg-purple-600 border-purple-500 text-white' : 'bg-white/5 border-white/20 text-white/60 hover:text-white hover:border-white/40'}`}
-          >
-            All Streams
-          </button>
-          {STREAMS.map(s => (
-            <button
-              key={s}
-              onClick={() => setStream(stream === s ? '' : s)}
-              className={`px-4 py-2 rounded-full text-sm font-semibold border transition-all ${stream === s ? 'bg-purple-600 border-purple-500 text-white' : 'bg-white/5 border-white/20 text-white/60 hover:text-white hover:border-white/40'}`}
+        {/* Filters */}
+        <div className="flex flex-wrap gap-4 mt-4 px-2">
+          {/* Stream Dropdown */}
+          <div className="relative">
+            <select 
+              value={stream} 
+              onChange={e => setStream(e.target.value)}
+              className="bg-slate-900/80 backdrop-blur text-white/80 text-sm rounded-xl px-4 py-2.5 pr-10 outline-none border border-white/10 focus:border-purple-500 appearance-none min-w-[150px] cursor-pointer shadow-lg hover:border-white/30 transition-colors"
             >
-              {s}
-            </button>
-          ))}
+              <option value="">All Streams</option>
+              {STREAMS.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+              <svg className="w-4 h-4 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+            </div>
+          </div>
+          
+          {/* Year Dropdown */}
+          <div className="relative">
+            <select 
+              value={year} 
+              onChange={e => setYear(e.target.value)}
+              className="bg-slate-900/80 backdrop-blur text-white/80 text-sm rounded-xl px-4 py-2.5 pr-10 outline-none border border-white/10 focus:border-purple-500 appearance-none min-w-[150px] cursor-pointer shadow-lg hover:border-white/30 transition-colors"
+            >
+              <option value="">All Years</option>
+              <option value="FY">First Year (FY)</option>
+              <option value="SY">Second Year (SY)</option>
+              <option value="TY">Third Year (TY)</option>
+            </select>
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+              <svg className="w-4 h-4 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+            </div>
+          </div>
+
+          {/* Div Dropdown */}
+          <div className="relative">
+            <select 
+              value={div} 
+              onChange={e => setDiv(e.target.value)}
+              className="bg-slate-900/80 backdrop-blur text-white/80 text-sm rounded-xl px-4 py-2.5 pr-10 outline-none border border-white/10 focus:border-purple-500 appearance-none min-w-[150px] cursor-pointer shadow-lg hover:border-white/30 transition-colors"
+            >
+              <option value="">All Divs</option>
+              <option value="A">Div A</option>
+              <option value="B">Div B</option>
+              <option value="C">Div C</option>
+              <option value="D">Div D</option>
+            </select>
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+              <svg className="w-4 h-4 text-white/40" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" /></svg>
+            </div>
+          </div>
         </div>
       </div>
 
