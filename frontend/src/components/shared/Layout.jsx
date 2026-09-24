@@ -32,9 +32,13 @@ const Layout = ({ children }) => {
   return (
     <>
       {/* Fixed Background Layer — DO NOT alter this */}
-      <div className="fixed inset-0 -z-10 bg-[url('/imgs/login-signup.jpg')] bg-cover bg-center bg-no-repeat">
+      <div className="fixed inset-0 -z-20 bg-[url('/imgs/login-signup.jpg')] bg-cover bg-center bg-no-repeat">
         <div className="absolute inset-0 bg-white/90 dark:bg-slate-900/85 backdrop-blur-md"></div>
       </div>
+
+      {/* Decorative Ambient Orbs for Glassmorphism */}
+      <div className="fixed top-[-10%] left-[-10%] w-96 h-96 bg-purple-600/40 rounded-full blur-[120px] pointer-events-none -z-10 dark:bg-purple-600/30"></div>
+      <div className="fixed bottom-[-10%] right-[-10%] w-96 h-96 bg-blue-600/40 rounded-full blur-[120px] pointer-events-none -z-10 dark:bg-blue-600/30"></div>
 
       {/* Scrollable Content Wrapper */}
       <div className="relative z-0 min-h-screen w-full overflow-y-auto text-gray-900 dark:text-white">
