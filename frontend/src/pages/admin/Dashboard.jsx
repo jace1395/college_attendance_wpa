@@ -6,6 +6,7 @@ import AdminReports from './AdminReports';
 import StudentDataEntry from './StudentDataEntry';
 import apiClient from '../../services/apiClient';
 import Layout from '../../components/shared/Layout';
+import { getDevicePerformance, getGlassmorphismClass } from '../../utils/device';
 
 const AdminDashboard = () => {
   const { user } = useAuth();
@@ -197,8 +198,10 @@ const AdminDashboard = () => {
                   { label: 'Total Teachers', value: system_stats?.total_teachers, color: 'purple' },
                   { label: 'Active Sessions', value: system_stats?.active_sessions, color: 'green', live: true, breakdown: `Teachers: ${system_stats?.active_teachers || 0} | Students: ${system_stats?.active_students || 0}`, info: 'Total number of users who have logged in today' },
                   { label: 'Last Backup', value: system_stats?.last_database_backup || 'N/A', color: 'yellow', isText: true },
-                ].map(({ label, value, color, live, isText, breakdown, info }) => (
-                  <div key={label} className={`bg-white dark:bg-slate-800 border ${color === 'green' ? 'border-green-500/30' : 'border-gray-200 dark:border-white/10'} rounded-3xl p-6 shadow-sm relative overflow-visible group`}>
+                ].map(({ label, value, color, live, isText, breakdown, info }) => {
+                  const glassClass = getGlassmorphismClass(getDevicePerformance());
+                  return (
+                  <div key={label} className={`${glassClass} border ${color === 'green' ? 'border-green-500/30' : 'border-gray-200 dark:border-white/10'} p-6 relative overflow-visible group`}>
                     <div className={`absolute -right-6 -top-6 w-24 h-24 bg-${color}-500/10 rounded-full blur-xl group-hover:bg-${color}-500/20 transition-colors pointer-events-none`}></div>
                     <div className="flex items-center gap-2 mb-2">
                       <p className="text-gray-500 dark:text-white/60 text-sm font-semibold uppercase tracking-wider">{label}</p>
@@ -239,7 +242,7 @@ const AdminDashboard = () => {
                       <p className="text-xs text-gray-500 dark:text-white/50 mt-2 font-medium">{breakdown}</p>
                     )}
                   </div>
-                ))}
+                )})}
               </div>
 
               {/* Active Classes */}

@@ -4,6 +4,8 @@ import {
   PieChart, Pie, Cell, Legend
 } from 'recharts';
 import apiClient from '../../services/apiClient';
+import Custom3DBar from '../../components/charts/Custom3DBar';
+import Custom3DPie from '../../components/charts/Custom3DPie';
 
 const COLORS_PRESENT = '#a855f7';
 const COLORS_ABSENT  = '#ef4444';
@@ -168,7 +170,7 @@ const PrincipalViewTab = ({ streams, defaultSubTab, defaultParams }) => {
               {streamData.map((item, idx) => {
                 const percent = item.total > 0 ? ((item.present / item.total) * 100).toFixed(1) : 0;
                 return (
-                  <div key={item.class_id || idx} className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-xl relative overflow-hidden group hover:border-white/20 transition-all">
+                  <div key={item.class_id || idx} className="apple-glass-dark p-6 relative overflow-hidden group hover:border-white/40 transition-all border border-white/20">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-purple-500/10 rounded-full blur-2xl group-hover:bg-purple-500/20 transition-colors"></div>
                     <h4 className="text-2xl font-bold mb-4 relative z-10 text-white">{item.year} {selectedStream}</h4>
 
@@ -206,7 +208,7 @@ const PrincipalViewTab = ({ streams, defaultSubTab, defaultParams }) => {
       )}
 
       {subTab === 'Mentor Oversight' && (
-        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-xl">
+        <div className="apple-glass-dark border border-white/20 p-6">
           <h3 className="text-xl font-bold mb-6 text-white">Mentor Oversight</h3>
           {loading ? (
              <div className="flex justify-center py-16"><div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500"></div></div>
@@ -270,7 +272,7 @@ const PrincipalViewTab = ({ streams, defaultSubTab, defaultParams }) => {
       )}
 
       {subTab === 'Division Analysis' && (
-        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl p-6 shadow-xl">
+        <div className="apple-glass-dark border border-white/20 p-6">
           <h3 className="text-xl font-bold mb-6 text-white">Division Analysis</h3>
           {loading ? (
              <div className="flex justify-center py-16"><div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500"></div></div>
@@ -379,7 +381,7 @@ const PrincipalViewTab = ({ streams, defaultSubTab, defaultParams }) => {
                     ) : (
                       <ResponsiveContainer width="100%" height={180}>
                         <PieChart>
-                          <Pie data={pieData} cx="50%" cy="50%" outerRadius={65} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false} isAnimationActive={false}>
+                          <Pie data={pieData} cx="50%" cy="50%" outerRadius={65} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false} isAnimationActive={false} activeIndex={[0,1]} activeShape={<Custom3DPie />}>
                             <Cell fill={COLORS_PRESENT} />
                             <Cell fill={COLORS_ABSENT} />
                           </Pie>
@@ -402,7 +404,7 @@ const PrincipalViewTab = ({ streams, defaultSubTab, defaultParams }) => {
                           <XAxis dataKey="subject" tick={{ fontSize: 12, fill: 'currentColor' }} interval={0} angle={-45} textAnchor="end" height={60} />
                           <YAxis domain={[0, 100]} tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11 }} />
                           <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: '#fff' }} />
-                          <Bar dataKey="pct" name="Attendance %" fill={COLORS_PRESENT} radius={[4, 4, 0, 0]} isAnimationActive={false} />
+                          <Bar dataKey="pct" name="Attendance %" fill={COLORS_PRESENT} shape={<Custom3DBar />} isAnimationActive={false} />
                         </BarChart>
                       </ResponsiveContainer>
                     )}
@@ -419,7 +421,7 @@ const PrincipalViewTab = ({ streams, defaultSubTab, defaultParams }) => {
                         <XAxis dataKey="week" tick={{ fontSize: 12, fill: 'currentColor' }} interval={0} angle={-45} textAnchor="end" height={60} />
                         <YAxis domain={[0, 100]} tick={{ fill: 'rgba(255,255,255,0.4)', fontSize: 11 }} />
                         <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 12, color: '#fff' }} />
-                        <Bar dataKey="pct" name="Avg %" fill="#0ea5e9" radius={[4, 4, 0, 0]} isAnimationActive={false} />
+                        <Bar dataKey="pct" name="Avg %" fill="#0ea5e9" shape={<Custom3DBar />} isAnimationActive={false} />
                       </BarChart>
                     </ResponsiveContainer>
                   </div>

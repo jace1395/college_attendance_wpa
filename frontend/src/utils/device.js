@@ -1,18 +1,13 @@
 export const getDevicePerformance = () => {
-  // Check if navigator properties exist to prevent errors
-  const hardwareConcurrency = navigator.hardwareConcurrency || 4; 
-  const deviceMemory = navigator.deviceMemory || 4; // in GB
-
-  // We define a "high-end" device as having >= 8 cores or >= 8GB RAM
-  const isHighEnd = hardwareConcurrency >= 8 || deviceMemory >= 8;
-
-  return isHighEnd ? 'high' : 'low';
+  return 'high';
 };
 
-export const getGlassmorphismClass = (performanceLevel) => {
+export const getGlassmorphismClass = (performanceLevel, theme = 'dark') => {
   if (performanceLevel === 'high') {
-    return 'bg-white/20 backdrop-blur-xl border border-white/30 shadow-2xl';
+    return theme === 'light' ? 'apple-glass-light rounded-3xl' : 'apple-glass-dark rounded-3xl';
   }
   // Glassmorphism Lite for low-end devices (solid color with slight opacity, no blur)
-  return 'bg-slate-800/90 border border-slate-700 shadow-sm';
+  return theme === 'light' 
+    ? 'bg-slate-200 border border-slate-300 shadow-sm rounded-3xl' 
+    : 'bg-slate-800 border border-slate-700 shadow-sm rounded-3xl';
 };

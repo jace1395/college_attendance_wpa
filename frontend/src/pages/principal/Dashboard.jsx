@@ -7,6 +7,7 @@ import apiClient from '../../services/apiClient';
 import Layout from '../../components/shared/Layout';
 import PrincipalMonitoringTab from './PrincipalMonitoringTab';
 import PrincipalAdvancedGraph from './PrincipalAdvancedGraph';
+import { getDevicePerformance, getGlassmorphismClass } from '../../utils/device';
 
 const PrincipalDashboard = () => {
   const { user } = useAuth();
@@ -127,17 +128,19 @@ const PrincipalDashboard = () => {
                 onClick={handleMetricCardClick}
               >
                 {[
-                  { label: 'Total Present', value: college_stats_today?.total_students_present, color: 'purple', textColor: 'text-gray-900 dark:text-white' },
-                  { label: 'Total Absent', value: college_stats_today?.total_students_absent, color: 'red', textColor: 'text-gray-900 dark:text-white' },
-                  { label: 'Overall %', value: college_stats_today?.overall_attendance_percentage != null ? `${college_stats_today.overall_attendance_percentage}%` : '—', color: 'green', textColor: 'text-green-600 dark:text-green-400' },
-                  { label: 'Classes Conducted', value: college_stats_today?.classes_conducted_today, color: 'blue', textColor: 'text-blue-600 dark:text-blue-400' },
-                ].map(({ label, value, color, textColor }) => (
-                  <div key={label} className={`bg-white dark:bg-slate-800 border border-${color}-500/30 rounded-3xl p-6 shadow-sm relative overflow-hidden group hover:border-${color}-500/60 transition-colors`}>
+                  { label: 'Total Present', value: college_stats_today?.total_students_present, color: 'purple', textColor: 'text-white' },
+                  { label: 'Total Absent', value: college_stats_today?.total_students_absent, color: 'red', textColor: 'text-white' },
+                  { label: 'Overall %', value: college_stats_today?.overall_attendance_percentage != null ? `${college_stats_today.overall_attendance_percentage}%` : '—', color: 'green', textColor: 'text-green-400' },
+                  { label: 'Classes Conducted', value: college_stats_today?.classes_conducted_today, color: 'blue', textColor: 'text-blue-400' },
+                ].map(({ label, value, color, textColor }) => {
+                  const glassClass = getGlassmorphismClass(getDevicePerformance());
+                  return (
+                  <div key={label} className={`${glassClass} border border-${color}-500/30 p-6 relative overflow-hidden group hover:border-${color}-500/60 transition-colors`}>
                     <div className={`absolute -right-6 -top-6 w-24 h-24 bg-${color}-500/20 rounded-full blur-xl group-hover:bg-${color}-500/30 transition-colors`}></div>
-                    <p className="text-gray-500 dark:text-white/60 text-sm font-semibold uppercase tracking-wider mb-2">{label}</p>
+                    <p className="text-white/60 text-sm font-semibold uppercase tracking-wider mb-2">{label}</p>
                     <p className={`text-4xl font-bold ${textColor}`}>{value ?? '—'}</p>
                   </div>
-                ))}
+                )})}
               </div>
 
               {/* Interactive Graphs */}
