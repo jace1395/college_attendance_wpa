@@ -1,5 +1,5 @@
 import React, { Suspense, lazy } from "react";
-import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import RouteGuard from "./components/RouteGuard";
@@ -35,6 +35,22 @@ const Settings = lazy(() => import("./pages/shared/Settings"));
 // Timetable Incharge
 const TimetableDashboard = lazy(() => import("./pages/timetable/Dashboard"));
 
+const UnauthorizedPage = () => {
+  const location = useLocation();
+  return (
+    <div className="p-10 text-center text-red-500 bg-slate-900 min-h-screen flex items-center justify-center flex-col">
+      <div>
+        <p className="text-6xl mb-4">403</p>
+        <p className="text-xl font-bold text-red-400">Unauthorized Access</p>
+        <a href="/login" className="mt-4 inline-block text-sm text-white/60 hover:text-white underline">Back to Login</a>
+      </div>
+      <div className="mt-8 text-white bg-black/50 p-4 rounded text-left overflow-auto max-w-2xl w-full">
+        <pre>{JSON.stringify(location.state || {}, null, 2)}</pre>
+      </div>
+    </div>
+  );
+};
+
 function App() {
   return (
     <ThemeProvider>
@@ -46,15 +62,7 @@ function App() {
             <Routes>
               {/* Public */}
               <Route path="/login" element={<Login />} />
-              <Route path="/unauthorized" element={
-                <div className="p-10 text-center text-red-500 bg-slate-900 min-h-screen flex items-center justify-center">
-                  <div>
-                    <p className="text-6xl mb-4">403</p>
-                    <p className="text-xl font-bold text-red-400">Unauthorized Access</p>
-                    <a href="/login" className="mt-4 inline-block text-sm text-white/60 hover:text-white underline">Back to Login</a>
-                  </div>
-                </div>
-              } />
+              <Route path="/unauthorized" element={<UnauthorizedPage />} />
 
               {/* Admin Routes */}
               <Route element={<RouteGuard allowedRoles={["admin"]} />}>
@@ -67,7 +75,7 @@ function App() {
               </Route>
 
               {/* Teacher Routes */}
-              <Route element={<RouteGuard allowedRoles={["teacher", "admin", "principal"]} />}>
+              <Route element={<RouteGuard allowedRoles={["teacher", "hod", "admin", "principal"]} />}>
                 <Route path="/teacher/dashboard" element={<TeacherDashboard />} />
                 <Route path="/teacher/class/:class_id" element={<AttendanceGrid />} />
                 <Route path="/hod/dashboard" element={<HODDashboard />} />
@@ -88,8 +96,8 @@ function App() {
                 <Route path="/student/settings" element={<Settings />} />
               </Route>
 
-              {/* Universal Settings — accessible by all authenticated roles */}
-              <Route element={<RouteGuard allowedRoles={["admin", "principal", "teacher", "student"]} />}>
+              {/* Universal Settings */}
+              <Route element={<RouteGuard allowedRoles={["admin", "principal", "teacher", "student", "hod", "timetable_incharge"]} />}>
                 <Route path="/settings" element={<Settings />} />
               </Route>
 

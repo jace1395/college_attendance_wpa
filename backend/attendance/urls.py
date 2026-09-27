@@ -1,5 +1,7 @@
 from django.urls import path
 from .views import (
+    AdminAssignMentorStreamView,
+    AdminAssignSubjectView,
     # Student Views
     StudentDashboardView,
     StudentSubjectDetailView,
@@ -17,6 +19,7 @@ from .views import (
     HODOverviewStatsAPIView,
     HODClassStatsView,
     HODStudentReportAPIView,
+    HODMentorsListView,
     MentorMenteesView,
     MenteeReportAPIView,
     
@@ -111,6 +114,7 @@ urlpatterns = [
     path('api/teacher/hod/overview-stats/', HODOverviewStatsAPIView.as_view(), name='hod-overview-stats'),
     path('api/teacher/hod/class-stats/', HODClassStatsView.as_view(), name='hod-class-stats'),
     path('api/teacher/hod/student/<int:student_id>/report/', HODStudentReportAPIView.as_view(), name='hod-student-report'),
+    path('api/teacher/hod/mentors/', HODMentorsListView.as_view(), name='hod-mentors-list'),
     path('api/teacher/mentor/mentees/', MentorMenteesView.as_view(), name='mentor-mentees'),
     path('api/teacher/mentor/mentees/<int:mentee_id>/report/', MenteeReportAPIView.as_view(), name='mentor-mentee-report'),
 
@@ -141,12 +145,14 @@ urlpatterns = [
     path('api/admin/hierarchy/teachers/', AdminTeacherHierarchyView.as_view(), name='admin-hierarchy-teachers'),
     path('api/admin/hierarchy/hods/', AdminHODHierarchyView.as_view(), name='admin-hierarchy-hods'),
     path('api/admin/hierarchy/mentors/', AdminMentorHierarchyView.as_view(), name='admin-hierarchy-mentors'),
+    path('api/admin/assign-mentor/', AdminAssignMentorStreamView.as_view(), name='admin-assign-mentor'),
     path('api/admin/users/<int:user_id>/deactivate/', AdminDeactivateUserView.as_view(), name='admin-user-deactivate'),
     path('api/admin/users/<int:user_id>/reset-password/', AdminResetPasswordView.as_view(), name='admin-user-reset-password'),
     path('api/admin/unlock-requests/', AdminUnlockRequestsView.as_view(), name='admin-unlock-requests'),
     path('api/admin/unlock-requests/<int:request_id>/approve/', AdminApproveUnlockView.as_view(), name='admin-approve-unlock'),
     path('api/admin/unlock-requests/<int:request_id>/deny/', AdminDenyUnlockView.as_view(), name='admin-deny-unlock'),
     path('api/admin/teacher-subjects/', AdminTeacherSubjectsView.as_view(), name='admin-teacher-subjects'),
+    path('api/admin/assign-subject/', AdminAssignSubjectView.as_view(), name='admin-assign-subject'),
     path('api/admin/backup/export/', AdminBackupExportView.as_view(), name='admin-backup-export'),
     path('api/admin/audit-logs/', AuditLogPaginationView.as_view(), name='admin-audit-logs'),
     path('api/admin/force-unlock/', AdminForceUnlockView.as_view(), name='admin-force-unlock'),

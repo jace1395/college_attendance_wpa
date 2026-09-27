@@ -14,7 +14,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         data['user'] = {  # type: ignore
             'id': self.user.id,
             'name': self.user.name,
-            'email': self.user.email.lower(),
+            'email': self.user.email.lower() if self.user.email else None,
             'role': self.user.role,
             'is_hod': self.user.is_hod,
             'is_mentor': self.user.is_mentor,
@@ -58,7 +58,7 @@ class UserMeView(APIView):
         user = request.user
         return Response({
             'name': user.name,
-            'email': user.email.lower(),
+            'email': user.email.lower() if user.email else None,
             'role': user.role,
             'is_first_login': user.is_first_login,
             'department': user.department.name if getattr(user, 'department', None) else None,
@@ -127,7 +127,14 @@ class AdminUserDetailView(APIView):
         if 'roll_no' in data:
             user.roll_no = data['roll_no']
         if 'role' in data:
-            user.role = data['role']
+            new_role = data['role']
+            if new_role.lower() == 'hod':
+                user.role = 'HOD'
+                user.is_hod = True
+            else:
+                user.role = new_role.capitalize()
+                if user.role != 'HOD':
+                    user.is_hod = False
         if 'department_id' in data:
             user.department_id = data['department_id']
         if 'stream_id' in data:

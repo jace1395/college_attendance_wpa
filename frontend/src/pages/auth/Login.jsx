@@ -45,6 +45,9 @@ const Login = () => {
         case 'admin':
           navigate('/admin/dashboard');
           break;
+        case 'hod':
+          navigate('/teacher/dashboard');
+          break;
         case 'timetable_incharge':
           navigate('/timetable/dashboard');
           break;

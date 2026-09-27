@@ -18,6 +18,7 @@ const StudentForm = () => {
   const [form, setForm]       = useState(empty);
   const [errors, setErrors]   = useState({});
   const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [records, setRecords] = useState([]);
 
   useEffect(() => {
@@ -50,9 +51,11 @@ const StudentForm = () => {
 
   const handleSubmit = async e => {
     e.preventDefault();
+    if (loading) return;
     const errs = validate();
     if (Object.keys(errs).length) { setErrors(errs); return; }
     
+    setLoading(true);
     try {
       await apiClient.post('/api/admin/users/', {
         name: form.name,
@@ -68,6 +71,8 @@ const StudentForm = () => {
       setTimeout(() => setSuccess(false), 3500);
     } catch (err) {
       alert(err.response?.data?.error || "Failed to add student.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -115,8 +120,8 @@ const StudentForm = () => {
           <div className="sm:col-span-2 lg:col-span-1"><label className={lbl}>Address</label><input className={inp} value={form.address} onChange={set("address")} placeholder="City, State"/></div>
         </div>
         <div className="flex justify-end mt-5">
-          <button type="button" onClick={() => { setForm(empty); setErrors({}); }} className="px-5 py-2 text-white/50 hover:text-white text-sm mr-3 transition-colors">Clear</button>
-          <button type="submit" className="px-7 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl shadow-lg text-sm ">Add Student</button>
+          <button type="button" onClick={() => { setForm(empty); setErrors({}); }} className="px-5 py-2 text-white/50 hover:text-white text-sm mr-3 transition-colors" disabled={loading}>Clear</button>
+          <button type="submit" disabled={loading} className="px-7 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold rounded-xl shadow-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed">{loading ? 'Adding...' : 'Add Student'}</button>
         </div>
       </form>
 
@@ -156,6 +161,7 @@ const StaffForm = () => {
   const [form, setForm]       = useState(empty);
   const [errors, setErrors]   = useState({});
   const [success, setSuccess] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [records, setRecords] = useState([]);
 
   useEffect(() => {
@@ -187,9 +193,11 @@ const StaffForm = () => {
 
   const handleSubmit = async e => {
     e.preventDefault();
+    if (loading) return;
     const errs = validate();
     if (Object.keys(errs).length) { setErrors(errs); return; }
     
+    setLoading(true);
     try {
       await apiClient.post('/api/admin/users/', {
         name: form.name,
@@ -204,6 +212,8 @@ const StaffForm = () => {
       setTimeout(() => setSuccess(false), 3500);
     } catch (err) {
       alert(err.response?.data?.error || "Failed to add staff.");
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -242,8 +252,8 @@ const StaffForm = () => {
           <div><label className={lbl}>Date of Joining</label><input type="date" className={inp + " [color-scheme:dark]"} value={form.joining} onChange={set("joining")}/></div>
         </div>
         <div className="flex justify-end mt-5">
-          <button type="button" onClick={() => { setForm(empty); setErrors({}); }} className="px-5 py-2 text-white/50 hover:text-white text-sm mr-3 transition-colors">Clear</button>
-          <button type="submit" className="px-7 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl shadow-lg text-sm ">Add Staff</button>
+          <button type="button" onClick={() => { setForm(empty); setErrors({}); }} className="px-5 py-2 text-white/50 hover:text-white text-sm mr-3 transition-colors" disabled={loading}>Clear</button>
+          <button type="submit" disabled={loading} className="px-7 py-2.5 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white font-bold rounded-xl shadow-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed">{loading ? 'Adding...' : 'Add Staff'}</button>
         </div>
       </form>
 

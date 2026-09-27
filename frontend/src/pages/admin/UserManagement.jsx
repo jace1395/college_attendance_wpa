@@ -13,6 +13,7 @@ const UserManagement = () => {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [uploadStatus, setUploadStatus] = useState(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   // New User State
   const [newUser, setNewUser] = useState({
@@ -31,6 +32,10 @@ const UserManagement = () => {
   const [adminPassword, setAdminPassword] = useState('');
   const [isResetting, setIsResetting] = useState(false);
   const [resetError, setResetError] = useState('');
+
+  // Edit User State
+  const [editModalUser, setEditModalUser] = useState(null);
+  const [isEditingUser, setIsEditingUser] = useState(false);
 
   // Global Hierarchy Filters
   const [filtersLoading, setFiltersLoading] = useState(true);
@@ -81,7 +86,7 @@ const UserManagement = () => {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       setUploadStatus({ type: 'success', msg: 'CSV Processed! Users added successfully.' });
-      setTimeout(() => window.location.reload(), 2000); // Reload to fetch fresh data
+      setTimeout(() => setRefreshTrigger(prev => prev + 1), 2000); // Reload to fetch fresh data
     } catch (err) {
       const msg = err.response?.data?.error || 'Upload failed. Please check the file format.';
       setUploadStatus({ type: 'error', msg });
@@ -91,13 +96,13 @@ const UserManagement = () => {
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm(`Are you sure you want to deactivate user ${id}?`)) {
+    if (window.confirm(`Are you sure you want to PERMANENTLY delete user ${id} from the database? This cannot be undone.`)) {
       try {
-        await apiClient.patch(`/api/admin/users/${id}/deactivate/`);
-        alert("User deactivated successfully!");
-        window.location.reload();
+        await apiClient.delete(`/api/admin/users/${id}/deactivate/`);
+        alert("User permanently deleted from database!");
+        setRefreshTrigger(prev => prev + 1);
       } catch (err) {
-        alert(err.response?.data?.error || 'Failed to deactivate user.');
+        alert(err.response?.data?.error || 'Failed to delete user.');
       }
     }
   };
@@ -129,11 +134,31 @@ const UserManagement = () => {
       alert('User added successfully!');
       setIsAddModalOpen(false);
       setNewUser({ name: '', email: '', role: 'student', stream: '', department: '', year: '', roll_no: '' });
-      window.location.reload(); 
+      setRefreshTrigger(prev => prev + 1); 
     } catch (err) {
       alert(err.response?.data?.error || 'Failed to create user');
     } finally {
       setIsCreatingUser(false);
+    }
+  };
+
+  const handleEditUser = async (e) => {
+    e.preventDefault();
+    setIsEditingUser(true);
+    try {
+      await apiClient.patch(`/api/admin/users/${editModalUser.id}/`, {
+        name: editModalUser.name,
+        email: editModalUser.email,
+        role: editModalUser.role,
+        is_timetable_incharge: editModalUser.is_timetable_incharge
+      });
+      alert('User updated successfully!');
+      setEditModalUser(null);
+      setRefreshTrigger(prev => prev + 1);
+    } catch (err) {
+      alert(err.response?.data?.error || 'Failed to update user');
+    } finally {
+      setIsEditingUser(false);
     }
   };
 
@@ -219,6 +244,8 @@ const UserManagement = () => {
                   classes={classes} 
                   setResetModalUser={setResetModalUser} 
                   handleDelete={handleDelete}
+                  setEditModalUser={setEditModalUser}
+                  refreshTrigger={refreshTrigger}
                 />
               )}
               {activeSubTab === 'teachers' && (
@@ -226,6 +253,8 @@ const UserManagement = () => {
                   departments={departments} 
                   setResetModalUser={setResetModalUser} 
                   handleDelete={handleDelete}
+                  setEditModalUser={setEditModalUser}
+                  refreshTrigger={refreshTrigger}
                 />
               )}
               {activeSubTab === 'hods' && (
@@ -233,18 +262,22 @@ const UserManagement = () => {
                   departments={departments} 
                   setResetModalUser={setResetModalUser} 
                   handleDelete={handleDelete}
+                  setEditModalUser={setEditModalUser}
+                  refreshTrigger={refreshTrigger}
                 />
               )}
               {activeSubTab === 'mentors' && (
                 <ManageMentorsView 
                   departments={departments} 
-                  classes={classes} 
+                  streams={streams} 
                   setResetModalUser={setResetModalUser} 
                   handleDelete={handleDelete}
+                  setEditModalUser={setEditModalUser}
+                  refreshTrigger={refreshTrigger}
                 />
               )}
               {activeSubTab === 'principal' && (
-                <ManagePrincipalView />
+                <ManagePrincipalView refreshTrigger={refreshTrigger} />
               )}
             </>
           )}
@@ -382,6 +415,62 @@ const UserManagement = () => {
                   className="bg-red-600 hover:bg-red-500 text-white px-6 py-2 rounded-xl font-bold shadow-lg transition-transform transform disabled:opacity-50"
                 >
                   {isResetting ? 'Resetting...' : 'Confirm Reset'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Edit User Modal */}
+      {editModalUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={() => !isEditingUser && setEditModalUser(null)}></div>
+
+          <div className="bg-slate-800 border border-slate-600 w-full max-w-md rounded-2xl shadow-2xl relative z-10 flex flex-col overflow-hidden">
+            <div className="bg-slate-900 px-6 py-4 flex justify-between items-center border-b border-slate-700">
+              <h3 className="font-bold text-lg text-white">Edit User</h3>
+              <button onClick={() => !isEditingUser && setEditModalUser(null)} className="text-slate-400 hover:text-white" disabled={isEditingUser}>
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+              </button>
+            </div>
+
+            <form onSubmit={handleEditUser}>
+              <div className="p-6 flex flex-col gap-4">
+                <div>
+                  <label className="block text-sm text-white/60 mb-1 ml-1">Full Name</label>
+                  <input type="text" required value={editModalUser.name} onChange={e => setEditModalUser({...editModalUser, name: e.target.value})} className="w-full bg-slate-900/50 text-white rounded-xl px-4 py-2.5 outline-none border border-slate-600 focus:border-blue-500" />
+                </div>
+                <div>
+                  <label className="block text-sm text-white/60 mb-1 ml-1">Email Address</label>
+                  <input type="email" required value={editModalUser.email} onChange={e => setEditModalUser({...editModalUser, email: e.target.value})} className="w-full bg-slate-900/50 text-white rounded-xl px-4 py-2.5 outline-none border border-slate-600 focus:border-blue-500" />
+                </div>
+                {((editModalUser.role && editModalUser.role.toLowerCase() === 'teacher') || (editModalUser.role && editModalUser.role.toLowerCase() === 'hod')) && (
+                  <div className="flex items-center gap-3 mt-2 ml-1">
+                    <input 
+                      type="checkbox" 
+                      id="tt-incharge-edit" 
+                      checked={editModalUser.is_timetable_incharge || false} 
+                      onChange={e => setEditModalUser({...editModalUser, is_timetable_incharge: e.target.checked})}
+                      className="w-4 h-4 rounded border-slate-600 bg-slate-900/50 text-blue-500 focus:ring-blue-500 focus:ring-offset-slate-800"
+                    />
+                    <label htmlFor="tt-incharge-edit" className="text-sm font-medium text-white/80 cursor-pointer">
+                      Timetable Incharge
+                    </label>
+                  </div>
+                )}
+              </div>
+
+              <div className="bg-slate-900 px-6 py-4 flex justify-end gap-3 border-t border-slate-700">
+                <button type="button" onClick={() => setEditModalUser(null)} className="px-4 py-2 text-white/70 hover:text-white transition-colors" disabled={isEditingUser}>
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isEditingUser}
+                  className="bg-blue-600 hover:bg-blue-500 text-white px-6 py-2 rounded-xl font-bold shadow-lg transition-transform transform disabled:opacity-50"
+                >
+                  {isEditingUser ? 'Saving...' : 'Save Changes'}
                 </button>
               </div>
             </form>

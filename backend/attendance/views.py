@@ -52,14 +52,14 @@ class IsStudent(BasePermission):
 
 class IsTeacher(BasePermission):
     def has_permission(self, request, view):
-        return bool(request.user and request.user.is_authenticated and request.user.role in ['Teacher', 'HOD', 'Admin', 'Principal'])
+        return bool(request.user and request.user.is_authenticated and request.user.role in ['Teacher', 'HOD', 'Hod', 'Admin', 'Principal'])
 
 
 class IsHOD(BasePermission):
     def has_permission(self, request, view):
         return bool(
             request.user and request.user.is_authenticated and (
-                request.user.role in ['HOD', 'Admin', 'Principal'] or getattr(request.user, 'is_hod', False)
+                request.user.role in ['HOD', 'Hod', 'Admin', 'Principal'] or getattr(request.user, 'is_hod', False)
             )
         )
 
@@ -381,13 +381,15 @@ class TeacherDashboardView(APIView):
         )
         att_map = {row['class_batch']: row for row in att_counts}
         
-        enroll_counts = Enrollment.objects.filter(class_batch__in=batch_ids).values('class_batch').annotate(count=Count('id'))
+        enroll_counts = Enrollment.objects.filter(class_batch__in=batch_ids, student__is_active=True).values('class_batch').annotate(count=Count('id'))
         enroll_map = {row['class_batch']: row['count'] for row in enroll_counts}
 
         assigned_classes = []
         for batch in assigned_batches:
             subject = batch.subject
-            div_str = f" - Div {batch.division}" if batch.division else ""
+            div_str = ""
+            if batch.division and batch.division.strip().lower() not in ['bvoc', 'none', 'general', '', 'all']:
+                div_str = f"-{batch.division.strip()}"
             class_name = f"{subject.stream} {subject.semester}{div_str}" if subject else f"Class #{batch.id}"
 
             total_sessions = conducted_map.get(batch.id, 0)
@@ -425,8 +427,10 @@ class TeacherDashboardView(APIView):
         teacher_info = {
             "name": user.name or "Teacher",
             "email": user.email,
+            "role": getattr(user, 'role', 'Teacher'),
+            "department": getattr(user.department, 'name', 'No Department') if getattr(user, 'department', None) else 'No Department',
             "isMentor": getattr(user, 'is_mentor', False),
-            "isHOD": getattr(user, 'is_hod', False) or user.role == 'HOD',
+            "isHOD": getattr(user, 'is_hod', False) or (user.role and user.role.lower() == 'hod'),
             "isTimetableIncharge": getattr(user, 'is_timetable_incharge', False),
         }
 
@@ -465,7 +469,7 @@ class AttendanceGridView(APIView):
         except ClassBatch.DoesNotExist:
             return Response({"error": "Class batch not found"}, status=status.HTTP_404_NOT_FOUND)
 
-        enrollments = batch.enrollments.select_related('student').order_by('student__roll_no')
+        enrollments = batch.enrollments.filter(student__is_active=True).select_related('student').order_by('student__roll_no')
         roster = [
             {
                 "student_id": en.student.id,
@@ -486,9 +490,14 @@ class AttendanceGridView(APIView):
             for r in records_qs
         ]
 
+        div_str = ""
+        if batch.division and batch.division.strip().lower() not in ['bvoc', 'none', 'general', '', 'all']:
+            div_str = f"-{batch.division.strip()}"
+        class_name = f"{batch.subject.stream} {batch.subject.semester}{div_str}"
+
         return Response({
             "class_id": batch.id,
-            "class_name": f"{batch.subject.name} - {batch.subject.stream} {batch.subject.semester}",
+            "class_name": f"{batch.subject.name} - {class_name}",
             "roster": roster,
             "attendance_records": attendance_records
         })
@@ -516,7 +525,7 @@ class AttendanceUnlockRequestView(APIView):
         att = Attendance.objects.filter(class_batch=batch, date=date_to_unlock).first()
         if not att:
             # Create a placeholder record so AttendanceTicket can reference it
-            first_student = batch.enrollments.first()
+            first_student = batch.enrollments.filter(student__is_active=True).first()
             if not first_student or not first_student.student:
                 return Response({"error": "No students enrolled in this class to associate attendance with."}, status=status.HTTP_400_BAD_REQUEST)
             att = Attendance.objects.create(
@@ -688,7 +697,7 @@ class HODOverviewStatsAPIView(APIView):
         batches = ClassBatch.objects.filter(subject__stream__in=available_streams).select_related('subject')
 
         # Get enrollments
-        enrollments = Enrollment.objects.filter(class_batch__in=batches).select_related('student', 'class_batch__subject')
+        enrollments = Enrollment.objects.filter(class_batch__in=batches, student__is_active=True).select_related('student', 'class_batch__subject')
         
         # We need attendance records for these students in these batches
         att_qs = Attendance.objects.filter(class_batch__in=batches).filter(date_filter)
@@ -696,9 +705,9 @@ class HODOverviewStatsAPIView(APIView):
         # Dictionary to hold stats for each class string (e.g. 'FY BCA')
         
         sem_to_year = {
-            'Sem 1': 'FY', 'Sem 2': 'FY',
-            'Sem 3': 'SY', 'Sem 4': 'SY',
-            'Sem 5': 'TY', 'Sem 6': 'TY'
+            'Sem 1': 'FY', 'Sem 2': 'FY', '1': 'FY', '2': 'FY',
+            'Sem 3': 'SY', 'Sem 4': 'SY', '3': 'SY', '4': 'SY',
+            'Sem 5': 'TY', 'Sem 6': 'TY', '5': 'TY', '6': 'TY'
         }
 
         # Initialize results map
@@ -795,9 +804,9 @@ class HODClassStatsView(APIView):
 
         # Translate year (FY -> Sem 1/2, SY -> Sem 3/4, TY -> Sem 5/6)
         sem_map = {
-            'FY': ['Sem 1', 'Sem 2'],
-            'SY': ['Sem 3', 'Sem 4'],
-            'TY': ['Sem 5', 'Sem 6']
+            'FY': ['Sem 1', 'Sem 2', '1', '2'],
+            'SY': ['Sem 3', 'Sem 4', '3', '4'],
+            'TY': ['Sem 5', 'Sem 6', '5', '6']
         }
         sems = sem_map.get(year, ['Sem 1', 'Sem 2'])
 
@@ -806,7 +815,7 @@ class HODClassStatsView(APIView):
             subject__semester__in=sems
         ).distinct()
 
-        enrollments = Enrollment.objects.filter(class_batch__in=batches).select_related('student').distinct().order_by('student__roll_no')
+        enrollments = Enrollment.objects.filter(class_batch__in=batches, student__is_active=True).select_related('student').distinct().order_by('student__roll_no')
         
         att_counts = Attendance.objects.filter(class_batch__in=batches).filter(date_filter).values('student_id').annotate(
             total_att=Count('id'),
@@ -855,6 +864,32 @@ class HODClassStatsView(APIView):
         })
 
 
+class HODMentorsListView(APIView):
+    permission_classes = [IsAuthenticated, IsHOD]
+
+    def get(self, request):
+        from django.db.models import Q
+        mentors = User.objects.filter(Q(is_mentor=True) | Q(mentees__isnull=False)).distinct().order_by('name')
+        
+        results = []
+        for m in mentors:
+            mentees = m.mentees.all()
+            class_set = set()
+            for mentee in mentees:
+                en = mentee.enrollment_set.first()
+                if en and en.class_batch and hasattr(en.class_batch, 'subject'):
+                    class_set.add(f"{en.class_batch.subject.stream} {en.class_batch.subject.semester}")
+            
+            results.append({
+                'id': m.id,
+                'name': m.name or m.email,
+                'assigned_classes': list(class_set) if class_set else ['Unassigned'],
+                'mentee_count': mentees.count()
+            })
+            
+        return Response({'mentors': results})
+
+
 class MentorMenteesView(APIView):
     permission_classes = [IsAuthenticated, IsMentor]
 
@@ -864,7 +899,7 @@ class MentorMenteesView(APIView):
         mentor = get_target_user(request)
         
         # Optimize with a single database query using annotations for attendance counts
-        mentees_qs = User.objects.filter(mentor=mentor).annotate(
+        mentees_qs = User.objects.filter(mentor=mentor, is_active=True).annotate(
             total_attendance=Count('attendance_records'),
             attended_attendance=Count('attendance_records', filter=Q(attendance_records__status='Present'))
         ).prefetch_related('enrollment_set__class_batch__subject').order_by('roll_no')
@@ -1163,9 +1198,9 @@ class TimetableFiltersAPIView(APIView):
                 }
                 
                 years_map = {
-                    "FY": ["Sem 1", "Sem 2"],
-                    "SY": ["Sem 3", "Sem 4"],
-                    "TY": ["Sem 5", "Sem 6"]
+                    "FY": ["Sem 1", "Sem 2", "1", "2"],
+                    "SY": ["Sem 3", "Sem 4", "3", "4"],
+                    "TY": ["Sem 5", "Sem 6", "5", "6"]
                 }
                 
                 for year_name, sems in years_map.items():
@@ -1323,9 +1358,9 @@ class TeacherMonitoringDutyView(APIView):
             total_enrolled = 0
             if d.class_batch:
                 sub = d.class_batch.subject
-                year = "FY" if sub.semester in ['Sem 1', 'Sem 2'] else "SY" if sub.semester in ['Sem 3', 'Sem 4'] else "TY"
+                year = "FY" if sub.semester in ['Sem 1', 'Sem 2', '1', '2'] else "SY" if sub.semester in ['Sem 3', 'Sem 4', '3', '4'] else "TY"
                 c_name = f"{year} {sub.stream}"
-                total_enrolled = d.class_batch.enrollments.count()
+                total_enrolled = d.class_batch.enrollments.filter(student__is_active=True).count()
             
             data.append({
                 "id": d.id,
@@ -1418,12 +1453,12 @@ class MonitorClassesView(APIView):
         seen = set()
         data = []
         for b in batches:
-            year = "FY" if b.subject.semester in ['Sem 1', 'Sem 2'] else "SY" if b.subject.semester in ['Sem 3', 'Sem 4'] else "TY"
+            year = "FY" if b.subject.semester in ['Sem 1', 'Sem 2', '1', '2'] else "SY" if b.subject.semester in ['Sem 3', 'Sem 4', '3', '4'] else "TY"
             key = f"{year} {b.subject.stream}"
             if key not in seen:
                 seen.add(key)
                 # Count total enrollments for this representative batch
-                total = Enrollment.objects.filter(class_batch=b).count()
+                total = Enrollment.objects.filter(class_batch=b, student__is_active=True).count()
                 data.append({"id": b.id, "name": key, "total_students": total})
                 
         # Sort data nicely
@@ -1473,6 +1508,9 @@ class AdminPrincipalManagementView(APIView):
             principal.set_password(default_password)
             principal.save()
             return Response({"success": "Principal password reset successfully", "default_password": default_password})
+        elif action == 'delete':
+            principal.delete()
+            return Response({"success": "Principal deleted successfully"})
             
         return Response({"error": "Invalid action"}, status=400)
 
@@ -1481,8 +1519,8 @@ class AdminDashboardView(APIView):
     permission_classes = [IsAuthenticated, IsAdmin]
 
     def get(self, request):
-        total_students = User.objects.filter(role__iexact='Student').count()
-        total_teachers = User.objects.filter(Q(role__iexact='Teacher') | Q(role__iexact='HOD')).count()
+        total_students = User.objects.filter(role__iexact='Student', is_active=True).count()
+        total_teachers = User.objects.filter(Q(role__iexact='Teacher') | Q(role__iexact='HOD'), is_active=True).count()
         
         # Active sessions based on last_activity within the last 15 minutes
         time_threshold = timezone.now() - timedelta(minutes=15)
@@ -1605,7 +1643,12 @@ class AdminUsersListView(APIView):
         
         name = request.data.get('name')
         email = request.data.get('email')
-        role = request.data.get('role', 'Student').capitalize()
+        role = request.data.get('role', 'Student')
+        if role.lower() == 'hod':
+            role = 'HOD'
+        else:
+            role = role.capitalize()
+            
         stream_name = request.data.get('stream')
         department_name = request.data.get('department')
         roll_no = request.data.get('roll_no')
@@ -1621,6 +1664,8 @@ class AdminUsersListView(APIView):
         if stream_name and role == 'Student':
             stream = Stream.objects.filter(name=stream_name).first()
 
+        is_hod = (role == 'HOD')
+
         try:
             user = User.objects.create_user(
                 email=email,
@@ -1628,7 +1673,8 @@ class AdminUsersListView(APIView):
                 name=name,
                 role=role,
                 department=dept,
-                stream=stream
+                stream=stream,
+                is_hod=is_hod
             )
             return Response({"message": "User created successfully", "user_id": user.id})
         except Exception as e:
@@ -1669,6 +1715,15 @@ class AdminDeactivateUserView(APIView):
         target_user.is_archived = True
         target_user.save()
         return Response({"message": f"User {target_user.email or target_user.id} has been deactivated."})
+
+    def delete(self, request, user_id):
+        try:
+            target_user = User.objects.get(id=user_id)
+        except User.DoesNotExist:
+            return Response({"error": "User not found"}, status=status.HTTP_404_NOT_FOUND)
+
+        target_user.delete()
+        return Response({"message": f"User has been permanently deleted from the database."})
 
 
 class AdminUnlockRequestsView(APIView):
@@ -2123,8 +2178,8 @@ class PrincipalFilterOptionsView(APIView):
         for c in classes_qs:
             year = "FY"
             sem = c.subject.semester
-            if sem in ['Sem 3', 'Sem 4']: year = "SY"
-            elif sem in ['Sem 5', 'Sem 6']: year = "TY"
+            if sem in ['Sem 3', 'Sem 4', '3', '4']: year = "SY"
+            elif sem in ['Sem 5', 'Sem 6', '5', '6']: year = "TY"
             
             classes.append({
                 "id": c.id,
@@ -2157,11 +2212,11 @@ class PrincipalAdvancedGraphView(APIView):
             # Map FY/SY/TY to semesters
             semesters = []
             if 'FY' in years:
-                semesters.extend(['Sem 1', 'Sem 2'])
+                semesters.extend(['Sem 1', 'Sem 2', '1', '2'])
             if 'SY' in years:
-                semesters.extend(['Sem 3', 'Sem 4'])
+                semesters.extend(['Sem 3', 'Sem 4', '3', '4'])
             if 'TY' in years:
-                semesters.extend(['Sem 5', 'Sem 6'])
+                semesters.extend(['Sem 5', 'Sem 6', '5', '6'])
             if semesters:
                 qs = qs.filter(class_batch__subject__semester__in=semesters)
                 
@@ -2203,7 +2258,7 @@ class PrincipalMonitoringDutiesView(APIView):
             class_name = d.class_room
             if d.class_batch:
                 class_name = d.class_batch.subject.name if d.class_batch.subject else d.class_room
-                enrolled = d.class_batch.enrollments.count()
+                enrolled = d.class_batch.enrollments.filter(student__is_active=True).count()
 
             data.append({
                 "id": d.id,
@@ -2274,7 +2329,7 @@ class PrincipalDashboardView(APIView):
         for c in class_data:
             sem = c['class_batch__subject__semester']
             stream_name = c['class_batch__subject__stream'] or "Unassigned"
-            year = "FY" if sem in ['Sem 1', 'Sem 2'] else "SY" if sem in ['Sem 3', 'Sem 4'] else "TY"
+            year = "FY" if sem in ['Sem 1', 'Sem 2', '1', '2'] else "SY" if sem in ['Sem 3', 'Sem 4', '3', '4'] else "TY"
             key = f"{year} {stream_name}"
             if key not in grouped_classes:
                 grouped_classes[key] = {"present": 0, "total": 0}
@@ -2315,9 +2370,9 @@ class PrincipalStreamView(APIView):
     def get(self, request):
         stream = request.query_params.get('stream', 'BCA')
         year_groups = [
-            ("FY", ['Sem 1', 'Sem 2']),
-            ("SY", ['Sem 3', 'Sem 4']),
-            ("TY", ['Sem 5', 'Sem 6'])
+            ("FY", ['Sem 1', 'Sem 2', '1', '2']),
+            ("SY", ['Sem 3', 'Sem 4', '3', '4']),
+            ("TY", ['Sem 5', 'Sem 6', '5', '6'])
         ]
 
         from django.db.models import Count, Q
@@ -2329,7 +2384,7 @@ class PrincipalStreamView(APIView):
             if not batches_list:
                 continue
                 
-            total_students = Enrollment.objects.filter(class_batch_id__in=batches_list).values('student').distinct().count()
+            total_students = Enrollment.objects.filter(class_batch_id__in=batches_list, student__is_active=True).values('student').distinct().count()
 
             att_aggs = Attendance.objects.filter(class_batch_id__in=batches_list).aggregate(
                 present=Count('id', filter=Q(status='Present')),
@@ -2365,7 +2420,7 @@ class PrincipalClassDetailView(APIView):
                 "weekly_trend": []
             })
 
-        total_students = batch.enrollments.count()
+        total_students = batch.enrollments.filter(student__is_active=True).count()
         present = Attendance.objects.filter(class_batch=batch, status='Present').count()
         absent = Attendance.objects.filter(class_batch=batch, status='Absent').count()
 
@@ -2412,7 +2467,7 @@ class PrincipalClassDetailView(APIView):
             weekly_trend.append({"week": f"Wk {5 - w}", "pct": w_pct})
 
         # Fetch mentor name from the first student in the batch
-        first_enrollment = batch.enrollments.select_related('student__mentor').first()
+        first_enrollment = batch.enrollments.filter(student__is_active=True).select_related('student__mentor').first()
         mentor_name = "Unassigned"
         if first_enrollment and getattr(first_enrollment.student, 'mentor', None):
             mentor_name = first_enrollment.student.mentor.name or first_enrollment.student.mentor.email
@@ -2913,9 +2968,12 @@ class AdminFilterOptionsView(APIView):
         class_batches = ClassBatch.objects.select_related('subject', 'teacher').all()
         classes_data = []
         for cb in class_batches:
+            teacher_name = cb.teacher.name if cb.teacher else "Unassigned"
+            name = f"{cb.subject.name} ({teacher_name})"
+            
             classes_data.append({
                 'id': cb.id,
-                'name': f"{cb.subject.name} - Div {cb.division}" if cb.division else cb.subject.name,
+                'name': name,
                 'subject_name': cb.subject.name,
                 'stream_name': cb.subject.stream, # this is the string choice in Subject
                 'semester': cb.subject.semester,
@@ -2923,6 +2981,14 @@ class AdminFilterOptionsView(APIView):
                 'teacher_id': cb.teacher.id if cb.teacher else None,
                 'academic_year': cb.academic_year
             })
+            
+        # Sort so that 'ui ux' and 'qp' subjects are on top
+        def sort_key(c):
+            name_lower = c['subject_name'].lower()
+            is_uiux = 'ui ux' in name_lower or 'qp' in name_lower
+            return (0 if is_uiux else 1, name_lower, c['teacher_name'].lower())
+            
+        classes_data.sort(key=sort_key)
             
         return Response({
             'departments': list(departments),
@@ -2935,37 +3001,72 @@ class AdminStudentHierarchyView(APIView):
 
     def get(self, request):
         class_batch_id = request.query_params.get('class_batch')
-        if not class_batch_id:
-            return Response({"error": "class_batch parameter is required"}, status=400)
-            
-        try:
-            cb = ClassBatch.objects.select_related('subject', 'teacher').get(id=class_batch_id)
-        except ClassBatch.DoesNotExist:
-            return Response({"error": "ClassBatch not found"}, status=404)
-            
-        enrollments = Enrollment.objects.filter(class_batch=cb).select_related('student')
+        stream_id = request.query_params.get('stream')
         
-        students_data = []
-        for en in enrollments:
-            student = en.student
-            students_data.append({
+        if class_batch_id and class_batch_id != 'all':
+            try:
+                cb = ClassBatch.objects.select_related('subject', 'teacher').get(id=class_batch_id)
+                enrollments = Enrollment.objects.filter(class_batch=cb).select_related('student')
+                students_data = [{
+                    'id': en.student.id,
+                    'roll_no': en.student.roll_no,
+                    'name': en.student.name,
+                    'email': en.student.email,
+                    'status': 'active' if en.student.is_active else 'inactive'
+                } for en in enrollments]
+                
+                cb_data = {
+                    'id': cb.id,
+                    'name': f"{cb.subject.name} - Div {cb.division}" if cb.division else cb.subject.name,
+                    'subject_name': cb.subject.name,
+                    'teacher_name': cb.teacher.name if cb.teacher else "Unassigned",
+                }
+            except ClassBatch.DoesNotExist:
+                return Response({"error": "ClassBatch not found"}, status=404)
+                
+        elif stream_id and stream_id != 'all':
+            from users.models import User, Stream
+            students = User.objects.filter(role='Student', stream_id=stream_id)
+            students_data = [{
                 'id': student.id,
                 'roll_no': student.roll_no,
                 'name': student.name,
                 'email': student.email,
                 'status': 'active' if student.is_active else 'inactive'
-            })
+            } for student in students]
             
+            try:
+                stream_obj = Stream.objects.get(id=stream_id)
+                cb_data = {
+                    'name': f"Stream: {stream_obj.name}",
+                    'teacher_name': "N/A"
+                }
+            except:
+                cb_data = {
+                    'name': "Selected Stream",
+                    'teacher_name': "N/A"
+                }
+        else:
+            from users.models import User
+            students = User.objects.filter(role='Student')
+            students_data = [{
+                'id': student.id,
+                'roll_no': student.roll_no,
+                'name': student.name,
+                'email': student.email,
+                'status': 'active' if student.is_active else 'inactive'
+            } for student in students]
+            
+            cb_data = {
+                'name': "All Students",
+                'teacher_name': "N/A"
+            }
+                
         # Sort students by roll no
         students_data = sorted(students_data, key=lambda x: str(x['roll_no'] or x['id']))
             
         return Response({
-            'class_batch': {
-                'id': cb.id,
-                'name': f"{cb.subject.name} - Div {cb.division}" if cb.division else cb.subject.name,
-                'subject_name': cb.subject.name,
-                'teacher_name': cb.teacher.name if cb.teacher else "Unassigned",
-            },
+            'class_batch': cb_data,
             'students': students_data
         })
 
@@ -2975,7 +3076,7 @@ class AdminTeacherHierarchyView(APIView):
     def get(self, request):
         department_id = request.query_params.get('department')
         
-        qs = User.objects.filter(role='Teacher')
+        qs = User.objects.filter(role__in=['Teacher', 'Hod']).select_related('department')
         if department_id and department_id != 'all':
             if department_id == 'none':
                 qs = qs.filter(department__isnull=True)
@@ -3003,6 +3104,8 @@ class AdminTeacherHierarchyView(APIView):
                 'id': t.id,
                 'name': t.name,
                 'email': t.email,
+                'role': t.role,
+                'is_timetable_incharge': t.is_timetable_incharge,
                 'status': 'active' if t.is_active else 'inactive',
                 'department_name': t.department.name if t.department else "None",
                 'classes': classes_assigned
@@ -3020,29 +3123,29 @@ class AdminHODHierarchyView(APIView):
             departments = Department.objects.all()
             data = []
             for d in departments:
-                hods = User.objects.filter(role='HOD', department=d)
-                teachers = User.objects.filter(role='Teacher', department=d)
+                hods = User.objects.filter(role__iexact='hod', department=d)
+                teachers = User.objects.filter(role__iexact='teacher', department=d)
                 
                 data.append({
                     'department': {'id': d.id, 'name': d.name},
-                    'hods': [{'id': h.id, 'name': h.name, 'email': h.email, 'status': 'active' if h.is_active else 'inactive'} for h in hods],
-                    'teachers': [{'id': t.id, 'name': t.name, 'email': t.email, 'status': 'active' if t.is_active else 'inactive'} for t in teachers]
+                    'hods': [{'id': h.id, 'name': h.name, 'email': h.email, 'role': h.role, 'is_timetable_incharge': h.is_timetable_incharge, 'status': 'active' if h.is_active else 'inactive'} for h in hods],
+                    'teachers': [{'id': t.id, 'name': t.name, 'email': t.email, 'role': t.role, 'is_timetable_incharge': t.is_timetable_incharge, 'status': 'active' if t.is_active else 'inactive'} for t in teachers]
                 })
             return Response({'departments_hierarchy': data})
         else:
             if department_id == 'none':
-                hods = User.objects.filter(role='HOD', department__isnull=True)
-                teachers = User.objects.filter(role='Teacher', department__isnull=True)
+                hods = User.objects.filter(role__iexact='hod', department__isnull=True)
+                teachers = User.objects.filter(role__iexact='teacher', department__isnull=True)
                 dept_name = "None"
             else:
-                hods = User.objects.filter(role='HOD', department_id=department_id)
-                teachers = User.objects.filter(role='Teacher', department_id=department_id)
+                hods = User.objects.filter(role__iexact='hod', department_id=department_id)
+                teachers = User.objects.filter(role__iexact='teacher', department_id=department_id)
                 dept_name = Department.objects.get(id=department_id).name
                 
             return Response({
                 'department': {'id': department_id, 'name': dept_name},
-                'hods': [{'id': h.id, 'name': h.name, 'email': h.email, 'status': 'active' if h.is_active else 'inactive'} for h in hods],
-                'teachers': [{'id': t.id, 'name': t.name, 'email': t.email, 'status': 'active' if t.is_active else 'inactive'} for t in teachers]
+                'hods': [{'id': h.id, 'name': h.name, 'email': h.email, 'role': h.role, 'is_timetable_incharge': h.is_timetable_incharge, 'status': 'active' if h.is_active else 'inactive'} for h in hods],
+                'teachers': [{'id': t.id, 'name': t.name, 'email': t.email, 'role': t.role, 'is_timetable_incharge': t.is_timetable_incharge, 'status': 'active' if t.is_active else 'inactive'} for t in teachers]
             })
 
 class AdminMentorHierarchyView(APIView):
@@ -3051,7 +3154,7 @@ class AdminMentorHierarchyView(APIView):
     def get(self, request):
         department_id = request.query_params.get('department')
         
-        qs = User.objects.filter(is_mentor=True)
+        qs = User.objects.filter(role__in=['Teacher', 'Hod']).select_related('department')
         if department_id and department_id != 'all':
             if department_id == 'none':
                 qs = qs.filter(department__isnull=True)
@@ -3059,7 +3162,7 @@ class AdminMentorHierarchyView(APIView):
                 qs = qs.filter(department_id=department_id)
                 
         qs = qs.prefetch_related(
-            Prefetch('mentees', queryset=User.objects.filter(role='Student').select_related('stream'))
+            Prefetch('mentees', queryset=User.objects.filter(role__iexact='student', is_active=True).select_related('stream'))
         ).order_by('name')
         
         mentors_data = []
@@ -3410,9 +3513,9 @@ class PrincipalSearchView(APIView):
             students = students.filter(enrollment__class_batch__division=div)
         if year:
             semesters = []
-            if year.lower() == 'fy': semesters = ['Sem 1', 'Sem 2']
-            elif year.lower() == 'sy': semesters = ['Sem 3', 'Sem 4']
-            elif year.lower() == 'ty': semesters = ['Sem 5', 'Sem 6']
+            if year.lower() == 'fy': semesters = ['Sem 1', 'Sem 2', '1', '2']
+            elif year.lower() == 'sy': semesters = ['Sem 3', 'Sem 4', '3', '4']
+            elif year.lower() == 'ty': semesters = ['Sem 5', 'Sem 6', '5', '6']
             if semesters:
                 students = students.filter(enrollment__class_batch__subject__semester__in=semesters)
                 
@@ -3430,9 +3533,9 @@ class PrincipalSearchView(APIView):
                 t_filters &= Q(classbatch__division=div)
             if year:
                 semesters = []
-                if year.lower() == 'fy': semesters = ['Sem 1', 'Sem 2']
-                elif year.lower() == 'sy': semesters = ['Sem 3', 'Sem 4']
-                elif year.lower() == 'ty': semesters = ['Sem 5', 'Sem 6']
+                if year.lower() == 'fy': semesters = ['Sem 1', 'Sem 2', '1', '2']
+                elif year.lower() == 'sy': semesters = ['Sem 3', 'Sem 4', '3', '4']
+                elif year.lower() == 'ty': semesters = ['Sem 5', 'Sem 6', '5', '6']
                 if semesters:
                     t_filters &= Q(classbatch__subject__semester__in=semesters)
             teachers = teachers.filter(t_filters)
@@ -3445,7 +3548,7 @@ class PrincipalSearchView(APIView):
             year = "N/A"
             if enrollments and enrollments.class_batch and enrollments.class_batch.subject:
                 sem = enrollments.class_batch.subject.semester
-                sem_to_year = {'Sem 1': 'FY', 'Sem 2': 'FY', 'Sem 3': 'SY', 'Sem 4': 'SY', 'Sem 5': 'TY', 'Sem 6': 'TY'}
+                sem_to_year = {'Sem 1': 'FY', 'Sem 2': 'FY', 'Sem 3': 'SY', 'Sem 4': 'SY', 'Sem 5': 'TY', 'Sem 6': 'TY', '1': 'FY', '2': 'FY', '3': 'SY', '4': 'SY', '5': 'TY', '6': 'TY'}
                 year = sem_to_year.get(sem, sem)
             student_data.append({
                 'id': s.id,
@@ -3508,7 +3611,7 @@ class PrincipalMentorOversightView(APIView):
 
     def get(self, request):
         mentors = User.objects.filter(is_mentor=True).prefetch_related(
-            Prefetch('mentees', queryset=User.objects.filter(role='Student').select_related('stream'))
+            Prefetch('mentees', queryset=User.objects.filter(role='Student', is_active=True).select_related('stream'))
         ).select_related('department')
 
         data = []
@@ -3579,6 +3682,7 @@ class AdminUserDetailView(APIView):
             'roll_no': user.roll_no,
             'is_active': user.is_active,
             'is_mentor': user.is_mentor,
+            'is_timetable_incharge': user.is_timetable_incharge,
         })
 
     def patch(self, request, user_id):
@@ -3586,7 +3690,7 @@ class AdminUserDetailView(APIView):
             user = User.objects.get(id=user_id)
         except User.DoesNotExist:
             return Response({'error': 'User not found'}, status=404)
-        for field in ['name', 'email', 'role', 'is_active', 'is_mentor']:
+        for field in ['name', 'email', 'role', 'is_active', 'is_mentor', 'is_timetable_incharge']:
             if field in request.data:
                 setattr(user, field, request.data[field])
         user.save()
@@ -3649,3 +3753,75 @@ class AdminArchiveSemesterView(APIView):
     def post(self, request):
         ClassBatch.objects.update(academic_year="Archived")
         return Response({'message': 'Semester archived successfully'})
+
+
+class AdminAssignSubjectView(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def get(self, request):
+        subjects = Subject.objects.all()
+        return Response([{'id': s.id, 'name': s.name, 'stream': s.stream, 'semester': s.semester} for s in subjects])
+
+    def post(self, request):
+        teacher_id = request.data.get('teacher_id')
+        subject_id = request.data.get('subject_id')
+        division = request.data.get('division', 'A')
+        
+        if not teacher_id or not subject_id:
+            return Response({'error': 'Teacher and Subject are required'}, status=400)
+            
+        teacher = User.objects.filter(id=teacher_id).first()
+        subject = Subject.objects.filter(id=subject_id).first()
+        
+        if not teacher or not subject:
+            return Response({'error': 'Invalid teacher or subject'}, status=404)
+            
+        batch, created = ClassBatch.objects.get_or_create(
+            teacher=teacher,
+            subject=subject,
+            division=division
+        )
+        if not created:
+            return Response({'error': 'Already assigned'}, status=400)
+        return Response({'message': 'Success'})
+
+    def delete(self, request):
+        batch_id = request.query_params.get('batch_id')
+        if not batch_id:
+            return Response({'error': 'batch_id is required'}, status=400)
+            
+        batch = ClassBatch.objects.filter(id=batch_id).first()
+        if not batch:
+            return Response({'error': 'Assignment not found'}, status=404)
+            
+        batch.delete()
+        return Response({'message': 'Assignment removed successfully'})
+
+
+class AdminAssignMentorStreamView(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def post(self, request):
+        teacher_id = request.data.get('teacher_id')
+        stream_id = request.data.get('stream_id')
+        
+        if not teacher_id or not stream_id:
+            return Response({'error': 'Teacher and Stream are required'}, status=400)
+            
+        teacher = User.objects.filter(id=teacher_id).first()
+        if not teacher:
+            return Response({'error': 'Teacher not found'}, status=404)
+            
+        stream = Stream.objects.filter(id=stream_id).first()
+        if not stream:
+            return Response({'error': 'Stream not found'}, status=404)
+            
+        # Update teacher to be a mentor
+        teacher.is_mentor = True
+        teacher.save()
+        
+        # Assign all active students in this stream to this mentor
+        students = User.objects.filter(role__iexact='student', stream=stream, is_active=True)
+        updated_count = students.update(mentor=teacher)
+        
+        return Response({'message': f'Successfully assigned as mentor to {updated_count} students in {stream.name}.'})

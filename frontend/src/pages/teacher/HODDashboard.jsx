@@ -47,6 +47,27 @@ const HODDashboard = ({ onBack }) => {
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
 
+  // Mentors List
+  const [mentorsList, setMentorsList] = useState([]);
+  const [loadingMentors, setLoadingMentors] = useState(false);
+
+  useEffect(() => {
+    if (activeTab === 'mentors') {
+      const fetchMentors = async () => {
+        setLoadingMentors(true);
+        try {
+          const { data } = await apiClient.get('/api/teacher/hod/mentors/');
+          setMentorsList(data.mentors || []);
+        } catch {
+          setMentorsList([]);
+        } finally {
+          setLoadingMentors(false);
+        }
+      };
+      fetchMentors();
+    }
+  }, [activeTab]);
+
   // ── Fetch HOD's departments ──────────────────────────────────────────────
   useEffect(() => {
     if (!user) return;
@@ -268,6 +289,7 @@ const HODDashboard = ({ onBack }) => {
         {[
           { key: 'overview', label: 'Overview' },
           { key: 'class',    label: 'Class View' },
+          { key: 'mentors',  label: 'Mentors List' },
         ].map(tab => (
           <button
             key={tab.key}
@@ -540,6 +562,60 @@ const HODDashboard = ({ onBack }) => {
               </div>
             </div>
           ) : null}
+        </div>
+      )}
+
+      {/* ── MENTORS LIST TAB ────────────────────────────────────────────────── */}
+      {activeTab === 'mentors' && (
+        <div className="flex flex-col gap-6 animate-fade-in">
+          <div className="bg-white/70 dark:bg-slate-900/40 border border-slate-300/50 dark:border-white/5 rounded-2xl p-6">
+            <h3 className="text-xl font-bold text-slate-800 dark:text-white mb-6">Mentors Oversight</h3>
+            
+            {loadingMentors ? (
+              <div className="flex justify-center py-12">
+                <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-400"></div>
+              </div>
+            ) : mentorsList.length === 0 ? (
+              <div className="text-center py-10 text-slate-400 dark:text-white/30 text-sm bg-slate-200/50 dark:bg-white/5 rounded-2xl">
+                No mentors found in your department.
+              </div>
+            ) : (
+              <div className="overflow-x-auto bg-slate-200/50 dark:bg-white/5 rounded-2xl border border-slate-300/60 dark:border-white/10 shadow-xl">
+                <table className="w-full text-sm text-left">
+                  <thead>
+                    <tr className="bg-slate-300/50 dark:bg-white/5 text-slate-500 dark:text-white/40 text-xs uppercase tracking-wider">
+                      <th className="px-5 py-4">Mentor Name</th>
+                      <th className="px-5 py-4">Assigned Classes</th>
+                      <th className="px-5 py-4 text-center">Total Mentees</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {mentorsList.map((m, idx) => (
+                      <tr key={m.id || idx} className="border-t border-slate-300/50 dark:border-white/5 hover:bg-slate-300/50 dark:bg-white/10 transition-colors">
+                        <td className="px-5 py-4 font-bold text-slate-800 dark:text-white/90">
+                          {m.name}
+                        </td>
+                        <td className="px-5 py-4 text-slate-600 dark:text-white/70">
+                          <div className="flex flex-wrap gap-2">
+                            {m.assigned_classes.map(c => (
+                              <span key={c} className="bg-purple-500/10 text-purple-600 dark:text-purple-300 px-2.5 py-1 rounded-lg font-medium text-xs border border-purple-500/20">
+                                {c}
+                              </span>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="px-5 py-4 text-center">
+                          <span className="font-extrabold text-slate-700 dark:text-white bg-slate-300/50 dark:bg-white/10 px-3 py-1 rounded-xl">
+                            {m.mentee_count}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import apiClient from '../../../services/apiClient';
 
-const ManagePrincipalView = () => {
+const ManagePrincipalView = ({ refreshTrigger }) => {
   const [principal, setPrincipal] = useState(null);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState('');
@@ -11,7 +11,7 @@ const ManagePrincipalView = () => {
 
   useEffect(() => {
     fetchPrincipal();
-  }, []);
+  }, [refreshTrigger]);
 
   const fetchPrincipal = async () => {
     try {
@@ -20,6 +20,7 @@ const ManagePrincipalView = () => {
       setName(data.name || '');
       setEmail(data.email || '');
     } catch (err) {
+      setPrincipal(null);
       setMessage({ text: 'Error fetching principal data. Ensure a Principal user exists.', type: 'error' });
     } finally {
       setLoading(false);
@@ -56,6 +57,21 @@ const ManagePrincipalView = () => {
       setMessage({ text: 'Password reset successful.', type: 'success' });
     } catch (err) {
       setMessage({ text: err.response?.data?.error || 'Failed to reset password.', type: 'error' });
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm("Are you sure you want to PERMANENTLY delete the Principal from the database? This cannot be undone.")) return;
+    
+    setMessage({ text: '', type: '' });
+    try {
+      await apiClient.post('/api/admin/principal-management/', {
+        action: 'delete'
+      });
+      alert('Principal deleted successfully!');
+      fetchPrincipal();
+    } catch (err) {
+      setMessage({ text: err.response?.data?.error || 'Failed to delete principal.', type: 'error' });
     }
   };
 
@@ -123,14 +139,24 @@ const ManagePrincipalView = () => {
           </div>
 
           <div className="pt-4 flex flex-col sm:flex-row justify-between items-center gap-4 border-t border-white/10">
-            <button
-              type="button"
-              onClick={handleResetPassword}
-              className="w-full sm:w-auto px-6 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-xl font-bold transition-all text-sm flex items-center justify-center gap-2"
-            >
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
-              Reset Password
-            </button>
+            <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+              <button
+                type="button"
+                onClick={handleResetPassword}
+                className="w-full sm:w-auto px-6 py-3 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded-xl font-bold transition-all text-sm flex items-center justify-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
+                Reset Password
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                className="w-full sm:w-auto px-6 py-3 bg-red-600 hover:bg-red-500 text-white border border-red-500/20 rounded-xl font-bold transition-all text-sm flex items-center justify-center gap-2"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                Delete Principal
+              </button>
+            </div>
             <button
               type="submit"
               className="w-full sm:w-auto px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-bold shadow-lg shadow-purple-500/20 transition-all text-sm"

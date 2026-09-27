@@ -5,20 +5,20 @@ import apiClient from '../../services/apiClient';
 const PrincipalAdvancedGraph = ({ streams, onGraphClick }) => {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
-  
+
   // Filter options from backend
   const [filterOptions, setFilterOptions] = useState({
     streams: [],
     years: [],
     classes: []
   });
-  
+
   // Filter state
   const [selectedStreams, setSelectedStreams] = useState([]);
   const [selectedYears, setSelectedYears] = useState([]);
   const [selectedClasses, setSelectedClasses] = useState([]);
   const [openDropdown, setOpenDropdown] = useState(null);
-  
+
   // Fetch filter options on mount
   useEffect(() => {
     const fetchOptions = async () => {
@@ -49,11 +49,11 @@ const PrincipalAdvancedGraph = ({ streams, onGraphClick }) => {
       setSelectedClasses(newSelected);
     }
   }, [availableClasses, selectedClasses]);
-  
+
   useEffect(() => {
     fetchGraphData();
   }, [selectedStreams, selectedYears, selectedClasses]);
-  
+
   const fetchGraphData = async () => {
     setLoading(true);
     try {
@@ -61,7 +61,7 @@ const PrincipalAdvancedGraph = ({ streams, onGraphClick }) => {
       selectedStreams.forEach(s => params.append('streams[]', s));
       selectedYears.forEach(y => params.append('years[]', y));
       selectedClasses.forEach(c => params.append('classes[]', c));
-      
+
       const { data: resData } = await apiClient.get(`/api/reports/principal/aggregate/?${params.toString()}`);
       setData(resData);
     } catch (error) {
@@ -89,11 +89,11 @@ const PrincipalAdvancedGraph = ({ streams, onGraphClick }) => {
           </h2>
           <p className="text-base text-gray-500 dark:text-white/60 mt-1 font-medium">Filter by Hierarchy (Streams → Years → Classes) for dynamic 3D-styled plotting</p>
         </div>
-        
+
         <div className="flex flex-wrap gap-4 items-center">
           {/* Stream Filter */}
           <div className="relative">
-            <button 
+            <button
               onClick={() => setOpenDropdown(openDropdown === 'streams' ? null : 'streams')}
               className="px-5 py-2.5 bg-gray-50 hover:bg-gray-100 dark:bg-slate-900/50 dark:hover:bg-slate-900/80 border border-gray-200 dark:border-white/10 rounded-xl text-sm font-bold text-gray-700 dark:text-white/90 flex items-center gap-2 transition-colors shadow-sm"
             >
@@ -103,8 +103,8 @@ const PrincipalAdvancedGraph = ({ streams, onGraphClick }) => {
             <div className={`absolute right-0 mt-2 w-48 bg-white dark:bg-slate-800 border border-gray-200 dark:border-white/10 rounded-2xl shadow-2xl p-2 z-30 ${openDropdown === 'streams' ? 'block' : 'hidden'}`}>
               {filterOptions.streams.map(stream => (
                 <label key={stream} className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 dark:hover:bg-white/5 rounded-xl cursor-pointer">
-                  <input 
-                    type="checkbox" 
+                  <input
+                    type="checkbox"
                     checked={selectedStreams.includes(stream)}
                     onChange={() => toggleSelection(setSelectedStreams, selectedStreams, stream)}
                     className="rounded-md w-4 h-4 text-purple-600 focus:ring-purple-500 border-gray-300 dark:border-white/20 dark:bg-slate-900"
@@ -114,10 +114,10 @@ const PrincipalAdvancedGraph = ({ streams, onGraphClick }) => {
               ))}
             </div>
           </div>
-          
+
           {/* Year Filter */}
           <div className="relative">
-            <button 
+            <button
               onClick={() => setOpenDropdown(openDropdown === 'years' ? null : 'years')}
               className="px-5 py-2.5 bg-gray-50 hover:bg-gray-100 dark:bg-slate-900/50 dark:hover:bg-slate-900/80 border border-gray-200 dark:border-white/10 rounded-xl text-sm font-bold text-gray-700 dark:text-white/90 flex items-center gap-2 transition-colors shadow-sm"
             >
@@ -127,8 +127,8 @@ const PrincipalAdvancedGraph = ({ streams, onGraphClick }) => {
             <div className={`absolute right-0 mt-2 w-36 bg-white dark:bg-slate-800 border border-gray-200 dark:border-white/10 rounded-2xl shadow-2xl p-2 z-30 ${openDropdown === 'years' ? 'block' : 'hidden'}`}>
               {filterOptions.years.map(year => (
                 <label key={year} className="flex items-center gap-3 px-3 py-2 hover:bg-gray-50 dark:hover:bg-white/5 rounded-xl cursor-pointer">
-                  <input 
-                    type="checkbox" 
+                  <input
+                    type="checkbox"
                     checked={selectedYears.includes(year)}
                     onChange={() => toggleSelection(setSelectedYears, selectedYears, year)}
                     className="rounded-md w-4 h-4 text-purple-600 focus:ring-purple-500 border-gray-300 dark:border-white/20 dark:bg-slate-900"
@@ -141,7 +141,7 @@ const PrincipalAdvancedGraph = ({ streams, onGraphClick }) => {
 
           {/* Classes Filter */}
           <div className="relative">
-            <button 
+            <button
               onClick={() => setOpenDropdown(openDropdown === 'classes' ? null : 'classes')}
               className="px-5 py-2.5 bg-gray-50 hover:bg-gray-100 dark:bg-slate-900/50 dark:hover:bg-slate-900/80 border border-gray-200 dark:border-white/10 rounded-xl text-sm font-bold text-gray-700 dark:text-white/90 flex items-center gap-2 transition-colors shadow-sm"
             >
@@ -151,8 +151,8 @@ const PrincipalAdvancedGraph = ({ streams, onGraphClick }) => {
             <div className={`absolute right-0 mt-2 w-64 max-h-[300px] overflow-y-auto bg-white dark:bg-slate-800 border border-gray-200 dark:border-white/10 rounded-2xl shadow-2xl p-2 z-30 ${openDropdown === 'classes' ? 'block' : 'hidden'}`}>
               {availableClasses.map(cls => (
                 <label key={cls.id} className="flex items-start gap-3 px-3 py-2.5 hover:bg-gray-50 dark:hover:bg-white/5 rounded-xl cursor-pointer">
-                  <input 
-                    type="checkbox" 
+                  <input
+                    type="checkbox"
                     checked={selectedClasses.includes(cls.id)}
                     onChange={() => toggleSelection(setSelectedClasses, selectedClasses, cls.id)}
                     className="rounded-md w-4 h-4 mt-0.5 text-purple-600 focus:ring-purple-500 border-gray-300 dark:border-white/20 dark:bg-slate-900"
@@ -168,7 +168,7 @@ const PrincipalAdvancedGraph = ({ streams, onGraphClick }) => {
           </div>
         </div>
       </div>
-      
+
       <div className="flex-1 p-6 relative">
         {loading && (
           <div className="absolute inset-0 bg-white/40 dark:bg-slate-900/40 backdrop-blur-[2px] z-20 flex items-center justify-center rounded-b-3xl">
@@ -178,11 +178,11 @@ const PrincipalAdvancedGraph = ({ streams, onGraphClick }) => {
             </div>
           </div>
         )}
-        
+
         {data.length > 0 ? (
           <ResponsiveContainer width="100%" height="100%" className="cursor-pointer">
-            <ComposedChart 
-              data={data} 
+            <ComposedChart
+              data={data}
               margin={{ top: 20, right: 30, left: 0, bottom: 25 }}
               onClick={(e) => {
                 let clickedDate = null;
@@ -201,26 +201,26 @@ const PrincipalAdvancedGraph = ({ streams, onGraphClick }) => {
             >
               <defs>
                 <linearGradient id="colorPct" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#9333ea" stopOpacity={0.6}/>
-                  <stop offset="95%" stopColor="#9333ea" stopOpacity={0.0}/>
+                  <stop offset="5%" stopColor="#9333ea" stopOpacity={0.6} />
+                  <stop offset="95%" stopColor="#9333ea" stopOpacity={0.0} />
                 </linearGradient>
                 <filter id="drop-shadow" x="-20%" y="-20%" width="140%" height="140%">
                   <feDropShadow dx="0" dy="8" stdDeviation="6" floodColor="#9333ea" floodOpacity="0.4" />
                 </filter>
               </defs>
               <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(148, 163, 184, 0.1)" />
-              <XAxis dataKey="date" tick={{fill: '#94a3b8', fontSize: 12, fontWeight: 600}} axisLine={false} tickLine={false} dy={15} minTickGap={40} />
-              <YAxis tick={{fill: '#94a3b8', fontSize: 13, fontWeight: 600}} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} domain={[0, 100]} dx={-15} />
-              <Tooltip 
-                contentStyle={{backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', color: '#fff', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.5)', padding: '12px 16px'}}
-                itemStyle={{color: '#fff', fontWeight: 'bold', fontSize: '15px'}}
-                labelStyle={{color: '#94a3b8', marginBottom: '4px', fontSize: '13px'}}
+              <XAxis dataKey="date" tick={{ fill: '#94a3b8', fontSize: 12, fontWeight: 600 }} axisLine={false} tickLine={false} dy={15} minTickGap={40} />
+              <YAxis tick={{ fill: '#94a3b8', fontSize: 13, fontWeight: 600 }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}%`} domain={[0, 100]} dx={-15} />
+              <Tooltip
+                contentStyle={{ backgroundColor: '#0f172a', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '16px', color: '#fff', boxShadow: '0 20px 25px -5px rgb(0 0 0 / 0.5)', padding: '12px 16px' }}
+                itemStyle={{ color: '#fff', fontWeight: 'bold', fontSize: '15px' }}
+                labelStyle={{ color: '#94a3b8', marginBottom: '4px', fontSize: '13px' }}
                 formatter={(value) => [`${value}%`, 'Attendance']}
               />
-              <Area 
-                type="monotone" 
-                dataKey="percentage" 
-                fill="url(#colorPct)" 
+              <Area
+                type="monotone"
+                dataKey="percentage"
+                fill="url(#colorPct)"
                 stroke="none"
                 isAnimationActive={false}
               />
@@ -230,8 +230,8 @@ const PrincipalAdvancedGraph = ({ streams, onGraphClick }) => {
                 stroke="#9333ea"
                 strokeWidth={5}
                 dot={false}
-                activeDot={{r: 8, strokeWidth: 0, fill: '#d8b4fe', style: {filter: 'url(#drop-shadow)'}}}
-                style={{filter: 'url(#drop-shadow)'}}
+                activeDot={{ r: 8, strokeWidth: 0, fill: '#d8b4fe', style: { filter: 'url(#drop-shadow)' } }}
+                style={{ filter: 'url(#drop-shadow)' }}
                 isAnimationActive={false}
               />
             </ComposedChart>
@@ -247,3 +247,4 @@ const PrincipalAdvancedGraph = ({ streams, onGraphClick }) => {
 };
 
 export default PrincipalAdvancedGraph;
+

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import apiClient from '../../../services/apiClient';
 
-const ManageStudentsView = ({ departments, streams, classes, setResetModalUser, handleDelete }) => {
+const ManageStudentsView = ({ departments, streams, classes, setResetModalUser, handleDelete, setEditModalUser, refreshTrigger }) => {
   const [selectedDept, setSelectedDept] = useState('all');
   const [selectedStream, setSelectedStream] = useState('all');
   const [selectedClass, setSelectedClass] = useState('all');
@@ -51,18 +51,19 @@ const ManageStudentsView = ({ departments, streams, classes, setResetModalUser, 
     setSelectedClass('all');
   }, [selectedStream]);
 
-  // Fetch student data when class is selected
+  // Fetch student data when stream or class is selected, or fetch all by default
   useEffect(() => {
-    if (selectedClass === 'all') {
-      setClassData(null);
-      setStudents([]);
-      return;
-    }
-
     const fetchStudents = async () => {
       setLoading(true);
       try {
-        const { data } = await apiClient.get(`/api/admin/hierarchy/students/?class_batch=${selectedClass}`);
+        let url = '/api/admin/hierarchy/students/?';
+        if (selectedClass !== 'all') {
+          url += `class_batch=${selectedClass}`;
+        } else if (selectedStream !== 'all') {
+          url += `stream=${selectedStream}`;
+        }
+        
+        const { data } = await apiClient.get(url);
         setClassData(data.class_batch);
         setStudents(data.students);
       } catch (err) {
@@ -72,7 +73,7 @@ const ManageStudentsView = ({ departments, streams, classes, setResetModalUser, 
       }
     };
     fetchStudents();
-  }, [selectedClass]);
+  }, [selectedClass, selectedStream, refreshTrigger]);
 
   return (
     <div className="flex flex-col gap-6 w-full">
@@ -124,13 +125,7 @@ const ManageStudentsView = ({ departments, streams, classes, setResetModalUser, 
       </div>
 
       {/* Main Content Area */}
-      {selectedClass === 'all' ? (
-        <div className="bg-slate-800/30 border border-dashed border-slate-700 rounded-3xl p-12 text-center text-slate-400">
-          <svg className="w-16 h-16 mx-auto mb-4 text-slate-500 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
-          <h3 className="text-xl font-bold text-slate-300 mb-2">Select a Class</h3>
-          <p>Please select a Department, Stream, and Class to view enrolled students.</p>
-        </div>
-      ) : loading ? (
+      {loading ? (
         <div className="flex justify-center p-12 w-full">
           <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-400"></div>
         </div>
@@ -220,6 +215,13 @@ const ManageStudentsView = ({ departments, streams, classes, setResetModalUser, 
                               title="Reset Password"
                             >
                               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path></svg>
+                            </button>
+                            <button
+                              onClick={() => handleDelete(student.id)}
+                              className="p-2 bg-red-500/10 text-red-400 rounded hover:bg-red-500/20 transition-colors"
+                              title="Delete/Deactivate Student"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                             </button>
                           </>
                         )}

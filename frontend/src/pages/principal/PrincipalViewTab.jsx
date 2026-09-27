@@ -37,6 +37,10 @@ const PrincipalViewTab = ({ streams, defaultSubTab, defaultParams }) => {
   const [detailData, setDetailData]   = useState(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
+  // Division Filter States
+  const [divStreamFilter, setDivStreamFilter] = useState('All');
+  const [divSubjectFilter, setDivSubjectFilter] = useState('');
+
   // Fetch data based on active sub-tab
   useEffect(() => {
     if (subTab === 'Trends') {
@@ -125,6 +129,12 @@ const PrincipalViewTab = ({ streams, defaultSubTab, defaultParams }) => {
     { name: 'Present', value: detailData.present },
     { name: 'Absent',  value: detailData.absent  },
   ] : [];
+
+  const uniqueDivStreams = ['All', ...new Set(divisionData.map(d => d.stream))];
+  const filteredDivisionData = divisionData.filter(d => 
+    (divStreamFilter === 'All' || d.stream === divStreamFilter) &&
+    (divSubjectFilter === '' || (d.subject || '').toLowerCase().includes(divSubjectFilter.toLowerCase()))
+  );
 
   return (
     <div className="animate-fade-in-up flex flex-col gap-6 w-full">
@@ -273,7 +283,27 @@ const PrincipalViewTab = ({ streams, defaultSubTab, defaultParams }) => {
 
       {subTab === 'Division Analysis' && (
         <div className="apple-glass-dark border border-white/20 p-6">
-          <h3 className="text-xl font-bold mb-6 text-white">Division Analysis</h3>
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
+            <h3 className="text-xl font-bold text-white">Division Analysis</h3>
+            <div className="flex flex-wrap gap-4 items-center">
+              <select
+                value={divStreamFilter}
+                onChange={(e) => setDivStreamFilter(e.target.value)}
+                className="bg-slate-800/80 border border-white/10 text-white rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-purple-500"
+              >
+                {uniqueDivStreams.map(s => (
+                  <option key={s} value={s}>{s === 'All' ? 'All Streams' : s}</option>
+                ))}
+              </select>
+              <input
+                type="text"
+                placeholder="Search subject..."
+                value={divSubjectFilter}
+                onChange={(e) => setDivSubjectFilter(e.target.value)}
+                className="bg-slate-800/80 border border-white/10 text-white rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-1 focus:ring-purple-500 w-48"
+              />
+            </div>
+          </div>
           {loading ? (
              <div className="flex justify-center py-16"><div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500"></div></div>
           ) : (
@@ -290,14 +320,14 @@ const PrincipalViewTab = ({ streams, defaultSubTab, defaultParams }) => {
                   </tr>
                 </thead>
                 <tbody>
-                  {divisionData.length === 0 ? (
+                  {filteredDivisionData.length === 0 ? (
                     <tr>
-                      <td colSpan="5" className="py-8 text-center text-white/50 italic">
-                        No divisions have been set up in the database yet.
+                      <td colSpan="6" className="py-8 text-center text-white/50 italic">
+                        No divisions found matching your filters.
                       </td>
                     </tr>
                   ) : (
-                    divisionData.map((d, idx) => (
+                    filteredDivisionData.map((d, idx) => (
                       <tr key={d.class_id || idx} className="border-b border-white/5 hover:bg-white/5 transition-colors">
                         <td className="py-3 font-semibold">{d.stream}</td>
                         <td className="py-3 text-white/70">{d.subject}</td>

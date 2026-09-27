@@ -126,7 +126,7 @@ const MentorDashboard = ({ onBack }) => {
             <svg className="w-12 h-12 text-white/10" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"/>
             </svg>
-            <p className="text-sm">{searchQuery ? 'No mentees match your search.' : 'No mentees assigned yet. Data will appear after API integration.'}</p>
+            <p className="text-sm">{searchQuery ? 'No mentees match your search.' : 'No mentees assigned yet.'}</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -147,7 +147,7 @@ const MentorDashboard = ({ onBack }) => {
                     <td className="px-5 py-3 font-mono text-purple-300 text-xs">{m.roll}</td>
                     <td className="px-5 py-3 font-semibold text-slate-800 dark:text-white/90">{m.name}</td>
                     <td className="px-5 py-3 text-slate-500 dark:text-white/50 text-xs">
-                      <span className="bg-slate-300/50 dark:bg-white/10 px-2 py-0.5 rounded-md mr-1 font-mono">{m.year}</span>
+                      <span className="bg-slate-300/50 dark:bg-white/10 px-2 py-0.5 rounded-md mr-1 font-mono">{m.year || m.class_name || 'Unassigned'}</span>
                       {m.division && <span className="bg-emerald-500/15 text-emerald-300 px-2 py-0.5 rounded-md text-xs">Div {m.division}</span>}
                     </td>
                     <td className="px-5 py-3">

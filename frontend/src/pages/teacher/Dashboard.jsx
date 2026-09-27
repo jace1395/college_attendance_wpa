@@ -90,7 +90,7 @@ const TeacherDashboard = () => {
                 {/* Left: Profile Info */}
                 <div className="flex flex-col gap-2 text-center md:text-left w-full md:w-auto">
                   <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-1">{teacher.name}</h2>
-                  <p className="text-gray-600 dark:text-gray-400 text-lg mb-2">{teacher.department} Department</p>
+                  <p className="text-gray-600 dark:text-gray-400 text-lg mb-2">{teacher.role === 'Hod' ? 'HOD' : teacher.role} - {teacher.department}</p>
                   
                   {/* Stream/Subject/Class Selector */}
                   <div className="flex items-center justify-center md:justify-start gap-2 text-gray-600 dark:text-gray-400">
@@ -135,9 +135,9 @@ const TeacherDashboard = () => {
                     { key: 'monitoring', label: 'Monitoring', always: true },
                     { key: 'reports', label: 'Reports', always: true },
                     { key: 'my_timetable', label: 'Timetable', always: true },
-                    { key: 'mentor', label: '★ Mentor', show: Boolean(teacher?.isMentor || user?.is_mentor) },
-                    { key: 'hod', label: '★ HOD', show: Boolean(teacher?.isHOD || user?.is_hod) },
-                    { key: 'timetable', label: '★ Timetable Incharge', show: Boolean(teacher?.isTimetableIncharge || user?.is_timetable_incharge) },
+                    { key: 'mentor', label: '★ Mentor', show: Boolean(teacher?.isMentor || teacher?.isHOD) },
+                    { key: 'hod', label: '★ HOD', show: Boolean(teacher?.isHOD) },
+                    { key: 'timetable', label: '★ Timetable Incharge', show: Boolean(teacher?.isTimetableIncharge || teacher?.isHOD) },
                   ]
                     .filter(tab => tab.always || tab.show)
                     .map(tab => (

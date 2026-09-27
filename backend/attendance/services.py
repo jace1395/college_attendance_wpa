@@ -152,7 +152,7 @@ def process_timetable_upload(file_obj):
                 Notification.objects.create(user=batch.teacher, message=msg)
 
             # 2. Notify Students
-            enrollments = batch.enrollments.select_related('student')
+            enrollments = batch.enrollments.filter(student__is_active=True).select_related('student')
             notifications = [
                 Notification(user=enrollment.student, message=msg)
                 for enrollment in enrollments if enrollment.student

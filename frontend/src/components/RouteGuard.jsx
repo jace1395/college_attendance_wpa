@@ -13,13 +13,24 @@ const RouteGuard = ({ allowedRoles }) => {
   }
 
   // Check role
-  if (allowedRoles && (!user?.role || !allowedRoles.map(r => r.toLowerCase()).includes(user.role.toLowerCase()))) {
-    return <Navigate to="/unauthorized" replace />;
+  if (allowedRoles) {
+    const rolesLower = allowedRoles.map(r => r.toLowerCase());
+    const userRole = user?.role?.toLowerCase();
+    
+    let hasAccess = false;
+    if (userRole && rolesLower.includes(userRole)) hasAccess = true;
+    if (user?.is_timetable_incharge && rolesLower.includes('timetable_incharge')) hasAccess = true;
+    if (user?.is_mentor && rolesLower.includes('mentor')) hasAccess = true;
+
+    
+    if (!hasAccess) {
+      return <Navigate to="/unauthorized" state={{ reason: "role_check_failed", userRole, rolesLower, hasAccess, originalRole: user?.role, allowedRoles }} replace />;
+    }
   }
 
   // Strict URL ID checking (e.g., preventing /student/123 accessing /student/124)
-  if (id && user.id.toString() !== id.toString()) {
-    return <Navigate to="/unauthorized" replace />;
+  if (id && !isNaN(id) && user.id.toString() !== id.toString()) {
+    return <Navigate to="/unauthorized" state={{ reason: "id_check_failed", id, userId: user.id }} replace />;
   }
 
   return <Outlet />;
