@@ -1,0 +1,29 @@
+name: Keep Backend Awake
+
+on:
+  schedule:
+    # Runs every 14 minutes between 02:00 UTC and 11:00 UTC, Monday through Saturday
+    # 02:00 - 11:00 UTC corresponds to 07:30 - 16:30 IST (College Hours: 8:15 AM - 4:15 PM IST)
+    - cron: '*/14 2-11 * * 1-6'
+  workflow_dispatch: # Allows manual trigger from Actions tab
+
+jobs:
+  ping-backend:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Backend Service
+        env:
+          BACKEND_URL: ${{ secrets.BACKEND_KEEP_ALIVE_URL }}
+        run: |
+          if [ -z "$BACKEND_URL" ]; then
+            echo "::error::BACKEND_KEEP_ALIVE_URL secret is not set. Please configure it in your repository secrets."
+            exit 1
+          fi
+          echo "Pinging backend at: ${BACKEND_URL}"
+          STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 60 "$BACKEND_URL")
+          echo "HTTP response status code: ${STATUS_CODE}"
+          if [ "$STATUS_CODE" -ge 200 ] && [ "$STATUS_CODE" -lt 500 ]; then
+            echo "Ping successful (HTTP ${STATUS_CODE}). Backend is awake."
+          else
+            echo "::warning::Received HTTP status code ${STATUS_CODE} from backend."
+          fi
