@@ -1735,6 +1735,7 @@ class AdminResetPasswordView(APIView):
         current_year = timezone.now().year
         default_password = f"Sdcce@{current_year}"
         target_user.set_password(default_password)
+        target_user.is_first_login = True
         target_user.save()
 
         return Response({"message": f"Password for {target_user.name or target_user.email} reset successfully."})

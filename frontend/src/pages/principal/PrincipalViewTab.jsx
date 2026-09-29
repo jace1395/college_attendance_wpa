@@ -8,11 +8,11 @@ import Custom3DBar from '../../components/charts/Custom3DBar';
 import Custom3DPie from '../../components/charts/Custom3DPie';
 
 const COLORS_PRESENT = '#a855f7';
-const COLORS_ABSENT  = '#ef4444';
+const COLORS_ABSENT = '#ef4444';
 
 const PrincipalViewTab = ({ streams, defaultSubTab, defaultParams }) => {
   const [subTab, setSubTab] = useState(defaultSubTab || 'Trends');
-  
+
   // States for Trends
   // Initialize stream from graph click if provided
   const initialStream = (defaultParams?.streams?.length > 0) ? defaultParams.streams[0] : (streams?.[0] || 'BCA');
@@ -22,11 +22,11 @@ const PrincipalViewTab = ({ streams, defaultSubTab, defaultParams }) => {
   const [autoOpenClassId, setAutoOpenClassId] = useState(defaultParams?.classes?.length === 1 ? defaultParams.classes[0] : null);
   const [streamData, setStreamData] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+
   // States for other tabs
   const [mentorData, setMentorData] = useState([]);
   const [divisionData, setDivisionData] = useState([]);
-  
+
   // Accordion state for mentors
   const [expandedMentor, setExpandedMentor] = useState(null);
   const [mentorMentees, setMentorMentees] = useState([]);
@@ -34,7 +34,7 @@ const PrincipalViewTab = ({ streams, defaultSubTab, defaultParams }) => {
 
   // Deep Dive Modal
   const [detailClass, setDetailClass] = useState(null);
-  const [detailData, setDetailData]   = useState(null);
+  const [detailData, setDetailData] = useState(null);
   const [loadingDetail, setLoadingDetail] = useState(false);
 
   // Division Filter States
@@ -55,11 +55,11 @@ const PrincipalViewTab = ({ streams, defaultSubTab, defaultParams }) => {
 
           // If a class was clicked on the graph, auto open its deep dive modal once
           if (autoOpenClassId) {
-             const clsToOpen = fetchedClasses.find(c => String(c.class_id) === String(autoOpenClassId));
-             if (clsToOpen) {
-                 openDeepDive(clsToOpen);
-             }
-             setAutoOpenClassId(null); // Clear it so it doesn't repeatedly open
+            const clsToOpen = fetchedClasses.find(c => String(c.class_id) === String(autoOpenClassId));
+            if (clsToOpen) {
+              openDeepDive(clsToOpen);
+            }
+            setAutoOpenClassId(null); // Clear it so it doesn't repeatedly open
           }
         } catch {
           setStreamData([]);
@@ -128,27 +128,26 @@ const PrincipalViewTab = ({ streams, defaultSubTab, defaultParams }) => {
 
   const pieData = detailData ? [
     { name: 'Present', value: detailData.present },
-    { name: 'Absent',  value: detailData.absent  },
+    { name: 'Absent', value: detailData.absent },
   ] : [];
 
   const uniqueDivStreams = ['All', ...new Set(divisionData.map(d => d.stream))];
-  const filteredDivisionData = divisionData.filter(d => 
+  const filteredDivisionData = divisionData.filter(d =>
     (divStreamFilter === 'All' || d.stream === divStreamFilter) &&
     (divSubjectFilter === '' || (d.subject || '').toLowerCase().includes(divSubjectFilter.toLowerCase()))
   );
 
   return (
     <div className="animate-fade-in-up flex flex-col gap-6 w-full">
-      
+
       {/* Sub Tabs */}
       <div className="flex flex-wrap gap-2 bg-slate-900/50 p-1.5 rounded-xl border border-white/10 w-fit mb-4 shadow-sm">
         {['Trends', 'Mentor Oversight', 'Division Analysis'].map(t => (
-          <button 
-            key={t} 
+          <button
+            key={t}
             onClick={() => setSubTab(t)}
-            className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${
-              subTab === t ? 'bg-purple-600 text-white shadow' : 'text-white/50 hover:text-white hover:bg-white/5'
-            }`}
+            className={`px-6 py-2.5 rounded-lg text-sm font-bold transition-all ${subTab === t ? 'bg-purple-600 text-white shadow' : 'text-white/50 hover:text-white hover:bg-white/5'
+              }`}
           >
             {t}
           </button>
@@ -222,7 +221,7 @@ const PrincipalViewTab = ({ streams, defaultSubTab, defaultParams }) => {
         <div className="apple-glass-dark border border-white/20 p-6">
           <h3 className="text-xl font-bold mb-6 text-white">Mentor Oversight</h3>
           {loading ? (
-             <div className="flex justify-center py-16"><div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500"></div></div>
+            <div className="flex justify-center py-16"><div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500"></div></div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-white">
@@ -237,7 +236,7 @@ const PrincipalViewTab = ({ streams, defaultSubTab, defaultParams }) => {
                 <tbody>
                   {mentorData.map(m => (
                     <React.Fragment key={m.id}>
-                      <tr 
+                      <tr
                         className="border-b border-white/5 hover:bg-white/5 transition-colors cursor-pointer"
                         onClick={() => toggleMentorAccordion(m.id)}
                       >
@@ -306,7 +305,7 @@ const PrincipalViewTab = ({ streams, defaultSubTab, defaultParams }) => {
             </div>
           </div>
           {loading ? (
-             <div className="flex justify-center py-16"><div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500"></div></div>
+            <div className="flex justify-center py-16"><div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-purple-500"></div></div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-white">
@@ -391,9 +390,9 @@ const PrincipalViewTab = ({ streams, defaultSubTab, defaultParams }) => {
                 {/* Summary Row */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   {[
-                    { label: 'Total Students', value: detailData.total,   color: 'text-white', bg: 'bg-slate-800' },
-                    { label: 'Present',         value: detailData.present, color: 'text-green-400', bg: 'bg-green-900/20' },
-                    { label: 'Absent',          value: detailData.absent,  color: 'text-red-400', bg: 'bg-red-900/20' },
+                    { label: 'Total Students', value: detailData.total, color: 'text-white', bg: 'bg-slate-800' },
+                    { label: 'Present', value: detailData.present, color: 'text-green-400', bg: 'bg-green-900/20' },
+                    { label: 'Absent', value: detailData.absent, color: 'text-red-400', bg: 'bg-red-900/20' },
                   ].map(s => (
                     <div key={s.label} className={`${s.bg} rounded-2xl p-4 text-center border border-white/5`}>
                       <p className="text-xs text-white/40 uppercase tracking-wider mb-1">{s.label}</p>
@@ -412,7 +411,7 @@ const PrincipalViewTab = ({ streams, defaultSubTab, defaultParams }) => {
                     ) : (
                       <ResponsiveContainer width="100%" height={180}>
                         <PieChart>
-                          <Pie data={pieData} cx="50%" cy="50%" outerRadius={65} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false} isAnimationActive={false} activeIndex={[0,1]} activeShape={<Custom3DPie />}>
+                          <Pie data={pieData} cx="50%" cy="50%" outerRadius={65} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false} isAnimationActive={false} activeIndex={[0, 1]} activeShape={<Custom3DPie />}>
                             <Cell fill={COLORS_PRESENT} />
                             <Cell fill={COLORS_ABSENT} />
                           </Pie>
