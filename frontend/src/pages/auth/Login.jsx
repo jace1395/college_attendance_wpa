@@ -35,7 +35,12 @@ const Login = () => {
     const fullEmail = `${trimmedUsername}${getSuffix()}`;
 
     try {
-      const role = await login(fullEmail, password);
+      const { role, is_first_login } = await login(fullEmail, password);
+
+      if (is_first_login) {
+        navigate('/settings');
+        return;
+      }
 
       // Navigate based on assigned role
       switch (role?.toLowerCase()) {

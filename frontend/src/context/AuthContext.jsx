@@ -61,7 +61,10 @@ export const AuthProvider = ({ children }) => {
       setUser(userData);
       setIsAuthenticated(true);
 
-      return userData.role ? userData.role.toLowerCase() : null; // consumed by RouteGuard / login page for redirect
+      return {
+        role: userData.role ? userData.role.toLowerCase() : null,
+        is_first_login: userData.is_first_login
+      }; // consumed by RouteGuard / login page for redirect
     } finally {
       setIsLoading(false);
     }
