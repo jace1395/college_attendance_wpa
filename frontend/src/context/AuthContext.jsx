@@ -32,29 +32,7 @@ export const AuthProvider = ({ children }) => {
   // ---------------------------------------------------------------------------
   // Tab Close / Navigation away — ping logout to clear active session 
   // ---------------------------------------------------------------------------
-  useEffect(() => {
-    if (!isAuthenticated) return;
-    
-    const handleUnload = () => {
-      const token = localStorage.getItem("access_token");
-      if (token) {
-        // keepalive: true ensures the request finishes even if the tab closes
-        fetch(`${BASE_URL}/api/auth/logout/`, {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${token}`
-          },
-          keepalive: true
-        }).catch(() => {});
-      }
-    };
-
-    window.addEventListener('beforeunload', handleUnload);
-
-    return () => {
-      window.removeEventListener('beforeunload', handleUnload);
-    };
-  }, [isAuthenticated]);
+  // Removed beforeunload logout logic as it breaks page refresh
 
   // ---------------------------------------------------------------------------
   // Login — POST /api/auth/login/

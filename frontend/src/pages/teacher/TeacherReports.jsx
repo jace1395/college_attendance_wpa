@@ -100,6 +100,34 @@ const TeacherReports = ({ classes }) => {
     }
   };
 
+  const handleDownload = async (format) => {
+    if (!selectedClass) return;
+    try {
+      const params = new URLSearchParams({
+        class_id: selectedClass,
+        download_format: format
+      });
+      if (selectedMonth) params.append('month', selectedMonth);
+      
+      const response = await apiClient.get(`/api/reports/teacher/classes/?${params.toString()}`, { responseType: 'blob' });
+      const blob = new Blob([response.data]);
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      
+      let ext = format;
+      if (format === 'excel') ext = 'xlsx';
+      
+      link.setAttribute('download', `Class_Report.${ext}`);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+    } catch (error) {
+      console.error(error);
+      alert('Failed to download report');
+    }
+  };
+
   const handleWeeklyClick = (data) => {
     if (data && data.originalRecords && data.originalRecords.length > 0) {
       const dates = data.originalRecords.map(r => new Date(r.rawDate).getTime());
@@ -417,9 +445,17 @@ const TeacherReports = ({ classes }) => {
                 </div>
             </div>
             
-            <button className="w-full mt-4 py-3 border border-red-500/30 text-red-300 hover:bg-red-500/20 rounded-xl font-medium transition-colors">
-                Export to CSV
-            </button>
+            <div className="grid grid-cols-3 gap-3 mt-4">
+                <button onClick={() => handleDownload('pdf')} className="w-full py-2.5 border border-red-500/30 text-red-300 hover:bg-red-500/20 rounded-xl font-medium transition-colors text-sm flex items-center justify-center gap-2">
+                    PDF
+                </button>
+                <button onClick={() => handleDownload('excel')} className="w-full py-2.5 border border-green-500/30 text-green-300 hover:bg-green-500/20 rounded-xl font-medium transition-colors text-sm flex items-center justify-center gap-2">
+                    Excel
+                </button>
+                <button onClick={() => handleDownload('csv')} className="w-full py-2.5 border border-blue-500/30 text-blue-300 hover:bg-blue-500/20 rounded-xl font-medium transition-colors text-sm flex items-center justify-center gap-2">
+                    CSV
+                </button>
+            </div>
           </div>
       </div>
     </div>

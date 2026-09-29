@@ -1475,20 +1475,49 @@ class AdminPrincipalManagementView(APIView):
 
     def get(self, request):
         principal = User.objects.filter(role__iexact='Principal').first()
-        if not principal:
-            return Response({"error": "No Principal found"}, status=404)
-        return Response({
-            "id": principal.id,
-            "name": principal.name,
-            "email": principal.email
-        })
+        teachers = User.objects.filter(role__iexact='Teacher', is_active=True).values('id', 'name', 'email')
+        
+        data = {
+            "teachers": list(teachers)
+        }
+        
+        if principal:
+            data.update({
+                "id": principal.id,
+                "name": principal.name,
+                "email": principal.email
+            })
+            
+        return Response(data)
         
     def post(self, request):
+        action = request.data.get('action')
+        
+        if action == 'change_principal':
+            teacher_id = request.data.get('teacher_id')
+            if not teacher_id:
+                return Response({"error": "No teacher selected"}, status=400)
+                
+            try:
+                new_principal = User.objects.get(id=teacher_id, role__iexact='Teacher')
+            except User.DoesNotExist:
+                return Response({"error": "Selected teacher not found"}, status=404)
+                
+            # Demote current principal to teacher if exists
+            current_principal = User.objects.filter(role__iexact='Principal').first()
+            if current_principal:
+                current_principal.role = 'Teacher'
+                current_principal.save()
+                
+            # Promote new principal
+            new_principal.role = 'Principal'
+            new_principal.save()
+            
+            return Response({"success": f"Principal successfully changed to {new_principal.name}"})
+            
         principal = User.objects.filter(role__iexact='Principal').first()
         if not principal:
             return Response({"error": "No Principal found"}, status=404)
-            
-        action = request.data.get('action')
         if action == 'update':
             name = request.data.get('name')
             email = request.data.get('email')
@@ -1509,6 +1538,8 @@ class AdminPrincipalManagementView(APIView):
             principal.save()
             return Response({"success": "Principal password reset successfully", "default_password": default_password})
         elif action == 'delete':
+            # Demote to teacher instead of deleting if they want, but the requirement was to remove the delete button on frontend.
+            # I will leave the backend delete logic as is just in case, but frontend won't use it.
             principal.delete()
             return Response({"success": "Principal deleted successfully"})
             
@@ -1611,12 +1642,14 @@ class AdminUsersListView(APIView):
         for u in users_qs[:200]:
             user_stream = u.stream.name if getattr(u, 'stream', None) else "N/A"
             user_dept = u.department.name if getattr(u, 'department', None) else "N/A"
-            user_year = "N/A"
+            user_year = u.current_year or "N/A"
+            user_semester = u.current_semester or "N/A"
             
-            if u.role == 'Student':
+            if u.role == 'Student' and (user_year == "N/A" or user_semester == "N/A"):
                 en_list = u.enrollment_set.all()
                 if en_list and en_list[0].class_batch.subject:
-                    user_year = en_list[0].class_batch.subject.semester
+                    user_semester = en_list[0].class_batch.subject.semester
+                    user_year = "FY" if user_semester in ['Sem 1', 'Sem 2', '1', '2'] else "SY" if user_semester in ['Sem 3', 'Sem 4', '3', '4'] else "TY"
 
             if stream_filter and stream_filter != 'All' and user_stream != stream_filter:
                 continue
@@ -1632,6 +1665,7 @@ class AdminUsersListView(APIView):
                 "department": user_dept,
                 "stream": user_stream,
                 "year": user_year,
+                "semester": user_semester,
                 "status": "active" if u.is_active and not u.is_archived else "inactive",
                 "is_active": u.is_active
             })
@@ -1652,6 +1686,8 @@ class AdminUsersListView(APIView):
         stream_name = request.data.get('stream')
         department_name = request.data.get('department')
         roll_no = request.data.get('roll_no')
+        current_year = request.data.get('year')
+        current_semester = request.data.get('semester')
 
         if not email and not roll_no:
             return Response({"error": "Either email or roll number is required."}, status=400)
@@ -1674,7 +1710,9 @@ class AdminUsersListView(APIView):
                 role=role,
                 department=dept,
                 stream=stream,
-                is_hod=is_hod
+                is_hod=is_hod,
+                current_year=current_year,
+                current_semester=current_semester
             )
             return Response({"message": "User created successfully", "user_id": user.id})
         except Exception as e:
@@ -2378,7 +2416,7 @@ class PrincipalStreamView(APIView):
         from django.db.models import Count, Q
         classes_summary = []
         for label, sems in year_groups:
-            batches_qs = ClassBatch.objects.filter(subject__stream=stream, subject__semester__in=sems)
+            batches_qs = ClassBatch.objects.filter(subject__stream__iexact=stream, subject__semester__in=sems)
             batches_list = list(batches_qs.values_list('id', flat=True))
             
             if not batches_list:
@@ -2862,6 +2900,74 @@ class TeacherReportAPIView(APIView):
                 })
 
         avg_attendance = round(total_attendance / enrollments.count(), 1) if enrollments.exists() else 0
+
+        download_format = request.query_params.get('download_format')
+        if download_format:
+            import io, csv
+            from django.http import FileResponse
+            
+            report_list = []
+            for en in enrollments:
+                student = en.student
+                present_count = present_counts.get(student.id, 0)
+                student_percentage = round((present_count / total_conducted * 100), 1) if total_conducted > 0 else 0.0
+                report_list.append([student.roll_no or str(student.id), student.name, present_count, total_conducted, student_percentage])
+
+            if download_format == 'csv':
+                buffer = io.BytesIO()
+                text_buffer = io.StringIO()
+                writer = csv.writer(text_buffer)
+                writer.writerow(['Roll Number', 'Name', 'Classes Attended', 'Total Classes', 'Attendance (%)'])
+                for row in report_list:
+                    writer.writerow(row)
+                buffer.write(text_buffer.getvalue().encode('utf-8'))
+                buffer.seek(0)
+                return FileResponse(buffer, as_attachment=True, filename='Class_Report.csv', content_type='text/csv')
+            
+            elif download_format == 'excel':
+                import openpyxl
+                buffer = io.BytesIO()
+                wb = openpyxl.Workbook()
+                ws = wb.active
+                ws.title = "Report"
+                ws.append(['Roll Number', 'Name', 'Classes Attended', 'Total Classes', 'Attendance (%)'])
+                for row in report_list:
+                    ws.append(row)
+                wb.save(buffer)
+                buffer.seek(0)
+                return FileResponse(buffer, as_attachment=True, filename='Class_Report.xlsx', content_type='application/vnd.openxmlformats-officedocument.spreadsheetml.sheet')
+
+            elif download_format == 'pdf':
+                from reportlab.pdfgen import canvas
+                from reportlab.lib.pagesizes import letter
+                buffer = io.BytesIO()
+                p = canvas.Canvas(buffer, pagesize=letter)
+                y = 750
+                p.setFont("Helvetica-Bold", 16)
+                p.drawString(50, y, "Class Attendance Report")
+                y -= 30
+                p.setFont("Helvetica-Bold", 10)
+                p.drawString(50, y, "Roll Number")
+                p.drawString(150, y, "Name")
+                p.drawString(300, y, "Attended")
+                p.drawString(400, y, "Total")
+                p.drawString(500, y, "Percentage")
+                y -= 20
+                p.setFont("Helvetica", 10)
+                for row in report_list:
+                    if y < 50:
+                        p.showPage()
+                        y = 750
+                        p.setFont("Helvetica", 10)
+                    p.drawString(50, y, str(row[0]))
+                    p.drawString(150, y, str(row[1])[:25]) # Truncate long names
+                    p.drawString(300, y, str(row[2]))
+                    p.drawString(400, y, str(row[3]))
+                    p.drawString(500, y, f"{row[4]}%")
+                    y -= 20
+                p.save()
+                buffer.seek(0)
+                return FileResponse(buffer, as_attachment=True, filename='Class_Report.pdf', content_type='application/pdf')
 
         return Response({
             "chart_data": chart_data,
@@ -3409,6 +3515,15 @@ class PrincipalReportsHubView(APIView):
         if programme:
             batches = batches.filter(subject__stream=programme)
 
+        if year:
+            y = year.lower()
+            if y == 'first year':
+                batches = batches.filter(subject__semester__in=['Sem 1', 'Sem 2'])
+            elif y == 'second year':
+                batches = batches.filter(subject__semester__in=['Sem 3', 'Sem 4'])
+            elif y == 'third year':
+                batches = batches.filter(subject__semester__in=['Sem 5', 'Sem 6'])
+
         now = timezone.now()
         date_filter = {}
         if date_range == 'daily':
@@ -3420,7 +3535,7 @@ class PrincipalReportsHubView(APIView):
 
         from django.db.models import Count, Q
 
-        class_aggs = Attendance.objects.filter(class_batch__in=batches, **date_filter).values('class_batch').annotate(
+        class_aggs = Attendance.objects.filter(class_batch__in=batches, student__is_active=True, **date_filter).values('class_batch').annotate(
             total=Count('id'),
             present=Count('id', filter=Q(status='Present')),
             absent=Count('id', filter=Q(status='Absent'))
@@ -3447,8 +3562,28 @@ class PrincipalReportsHubView(APIView):
                     "absent": agg['absent']
                 })
 
-        atts = Attendance.objects.filter(class_batch__in=batches, **date_filter).select_related('student', 'class_batch')
+        from .models import Enrollment
+        enrollments = Enrollment.objects.filter(class_batch__in=batches, student__is_active=True).select_related('student', 'class_batch')
         student_map = {}
+        for e in enrollments:
+            s_id = e.student_id
+            if s_id not in student_map:
+                student = e.student
+                academic_year_str = e.class_batch.academic_year if e.class_batch else "2026-2027"
+                if academic_year_str and '-' in academic_year_str:
+                    display_year = academic_year_str.split('-')[0]
+                else:
+                    display_year = academic_year_str or "2026"
+                student_map[s_id] = {
+                    "name": student.name,
+                    "roll": str(student.roll_no or student.id),
+                    "year": display_year,
+                    "total": 0,
+                    "attended": 0,
+                    "absent": 0
+                }
+
+        atts = Attendance.objects.filter(class_batch__in=batches, student__is_active=True, **date_filter).select_related('student', 'class_batch')
         for a in atts:
             s_id = a.student_id
             if s_id not in student_map:
@@ -3519,7 +3654,7 @@ class PrincipalSearchView(APIView):
             if semesters:
                 students = students.filter(enrollment__class_batch__subject__semester__in=semesters)
                 
-        students = students.distinct().select_related('stream')[:50]
+        students = students.distinct().select_related('stream').order_by('roll_no')[:50]
 
         teachers = User.objects.filter(role__in=['Teacher', 'HOD'])
         if query:
@@ -3540,7 +3675,7 @@ class PrincipalSearchView(APIView):
                     t_filters &= Q(classbatch__subject__semester__in=semesters)
             teachers = teachers.filter(t_filters)
             
-        teachers = teachers.distinct().select_related('department')[:50]
+        teachers = teachers.distinct().select_related('department').order_by('name')[:50]
 
         student_data = []
         for s in students:
@@ -3680,6 +3815,8 @@ class AdminUserDetailView(APIView):
             'stream': user.stream.name if user.stream else None,
             'department': user.department.name if user.department else None,
             'roll_no': user.roll_no,
+            'year': user.current_year,
+            'semester': user.current_semester,
             'is_active': user.is_active,
             'is_mentor': user.is_mentor,
             'is_timetable_incharge': user.is_timetable_incharge,
@@ -3690,7 +3827,7 @@ class AdminUserDetailView(APIView):
             user = User.objects.get(id=user_id)
         except User.DoesNotExist:
             return Response({'error': 'User not found'}, status=404)
-        for field in ['name', 'email', 'role', 'is_active', 'is_mentor', 'is_timetable_incharge']:
+        for field in ['name', 'email', 'role', 'is_active', 'is_mentor', 'is_timetable_incharge', 'current_year', 'current_semester']:
             if field in request.data:
                 setattr(user, field, request.data[field])
         user.save()
@@ -3754,6 +3891,72 @@ class AdminArchiveSemesterView(APIView):
         ClassBatch.objects.update(academic_year="Archived")
         return Response({'message': 'Semester archived successfully'})
 
+
+class AdminSubjectManagementView(APIView):
+    permission_classes = [IsAuthenticated, IsAdmin]
+
+    def get(self, request):
+        subjects = Subject.objects.all().order_by('stream', 'semester', 'name')
+        data = [{
+            'id': s.id,
+            'name': s.name,
+            'stream': s.stream,
+            'semester': s.semester,
+            'is_elective': s.is_elective
+        } for s in subjects]
+        return Response(data)
+
+    def post(self, request):
+        name = request.data.get('name')
+        stream = request.data.get('stream')
+        semester = request.data.get('semester')
+        is_elective = request.data.get('is_elective', False)
+        
+        if not all([name, stream, semester]):
+            return Response({'error': 'Name, Stream, and Semester are required.'}, status=400)
+            
+        subject = Subject.objects.create(name=name, stream=stream, semester=semester, is_elective=is_elective)
+        TimetableActivityLog.objects.create(
+            action="Created Subject",
+            detail=f"Created {subject.name} for {stream} {semester}",
+            user=request.user,
+            color='bg-blue-500'
+        )
+        return Response({'message': 'Subject created', 'id': subject.id})
+
+    def put(self, request):
+        subject_id = request.data.get('id')
+        try:
+            subject = Subject.objects.get(id=subject_id)
+            subject.name = request.data.get('name', subject.name)
+            subject.stream = request.data.get('stream', subject.stream)
+            subject.semester = request.data.get('semester', subject.semester)
+            subject.is_elective = request.data.get('is_elective', subject.is_elective)
+            subject.save()
+            TimetableActivityLog.objects.create(
+                action="Updated Subject",
+                detail=f"Updated {subject.name} for {subject.stream} {subject.semester}",
+                user=request.user,
+                color='bg-blue-500'
+            )
+            return Response({'message': 'Subject updated'})
+        except Subject.DoesNotExist:
+            return Response({'error': 'Subject not found'}, status=404)
+
+    def delete(self, request):
+        subject_id = request.query_params.get('id')
+        try:
+            subject = Subject.objects.get(id=subject_id)
+            subject.delete()
+            TimetableActivityLog.objects.create(
+                action="Deleted Subject",
+                detail=f"Deleted {subject.name} ({subject.stream} {subject.semester})",
+                user=request.user,
+                color='bg-red-500'
+            )
+            return Response({'message': 'Subject deleted'})
+        except Subject.DoesNotExist:
+            return Response({'error': 'Subject not found'}, status=404)
 
 class AdminAssignSubjectView(APIView):
     permission_classes = [IsAuthenticated, IsAdmin]

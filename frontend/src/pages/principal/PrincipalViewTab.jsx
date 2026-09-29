@@ -48,8 +48,9 @@ const PrincipalViewTab = ({ streams, defaultSubTab, defaultParams }) => {
       const fetchStream = async () => {
         setLoading(true);
         try {
-          const { data } = await apiClient.get(`/api/principal/stream-view/?stream=${selectedStream}`);
-          const fetchedClasses = data.classes || [];
+          const { data } = await apiClient.get(`/api/principal/stream-view/?stream=${encodeURIComponent(selectedStream)}`);
+          console.log("Stream view data for", selectedStream, data);
+          const fetchedClasses = data?.classes || [];
           setStreamData(fetchedClasses);
 
           // If a class was clicked on the graph, auto open its deep dive modal once

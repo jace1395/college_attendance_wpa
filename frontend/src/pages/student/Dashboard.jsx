@@ -10,6 +10,8 @@ const StudentDashboard = () => {
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedSemester, setSelectedSemester] = useState('');
+  const [activeTab, setActiveTab] = useState('Dashboard');
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     if (!user) return;
@@ -26,7 +28,8 @@ const StudentDashboard = () => {
           setSelectedSemester(data.student.current_semester.toString());
         }
       } catch (err) {
-        // On API failure, render empty state — do NOT hardcode personal data
+        console.error("Student dashboard fetch error:", err);
+        setError("Network Error: Could not connect to the backend server. Please check if the server is running.");
         setDashboardData({ student: null, subjects: [] });
       } finally {
         setLoading(false);
@@ -157,8 +160,9 @@ const StudentDashboard = () => {
                   {['Dashboard', 'My Timetable', 'Attendance Reports'].map((tab) => (
                     <button
                       key={tab}
+                      onClick={() => setActiveTab(tab)}
                       className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                        tab === 'Dashboard' 
+                        activeTab === tab 
                           ? 'bg-white dark:bg-slate-800 text-blue-600 dark:text-blue-400 shadow-sm border border-gray-200 dark:border-slate-700' 
                           : 'text-gray-600 dark:text-gray-400 hover:bg-white/50 dark:hover:bg-slate-800/50'
                       }`}
@@ -171,47 +175,78 @@ const StudentDashboard = () => {
             </div>
           )}
 
-          {/* Subjects Grid */}
-          <h3 className="text-2xl font-semibold mb-6 text-gray-900 dark:text-white">Your Classes</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-10">
-            {subjects && subjects.length > 0 ? subjects.map((subject) => (
-              <Link
-                to={`/student/subject/${subject.subject_id}`}
-                key={subject.subject_id}
-                className="group bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden hover:bg-gray-50 dark:hover:bg-slate-700  shadow-sm hover:shadow-md hover:-translate-y-1 block"
-              >
-                <div className="p-6">
-                  <h4 className="text-xl font-bold truncate mb-1 text-gray-900 dark:text-white">{subject.subject_name}</h4>
-                  <p className="text-sm text-blue-600 dark:text-blue-400 mb-6">{subject.teacher_name}</p>
+          {/* Tab Contents */}
+          {activeTab === 'Dashboard' && (
+            <>
+              <h3 className="text-2xl font-semibold mb-6 text-gray-900 dark:text-white">Your Classes</h3>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pb-10">
+                {subjects && subjects.length > 0 ? subjects.map((subject) => (
+                  <Link
+                    to={`/student/subject/${subject.subject_id}`}
+                    key={subject.subject_id}
+                    className="group bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-700 rounded-xl overflow-hidden hover:bg-gray-50 dark:hover:bg-slate-700  shadow-sm hover:shadow-md hover:-translate-y-1 block"
+                  >
+                    <div className="p-6">
+                      <h4 className="text-xl font-bold truncate mb-1 text-gray-900 dark:text-white">{subject.subject_name}</h4>
+                      <p className="text-sm text-blue-600 dark:text-blue-400 mb-6">{subject.teacher_name}</p>
 
-                  <div className="flex justify-between items-end mb-2">
-                    <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">Attendance</span>
-                    <span className={`text-lg font-bold ${getAttendanceTextColor(subject.attendance_percentage)}`}>
-                      {subject.attendance_percentage}%
-                    </span>
-                  </div>
+                      <div className="flex justify-between items-end mb-2">
+                        <span className="text-sm text-gray-600 dark:text-gray-400 font-medium">Attendance</span>
+                        <span className={`text-lg font-bold ${getAttendanceTextColor(subject.attendance_percentage)}`}>
+                          {subject.attendance_percentage}%
+                        </span>
+                      </div>
 
-                  <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-3 mb-4 overflow-hidden">
-                    <div
-                      className={`h-3 rounded-full ${getProgressBarColor(subject.attendance_percentage)}`}
-                      style={{ width: `${subject.attendance_percentage}%` }}
-                    ></div>
-                  </div>
+                      <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-3 mb-4 overflow-hidden">
+                        <div
+                          className={`h-3 rounded-full ${getProgressBarColor(subject.attendance_percentage)}`}
+                          style={{ width: `${subject.attendance_percentage}%` }}
+                        ></div>
+                      </div>
 
-                  <div className="flex justify-between text-xs text-blue-600 dark:text-blue-400 pt-3 border-t border-gray-200 dark:border-slate-700">
-                    <span className="font-medium">Conducted: {subject.total_classes_conducted}</span>
-                    <span className="font-medium">Attended: {subject.classes_attended}</span>
-                  </div>
-                </div>
+                      <div className="flex justify-between text-xs text-blue-600 dark:text-blue-400 pt-3 border-t border-gray-200 dark:border-slate-700">
+                        <span className="font-medium">Conducted: {subject.total_classes_conducted}</span>
+                        <span className="font-medium">Attended: {subject.classes_attended}</span>
+                      </div>
+                    </div>
+                  </Link>
+                )) : (
+                  !loading && (
+                    <div className="col-span-full text-center py-16 text-gray-400 dark:text-white/30">
+                      <p className="text-lg">No subjects found for this semester.</p>
+                    </div>
+                  )
+                )}
+              </div>
+            </>
+          )}
+
+          {activeTab === 'My Timetable' && (
+            <div className="py-16 text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 dark:bg-slate-700 text-blue-500 mb-4">
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">My Timetable</h3>
+              <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-6">View your daily class schedule here.</p>
+              <Link to="/student/timetable" className="inline-flex items-center gap-2 px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors">
+                Open Full Timetable
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
               </Link>
-            )) : (
-              !loading && (
-                <div className="col-span-full text-center py-16 text-gray-400 dark:text-white/30">
-                  <p className="text-lg">No subjects found for this semester.</p>
-                </div>
-              )
-            )}
-          </div>
+            </div>
+          )}
+
+          {activeTab === 'Attendance Reports' && (
+            <div className="py-16 text-center">
+              <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-blue-100 dark:bg-slate-700 text-blue-500 mb-4">
+                <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+              </div>
+              <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-2">Attendance Reports</h3>
+              <p className="text-gray-500 dark:text-gray-400 max-w-md mx-auto mb-6">Detailed reports for your attendance history will be available here.</p>
+              <button disabled className="inline-flex items-center gap-2 px-6 py-2.5 bg-gray-100 dark:bg-slate-800 text-gray-400 dark:text-slate-500 rounded-lg font-medium cursor-not-allowed">
+                Coming Soon
+              </button>
+            </div>
+          )}
         </>
       )}
     </Layout>

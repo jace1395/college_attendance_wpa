@@ -13,35 +13,12 @@ const apiClient = axios.create({
 // ---------------------------------------------------------------------------
 // Request Interceptor — attach Bearer token from localStorage
 // ---------------------------------------------------------------------------
-// ---------------------------------------------------------------------------
-// Simple GET Cache
-// ---------------------------------------------------------------------------
-const cache = new Map();
-const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
 apiClient.interceptors.request.use(
   (config) => {
     const accessToken = localStorage.getItem('access_token');
     if (accessToken) {
       config.headers['Authorization'] = `Bearer ${accessToken}`;
-    }
-
-    if (config.method === 'get') {
-      // Do not use cache for binary downloads
-      if (config.responseType !== 'blob' && config.responseType !== 'arraybuffer') {
-        const cacheKey = config.url + (config.params ? '?' + new URLSearchParams(config.params).toString() : '');
-        const cached = cache.get(cacheKey);
-        if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
-          config.adapter = () => Promise.resolve({
-            data: cached.data,
-            status: 200,
-            statusText: 'OK',
-            headers: {},
-            config,
-            request: {}
-          });
-        }
-      }
     }
 
     return config;
@@ -68,19 +45,6 @@ const processQueue = (error, token = null) => {
 
 apiClient.interceptors.response.use(
   (response) => {
-    if (response.config.method === 'get') {
-      // Do not cache binary downloads (blob, arraybuffer)
-      if (response.config.responseType !== 'blob' && response.config.responseType !== 'arraybuffer') {
-        const cacheKey = response.config.url + (response.config.params ? '?' + new URLSearchParams(response.config.params).toString() : '');
-        cache.set(cacheKey, {
-          data: response.data,
-          timestamp: Date.now()
-        });
-      }
-    } else if (['post', 'put', 'patch', 'delete'].includes(response.config.method?.toLowerCase())) {
-      // Invalidate all cache on mutations for full state consistency
-      cache.clear();
-    }
     return response;
   },
   async (error) => {

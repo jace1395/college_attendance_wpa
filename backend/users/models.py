@@ -70,6 +70,8 @@ class User(AbstractBaseUser, PermissionsMixin):
     
     department = models.ForeignKey('Department', on_delete=models.SET_NULL, null=True, blank=True)
     stream = models.ForeignKey('Stream', on_delete=models.SET_NULL, null=True, blank=True)
+    current_semester = models.CharField(max_length=20, null=True, blank=True)
+    current_year = models.CharField(max_length=20, null=True, blank=True)
     is_staff = models.BooleanField(default=False)
 
     objects = CustomUserManager()

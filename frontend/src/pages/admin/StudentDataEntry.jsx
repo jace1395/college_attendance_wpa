@@ -287,6 +287,152 @@ const StaffForm = () => {
   );
 };
 
+// ─── Subject Management ────────────────────────────────────────────────────────
+const SubjectManagement = () => {
+  const empty = { name: "", stream: "", semester: "", is_elective: false };
+  const [form, setForm] = useState(empty);
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [records, setRecords] = useState([]);
+  const [editingId, setEditingId] = useState(null);
+
+  const fetchSubjects = async () => {
+    try {
+      const { data } = await apiClient.get('/api/admin/subjects/');
+      setRecords(data);
+    } catch (err) {
+      console.error("Failed to load subjects");
+    }
+  };
+
+  useEffect(() => {
+    fetchSubjects();
+  }, []);
+
+  const set = k => e => setForm(f => ({ ...f, [k]: e.target.type === 'checkbox' ? e.target.checked : e.target.value }));
+
+  const validate = () => {
+    const e = {};
+    if (!form.name.trim()) e.name = "Subject name is required.";
+    if (!form.stream) e.stream = "Select a stream.";
+    if (!form.semester) e.semester = "Select a semester.";
+    return e;
+  };
+
+  const handleSubmit = async e => {
+    e.preventDefault();
+    if (loading) return;
+    const errs = validate();
+    if (Object.keys(errs).length) { setErrors(errs); return; }
+    
+    setLoading(true);
+    try {
+      if (editingId) {
+        await apiClient.put('/api/admin/subjects/', { id: editingId, ...form });
+      } else {
+        await apiClient.post('/api/admin/subjects/', form);
+      }
+      fetchSubjects();
+      setForm(empty);
+      setEditingId(null);
+      setErrors({});
+    } catch (err) {
+      alert(err.response?.data?.error || "Failed to save subject.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this subject?")) return;
+    try {
+      await apiClient.delete(`/api/admin/subjects/?id=${id}`);
+      fetchSubjects();
+    } catch (err) {
+      alert(err.response?.data?.error || "Failed to delete subject.");
+    }
+  };
+
+  const handleEdit = (sub) => {
+    setForm({ name: sub.name, stream: sub.stream, semester: sub.semester, is_elective: sub.is_elective });
+    setEditingId(sub.id);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  return (
+    <div className="flex flex-col gap-5">
+      <form onSubmit={handleSubmit} className="bg-white/5 border border-white/10 rounded-2xl p-6 shadow-xl">
+        <h3 className="text-sm font-bold text-white/80 mb-5">{editingId ? 'Edit Subject' : 'New Subject Entry'}</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div><label className={lbl}>Subject Name *</label><input className={inp} value={form.name} onChange={set("name")} placeholder="e.g. Mathematics II"/>{errors.name && <p className={errCls}>{errors.name}</p>}</div>
+          <div>
+            <label className={lbl}>Stream *</label>
+            <select className={sel} value={form.stream} onChange={set("stream")}>
+              <option value="">Select...</option>
+              {PROGRAMMES.map(p => <option key={p}>{p}</option>)}
+            </select>
+            {errors.stream && <p className={errCls}>{errors.stream}</p>}
+          </div>
+          <div>
+            <label className={lbl}>Semester *</label>
+            <select className={sel} value={form.semester} onChange={set("semester")}>
+              <option value="">Select...</option>
+              {['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4', 'Sem 5', 'Sem 6'].map(s => <option key={s}>{s}</option>)}
+            </select>
+            {errors.semester && <p className={errCls}>{errors.semester}</p>}
+          </div>
+          <div className="flex items-center gap-2 mt-6">
+            <input type="checkbox" id="is_elective" checked={form.is_elective} onChange={set("is_elective")} className="w-4 h-4 rounded text-blue-600 focus:ring-blue-500 border-white/20 bg-slate-900"/>
+            <label htmlFor="is_elective" className="text-sm font-medium text-white/80">Is Elective?</label>
+          </div>
+        </div>
+        <div className="flex justify-end mt-5">
+          <button type="button" onClick={() => { setForm(empty); setEditingId(null); setErrors({}); }} className="px-5 py-2 text-white/50 hover:text-white text-sm mr-3 transition-colors" disabled={loading}>Clear</button>
+          <button type="submit" disabled={loading} className="px-7 py-2.5 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-500 hover:to-pink-500 text-white font-bold rounded-xl shadow-lg text-sm disabled:opacity-50 disabled:cursor-not-allowed">{loading ? 'Saving...' : editingId ? 'Update Subject' : 'Add Subject'}</button>
+        </div>
+      </form>
+
+      {/* Records Preview */}
+      <div className="bg-white/5 border border-white/10 rounded-2xl overflow-hidden shadow-xl">
+        <div className="px-5 py-4 border-b border-white/10 flex items-center justify-between">
+          <h3 className="text-sm font-bold text-white/80">Subjects</h3>
+          <span className="text-xs text-white/40">{records.length} records</span>
+        </div>
+        <div className="overflow-x-auto max-h-96">
+          <table className="w-full text-sm text-left relative">
+            <thead className="sticky top-0 bg-slate-900 border-b border-white/10">
+            <tr className="text-white/40 text-xs uppercase tracking-wider">
+              <th className="px-4 py-3">Name</th>
+              <th className="px-4 py-3">Stream</th>
+              <th className="px-4 py-3">Semester</th>
+              <th className="px-4 py-3">Type</th>
+              <th className="px-4 py-3 text-right">Actions</th>
+            </tr></thead>
+            <tbody>
+              {records.map((r) => (
+                <tr key={r.id} className="border-b border-white/5 hover:bg-white/5 transition-colors">
+                  <td className="px-4 py-3 font-semibold text-white/90">{r.name}</td>
+                  <td className="px-4 py-3"><span className="bg-purple-500/20 text-purple-300 text-xs px-2 py-0.5 rounded-md font-bold">{r.stream}</span></td>
+                  <td className="px-4 py-3 text-white/70">{r.semester}</td>
+                  <td className="px-4 py-3 text-white/50">{r.is_elective ? <span className="text-yellow-400">Elective</span> : 'Core'}</td>
+                  <td className="px-4 py-3 text-right flex justify-end gap-3">
+                    <button onClick={() => handleEdit(r)} className="text-blue-400 hover:text-blue-300 transition-colors" title="Edit">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                    </button>
+                    <button onClick={() => handleDelete(r.id)} className="text-red-400 hover:text-red-300 transition-colors" title="Delete">
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ─── Main Export ─────────────────────────────────────────────────────────────
 const StudentDataEntry = () => {
   const [tab, setTab] = useState("student");
@@ -298,21 +444,21 @@ const StudentDataEntry = () => {
         </div>
         <div>
           <h2 className="text-base font-bold text-white/90">Data Entry</h2>
-          <p className="text-xs text-white/40">Insert new student or staff records into the system</p>
+          <p className="text-xs text-white/40">Insert new student, staff, or subject records into the system</p>
         </div>
       </div>
 
       {/* Sub-tabs */}
       <div className="flex gap-2 bg-slate-900/50 p-1.5 rounded-xl border border-white/10 w-fit">
-        {["student", "staff"].map(t => (
+        {["student", "staff", "subjects"].map(t => (
           <button key={t} onClick={() => setTab(t)}
             className={"px-5 py-2 rounded-lg text-sm font-bold capitalize  " + (tab === t ? "bg-blue-600 text-white shadow" : "text-white/50 hover:text-white hover:bg-white/5")}>
-            {t === "student" ? "Student" : "Staff / Teacher"}
+            {t === "student" ? "Student" : t === "staff" ? "Staff / Teacher" : "Subjects"}
           </button>
         ))}
       </div>
 
-      {tab === "student" ? <StudentForm /> : <StaffForm />}
+      {tab === "student" ? <StudentForm /> : tab === "staff" ? <StaffForm /> : <SubjectManagement />}
     </div>
   );
 };

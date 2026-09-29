@@ -23,6 +23,7 @@ const UserManagement = () => {
     stream: '',
     department: '',
     year: '',
+    semester: '',
     roll_no: ''
   });
   const [isCreatingUser, setIsCreatingUser] = useState(false);
@@ -133,7 +134,7 @@ const UserManagement = () => {
       await apiClient.post('/api/admin/users/', newUser);
       alert('User added successfully!');
       setIsAddModalOpen(false);
-      setNewUser({ name: '', email: '', role: 'student', stream: '', department: '', year: '', roll_no: '' });
+      setNewUser({ name: '', email: '', role: 'student', stream: '', department: '', year: '', semester: '', roll_no: '' });
       setRefreshTrigger(prev => prev + 1); 
     } catch (err) {
       alert(err.response?.data?.error || 'Failed to create user');
@@ -346,6 +347,20 @@ const UserManagement = () => {
                         <option value="FY">FY</option>
                         <option value="SY">SY</option>
                         <option value="TY">TY</option>
+                      </select>
+                    </div>
+                  )}
+                  {newUser.role === 'student' && (
+                    <div className="flex-1">
+                      <label className="block text-sm text-white/60 mb-1 ml-1">Semester</label>
+                      <select value={newUser.semester} onChange={e => setNewUser({...newUser, semester: e.target.value})} className="w-full bg-slate-900/50 text-white rounded-xl px-4 py-2.5 outline-none border border-slate-600 focus:border-blue-500 appearance-none">
+                        <option value="">—</option>
+                        <option value="Sem 1">Sem 1</option>
+                        <option value="Sem 2">Sem 2</option>
+                        <option value="Sem 3">Sem 3</option>
+                        <option value="Sem 4">Sem 4</option>
+                        <option value="Sem 5">Sem 5</option>
+                        <option value="Sem 6">Sem 6</option>
                       </select>
                     </div>
                   )}

@@ -21,6 +21,7 @@ const TeacherDashboard = () => {
   // Modals / Alerts
   const [selectedClass, setSelectedClass] = useState(null);
   const [smartAlert, setSmartAlert] = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     if (!user) return;
@@ -33,7 +34,8 @@ const TeacherDashboard = () => {
         setDashboardData(data);
         if (data.smart_alert) setSmartAlert(data.smart_alert);
       } catch (err) {
-        // On API failure, render empty state
+        console.error("Dashboard fetch error:", err);
+        setError("Network Error: Could not connect to the backend server. Please check if the server is running.");
         setDashboardData({ teacher: null, assigned_classes: [], monitoring_duties: [] });
       } finally {
         setLoading(false);
@@ -77,6 +79,14 @@ const TeacherDashboard = () => {
                 <div className="h-6 bg-gray-200 dark:bg-slate-700 rounded w-1/3"></div>
               </div>
             ))}
+          </div>
+        </div>
+      ) : error ? (
+        <div className="flex flex-col items-center justify-center min-h-[50vh] text-center px-4">
+          <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-6 rounded-2xl border border-red-100 dark:border-red-900/30 max-w-md">
+            <h3 className="text-lg font-bold mb-2">Network Error</h3>
+            <p className="text-sm">{error}</p>
+            <button onClick={() => window.location.reload()} className="mt-4 px-4 py-2 bg-red-600 text-white rounded-lg text-sm hover:bg-red-700">Retry</button>
           </div>
         </div>
       ) : (
@@ -135,9 +145,9 @@ const TeacherDashboard = () => {
                     { key: 'monitoring', label: 'Monitoring', always: true },
                     { key: 'reports', label: 'Reports', always: true },
                     { key: 'my_timetable', label: 'Timetable', always: true },
-                    { key: 'mentor', label: '★ Mentor', show: Boolean(teacher?.isMentor || teacher?.isHOD) },
+                    { key: 'mentor', label: '★ Mentor', show: Boolean(teacher?.isMentor) },
                     { key: 'hod', label: '★ HOD', show: Boolean(teacher?.isHOD) },
-                    { key: 'timetable', label: '★ Timetable Incharge', show: Boolean(teacher?.isTimetableIncharge || teacher?.isHOD) },
+                    { key: 'timetable', label: '★ Timetable Incharge', show: Boolean(teacher?.isTimetableIncharge) },
                   ]
                     .filter(tab => tab.always || tab.show)
                     .map(tab => (

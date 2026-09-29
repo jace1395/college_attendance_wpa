@@ -14,7 +14,8 @@ const Login = () => {
 
   const getSuffix = () => {
     // If username starts with a digit, assume it's a student roll number
-    if (username && /^\d/.test(username)) {
+    const trimmedUsername = username.trim().toLowerCase();
+    if (trimmedUsername && /^\d/.test(trimmedUsername)) {
       return '.sdcce@vvm.edu.in';
     }
     return '@vvm.edu.in';
@@ -29,7 +30,9 @@ const Login = () => {
       return;
     }
 
-    const fullEmail = `${username}${getSuffix()}`;
+    // Strip trailing/leading spaces and accidentally typed domain
+    const trimmedUsername = username.trim().toLowerCase().replace(/@.*$/, '');
+    const fullEmail = `${trimmedUsername}${getSuffix()}`;
 
     try {
       const role = await login(fullEmail, password);
@@ -57,7 +60,11 @@ const Login = () => {
           break;
       }
     } catch (err) {
-      setError('Failed to login. Please try again.');
+      if (err.response && err.response.data && err.response.data.detail) {
+        setError(err.response.data.detail);
+      } else {
+        setError('Failed to login. Please try again.');
+      }
     }
   };
 

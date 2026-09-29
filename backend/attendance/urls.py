@@ -46,6 +46,7 @@ from .views import (
     AdminApproveUnlockView,
     AdminDenyUnlockView,
     AdminTeacherSubjectsView,
+    AdminSubjectManagementView,
     AdminBackupExportView,
     AuditLogPaginationView,
     
@@ -152,6 +153,7 @@ urlpatterns = [
     path('api/admin/unlock-requests/<int:request_id>/approve/', AdminApproveUnlockView.as_view(), name='admin-approve-unlock'),
     path('api/admin/unlock-requests/<int:request_id>/deny/', AdminDenyUnlockView.as_view(), name='admin-deny-unlock'),
     path('api/admin/teacher-subjects/', AdminTeacherSubjectsView.as_view(), name='admin-teacher-subjects'),
+    path('api/admin/subjects/', AdminSubjectManagementView.as_view(), name='admin-subjects'),
     path('api/admin/assign-subject/', AdminAssignSubjectView.as_view(), name='admin-assign-subject'),
     path('api/admin/backup/export/', AdminBackupExportView.as_view(), name='admin-backup-export'),
     path('api/admin/audit-logs/', AuditLogPaginationView.as_view(), name='admin-audit-logs'),

@@ -8,6 +8,8 @@ const ManagePrincipalView = ({ refreshTrigger }) => {
   const [email, setEmail] = useState('');
   const [message, setMessage] = useState({ text: '', type: '' });
   const [resetMessage, setResetMessage] = useState(null);
+  const [teachers, setTeachers] = useState([]);
+  const [selectedTeacherId, setSelectedTeacherId] = useState('');
 
   useEffect(() => {
     fetchPrincipal();
@@ -17,6 +19,7 @@ const ManagePrincipalView = ({ refreshTrigger }) => {
     try {
       const { data } = await apiClient.get('/api/admin/principal-management/');
       setPrincipal(data);
+      if (data.teachers) setTeachers(data.teachers);
       setName(data.name || '');
       setEmail(data.email || '');
     } catch (err) {
@@ -60,18 +63,21 @@ const ManagePrincipalView = ({ refreshTrigger }) => {
     }
   };
 
-  const handleDelete = async () => {
-    if (!window.confirm("Are you sure you want to PERMANENTLY delete the Principal from the database? This cannot be undone.")) return;
+  const handleChangePrincipal = async () => {
+    if (!selectedTeacherId) return;
+    if (!window.confirm("Are you sure you want to demote the current Principal and assign this Teacher as the new Principal?")) return;
     
     setMessage({ text: '', type: '' });
     try {
-      await apiClient.post('/api/admin/principal-management/', {
-        action: 'delete'
+      const { data } = await apiClient.post('/api/admin/principal-management/', {
+        action: 'change_principal',
+        teacher_id: selectedTeacherId
       });
-      alert('Principal deleted successfully!');
+      alert(data.success || 'Principal changed successfully!');
+      setSelectedTeacherId('');
       fetchPrincipal();
     } catch (err) {
-      setMessage({ text: err.response?.data?.error || 'Failed to delete principal.', type: 'error' });
+      setMessage({ text: err.response?.data?.error || 'Failed to change principal.', type: 'error' });
     }
   };
 
@@ -138,7 +144,31 @@ const ManagePrincipalView = ({ refreshTrigger }) => {
             </div>
           </div>
 
-          <div className="pt-4 flex flex-col sm:flex-row justify-between items-center gap-4 border-t border-white/10">
+          <div className="pt-6 mt-6 border-t border-white/10">
+            <h3 className="text-lg font-bold text-white mb-4">Change Principal</h3>
+            <div className="flex flex-col sm:flex-row gap-4">
+              <select
+                value={selectedTeacherId}
+                onChange={e => setSelectedTeacherId(e.target.value)}
+                className="w-full sm:flex-1 bg-slate-900/50 border border-white/10 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-purple-500"
+              >
+                <option value="">Select a Teacher to assign as new Principal</option>
+                {teachers.map(t => (
+                  <option key={t.id} value={t.id}>{t.name} ({t.email})</option>
+                ))}
+              </select>
+              <button
+                type="button"
+                onClick={handleChangePrincipal}
+                disabled={!selectedTeacherId}
+                className="w-full sm:w-auto px-6 py-3 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white rounded-xl font-bold transition-all text-sm"
+              >
+                Assign Principal
+              </button>
+            </div>
+          </div>
+
+          <div className="pt-6 flex flex-col sm:flex-row justify-between items-center gap-4 border-t border-white/10">
             <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
               <button
                 type="button"
@@ -147,14 +177,6 @@ const ManagePrincipalView = ({ refreshTrigger }) => {
               >
                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"></path></svg>
                 Reset Password
-              </button>
-              <button
-                type="button"
-                onClick={handleDelete}
-                className="w-full sm:w-auto px-6 py-3 bg-red-600 hover:bg-red-500 text-white border border-red-500/20 rounded-xl font-bold transition-all text-sm flex items-center justify-center gap-2"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
-                Delete Principal
               </button>
             </div>
             <button

@@ -14,7 +14,7 @@ const ManageStudentsView = ({ departments, streams, classes, setResetModalUser, 
 
   const handleEditClick = (student) => {
     setEditingUserId(student.id);
-    setEditForm({ name: student.name, email: student.email, roll_no: student.roll_no, status: student.status });
+    setEditForm({ name: student.name, email: student.email, roll_no: student.roll_no, status: student.status, current_year: student.year, current_semester: student.semester });
   };
 
   const handleEditSave = async (userId) => {
@@ -23,9 +23,11 @@ const ManageStudentsView = ({ departments, streams, classes, setResetModalUser, 
         name: editForm.name,
         email: editForm.email,
         roll_no: editForm.roll_no,
+        current_year: editForm.current_year,
+        current_semester: editForm.current_semester,
         is_active: editForm.status === 'active'
       });
-      setStudents(students.map(s => s.id === userId ? { ...s, ...editForm } : s));
+      setStudents(students.map(s => s.id === userId ? { ...s, ...editForm, year: editForm.current_year, semester: editForm.current_semester } : s));
       setEditingUserId(null);
     } catch (err) {
       alert(err.response?.data?.error || "Failed to update student");
@@ -157,6 +159,7 @@ const ManageStudentsView = ({ departments, streams, classes, setResetModalUser, 
                   <th className="p-4 font-medium">Roll No</th>
                   <th className="p-4 font-medium">Name</th>
                   <th className="p-4 font-medium">Email</th>
+                  <th className="p-4 font-medium">Year/Sem</th>
                   <th className="p-4 font-medium text-center">Status</th>
                   <th className="p-4 font-medium text-right">Actions</th>
                 </tr>
@@ -180,6 +183,31 @@ const ManageStudentsView = ({ departments, streams, classes, setResetModalUser, 
                       {isEditing ? (
                         <input type="email" value={editForm.email} onChange={(e) => setEditForm({...editForm, email: e.target.value})} className="bg-slate-900 border border-slate-700 rounded px-2 py-1 w-full text-white" />
                       ) : student.email}
+                    </td>
+                    <td className="p-4 text-sm font-medium">
+                      {isEditing ? (
+                        <div className="flex gap-2">
+                          <select value={editForm.current_year || ''} onChange={(e) => setEditForm({...editForm, current_year: e.target.value})} className="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white text-xs">
+                            <option value="">Year</option>
+                            <option value="FY">FY</option>
+                            <option value="SY">SY</option>
+                            <option value="TY">TY</option>
+                          </select>
+                          <select value={editForm.current_semester || ''} onChange={(e) => setEditForm({...editForm, current_semester: e.target.value})} className="bg-slate-900 border border-slate-700 rounded px-2 py-1 text-white text-xs">
+                            <option value="">Sem</option>
+                            <option value="Sem 1">Sem 1</option>
+                            <option value="Sem 2">Sem 2</option>
+                            <option value="Sem 3">Sem 3</option>
+                            <option value="Sem 4">Sem 4</option>
+                            <option value="Sem 5">Sem 5</option>
+                            <option value="Sem 6">Sem 6</option>
+                          </select>
+                        </div>
+                      ) : (
+                        <span className="bg-slate-800 border border-slate-700 px-2 py-1 rounded-md text-white/80 whitespace-nowrap">
+                          {student.year || 'N/A'} / {student.semester || 'N/A'}
+                        </span>
+                      )}
                     </td>
                     <td className="p-4 text-center">
                       {isEditing ? (

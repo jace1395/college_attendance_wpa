@@ -87,7 +87,7 @@ const MonitoringTab = () => {
   const activeDuties = duties.filter(d => {
       const dutyDate = new Date(d.date);
       dutyDate.setHours(0,0,0,0);
-      return dutyDate.getTime() === today.getTime() && d.status !== 'Completed';
+      return dutyDate.getTime() >= today.getTime() && d.status !== 'Completed';
   });
   
   const archivedDuties = duties.filter(d => {
@@ -268,7 +268,7 @@ const MonitoringTab = () => {
                       : 'text-white/60 hover:text-white hover:bg-white/5'
               }`}
           >
-              Active Today ({activeDuties.length})
+              Active / Upcoming ({activeDuties.length})
           </button>
           <button
               onClick={() => setActiveView('archived')}
@@ -295,7 +295,7 @@ const MonitoringTab = () => {
                   ))
               ) : (
                   <div className="flex flex-col items-center justify-center h-48 bg-slate-900/50 border border-white/10 rounded-3xl">
-                      <p className="text-white/50 text-lg">No active monitoring duties today.</p>
+                      <p className="text-white/50 text-lg">No active or upcoming monitoring duties.</p>
                   </div>
               )}
           </div>
