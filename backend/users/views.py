@@ -11,6 +11,13 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         
         assert self.user is not None
         
+        import datetime
+        current_year = datetime.date.today().year
+        default_password = f"Sdcce@{current_year}"
+        if self.user.check_password(default_password):
+            self.user.is_first_login = True
+            self.user.save(update_fields=['is_first_login'])
+        
         data['user'] = {  # type: ignore
             'id': self.user.id,
             'name': self.user.name,
