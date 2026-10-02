@@ -20,7 +20,7 @@ jobs:
             exit 1
           fi
           echo "Pinging backend at: ${BACKEND_URL}"
-          STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 60 "$BACKEND_URL")
+          STATUS_CODE=$(curl -s -o /dev/null -w "%{http_code}" --max-time 120 "$BACKEND_URL")
           echo "HTTP response status code: ${STATUS_CODE}"
           if [ "$STATUS_CODE" -ge 200 ] && [ "$STATUS_CODE" -lt 500 ]; then
             echo "Ping successful (HTTP ${STATUS_CODE}). Backend is awake."
